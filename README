@@ -13,7 +13,7 @@ Build ajabase and ajantv2:
 
 Build the gst plugin:
 
-    cd ajaplugins/gstreamer/gst-plugin
+    cd ajaplugins/gst-plugin
     ./autogen.sh
     make
     sudo make install
