@@ -35,19 +35,19 @@ libgstaja_la_SOURCES = \
 	gstaja.cpp \
 	gstajavideosrc.cpp \
 	gstajaaudiosrc.cpp \
-	gstajavideosink.cpp \
-	gstajaaudiosink.cpp \
 	gstntv2.cpp
+#	gstajavideosink.cpp
+#	gstajaaudiosink.cpp
 #	gstajahevcsrc.cpp
 
 # headers we need but don't want installed
 noinst_HEADERS = \
 	gstaja.h \
 	gstajavideosrc.h \
-	gstajaaudiosrc.cpp \
-	gstajavideosink.cpp \
-	gstajaaudiosink.cpp \
+	gstajaaudiosrc.h \
 	gstntv2.h \
 	../../../ajalibraries/ajantv2/includes/ntv2enums.h \
 	../../../ajalibraries/ajantv2/includes/ntv2m31enums.h
 #	gstajahevcsrc.h
+#	gstajavideosink.cpp
+#	gstajaaudiosink.cpp
