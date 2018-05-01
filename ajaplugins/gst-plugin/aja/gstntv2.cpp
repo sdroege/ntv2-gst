@@ -1061,6 +1061,8 @@ NTV2GstAV::ACInputThreadStatic (AJAThread * pThread, void *pContext)
 void
 NTV2GstAV::ACInputWorker (void)
 {
+  guint64 timeoutStart = GST_CLOCK_TIME_NONE;
+
   // Choose timecode source
   NTV2TCIndex tcIndex;
 
@@ -1154,6 +1156,12 @@ NTV2GstAV::ACInputWorker (void)
           AcquireVideoBuffer ());
       GstMapInfo video_map, audio_map;
 
+      NTV2VideoFormat inputVideoFormat = mDevice.GetInputVideoFormat(mInputSource);
+      pVideoData->haveSignal = (mVideoFormat == inputVideoFormat);
+      if (!pVideoData->haveSignal && timeoutStart == GST_CLOCK_TIME_NONE) {
+        timeoutStart = gst_util_get_timestamp ();
+      }
+
       if (pVideoData->buffer) {
         gst_buffer_map (pVideoData->buffer, &video_map, GST_MAP_READWRITE);
         pVideoData->pVideoBuffer = (uint32_t *) video_map.data;
@@ -1163,6 +1171,7 @@ NTV2GstAV::ACInputWorker (void)
           pVideoData->videoBufferSize);
 
       AjaAudioBuff *pAudioData = AcquireAudioBuffer ();
+      pAudioData->haveSignal = pVideoData->haveSignal;
       if (pAudioData->buffer) {
         gst_buffer_map (pAudioData->buffer, &audio_map, GST_MAP_READWRITE);
         pAudioData->pAudioBuffer = (uint32_t *) audio_map.data;
@@ -1312,7 +1321,17 @@ NTV2GstAV::ACInputWorker (void)
           mLastFrameAudioOut = true;
           break;
       } else {
-        mDevice.WaitForInputVerticalInterrupt (mInputChannel);
+        if (!mDevice.WaitForInputVerticalInterrupt (mInputChannel)) {
+          if (timeoutStart == GST_CLOCK_TIME_NONE) {
+            timeoutStart = gst_util_get_timestamp ();
+          } else if (gst_util_get_timestamp() - timeoutStart >= 100 * GST_MSECOND) {
+            // Only report missing frames a) every 100ms and b) if there
+            // actually was no frame for 100ms
+            DoCallback (VIDEO_CALLBACK, NULL);
+            DoCallback (AUDIO_CALLBACK, NULL);
+            timeoutStart = GST_CLOCK_TIME_NONE;
+          }
+        }
       }
     }
   }                             // loop til quit signaled
