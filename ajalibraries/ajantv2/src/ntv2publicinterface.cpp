@@ -431,6 +431,32 @@ NTV2FrameBufferFormatSet & operator += (NTV2FrameBufferFormatSet & inOutSet, con
 }
 
 
+//	Implementation of NTV2StandardSet's ostream writer...
+ostream & operator << (ostream & inOStream, const NTV2StandardSet & inStandards)
+{
+	NTV2StandardSetConstIter	iter	(inStandards.begin ());
+
+	inOStream	<< inStandards.size ()
+				<< (inStandards.size () == 1 ? " standard:  " : " standards:  ");
+
+	while (iter != inStandards.end ())
+	{
+		inOStream << ::NTV2StandardToString(*iter);
+		inOStream << (++iter == inStandards.end ()  ?  ""  :  ", ");
+	}
+
+	return inOStream;
+}
+
+
+NTV2StandardSet & operator += (NTV2StandardSet & inOutSet, const NTV2StandardSet inSet)
+{
+	for (NTV2StandardSetConstIter iter(inSet.begin ());  iter != inSet.end();  ++iter)
+		inOutSet.insert(*iter);
+	return inOutSet;
+}
+
+
 //	Implementation of NTV2FrameBufferFormatSet's ostream writer...
 ostream & operator << (ostream & inOStream, const NTV2InputSourceSet & inSet)
 {
@@ -1354,7 +1380,7 @@ AUTOCIRCULATE_TRANSFER::AUTOCIRCULATE_TRANSFER ()
 		acFrameBufferOrientation	(NTV2_FRAMEBUFFER_ORIENTATION_TOPDOWN),
 		acVidProcInfo				(),
 		acVideoQuarterSizeExpand	(NTV2_QuarterSizeExpandOff),
-		acReserved001				(0),
+		acHDR10PlusDynamicMetaData	(NULL, 0),
 		acPeerToPeerFlags			(0),
 		acFrameRepeatCount			(1),
 		acDesiredFrame				(-1),
@@ -1385,7 +1411,7 @@ AUTOCIRCULATE_TRANSFER::AUTOCIRCULATE_TRANSFER (ULWord * pInVideoBuffer, const U
 		acFrameBufferOrientation	(NTV2_FRAMEBUFFER_ORIENTATION_TOPDOWN),
 		acVidProcInfo				(),
 		acVideoQuarterSizeExpand	(NTV2_QuarterSizeExpandOff),
-		acReserved001				(0),
+		acHDR10PlusDynamicMetaData	(NULL, 0),
 		acPeerToPeerFlags			(0),
 		acFrameRepeatCount			(1),
 		acDesiredFrame				(-1),
@@ -1840,6 +1866,15 @@ ostream & operator << (ostream & inOutStream, const NTV2RasterLineOffsets & inOb
 }
 
 
+NTV2RegisterReadsConstIter FindFirstMatchingRegisterNumber (const uint32_t inRegNum, const NTV2RegisterReads & inRegInfos)
+{
+	for (NTV2RegisterReadsConstIter	iter(inRegInfos.begin());  iter != inRegInfos.end();  ++iter)	//	Ugh -- linear search
+		if (iter->registerNumber == inRegNum)
+			return iter;
+	return inRegInfos.end();
+}
+
+
 ostream & operator << (std::ostream & inOutStream, const NTV2RegInfo & inObj)
 {
 	const string	regName	(::NTV2RegisterNumberToString (NTV2RegisterNumber (inObj.registerNumber)));
@@ -1908,3 +1943,22 @@ ostream & NTV2BankSelGetSetRegs::Print (ostream & inOutStream) const
 		inOutStream << *pRegInfo;
 	return inOutStream;
 }
+
+
+NTV2VirtualData::NTV2VirtualData (const ULWord inTag, const void* inVirtualData, const size_t inVirtualDataSize, const bool inDoWrite)
+    :	mHeader			(NTV2_TYPE_VIRTUAL_DATA_RW, sizeof (NTV2VirtualData)),
+        mTag            (inTag),                                //  setup tag
+        mIsWriting		(inDoWrite),                            //	setup write/read
+        mVirtualData	(inVirtualData, inVirtualDataSize)      //	setup virtual data
+{
+    NTV2_ASSERT_STRUCT_VALID;
+}
+
+
+ostream & NTV2VirtualData::Print (ostream & inOutStream) const
+{
+    NTV2_ASSERT_STRUCT_VALID;
+    inOutStream	<< mHeader << ", mTag=" << mTag << ", mIsWriting=" << mIsWriting;
+    return inOutStream;
+}
+

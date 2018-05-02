@@ -191,7 +191,7 @@ CNTV2LinuxDriverInterface::Open(
 	ULWord driverVersionMajor;
 	GetDriverVersion(&driverVersionMajor);
 	driverVersionMajor = (driverVersionMajor >> 4) & 0xF;
-	if (driverVersionMajor < AJA_NTV2_SDK_VERSION_MAJOR)
+    if (driverVersionMajor < (ULWord)AJA_NTV2_SDK_VERSION_MAJOR)
 	{
 		printf("Failing open as driver version %d is older than SDK version %d\n",
 				driverVersionMajor, AJA_NTV2_SDK_VERSION_MAJOR);
@@ -255,6 +255,8 @@ CNTV2LinuxDriverInterface::Open(
 bool
 CNTV2LinuxDriverInterface::SetOverlappedMode (bool bOverlapped)
 {
+    (void)bOverlapped;
+
 	// MOP on Linux
 	return true;
 }
@@ -911,6 +913,7 @@ CNTV2LinuxDriverInterface::DmaTransfer (
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
 	dmaControlBuf.frameBuffer = pFrameBuffer;
 	if (bRead)
@@ -1500,6 +1503,8 @@ CNTV2LinuxDriverInterface::AutoCirculate (AUTOCIRCULATE_DATA &autoCircData)
 
 bool CNTV2LinuxDriverInterface::SetRelativeVideoPlaybackDelay(ULWord frameDelay)
 {
+    (void)frameDelay;
+
 #if 0
 	return WriteRegister (kVRegRelativeVideoPlaybackDelay,
 						  frameDelay);
@@ -1509,6 +1514,8 @@ bool CNTV2LinuxDriverInterface::SetRelativeVideoPlaybackDelay(ULWord frameDelay)
 
 bool CNTV2LinuxDriverInterface::GetRelativeVideoPlaybackDelay(ULWord* frameDelay)
 {
+    (void)frameDelay;
+
 #if 0
 	return ReadRegister (kVRegRelativeVideoPlaybackDelay,
 								frameDelay);
@@ -1518,11 +1525,15 @@ bool CNTV2LinuxDriverInterface::GetRelativeVideoPlaybackDelay(ULWord* frameDelay
 
 bool CNTV2LinuxDriverInterface::SetAudioRecordPinDelay(ULWord millisecondDelay)
 {
+    (void)millisecondDelay;
+
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetAudioRecordPinDelay(ULWord* millisecondDelay)
 {
+    (void)millisecondDelay;
+
 	return false;
 }
 
@@ -1742,6 +1753,7 @@ bool CNTV2LinuxDriverInterface::DmaWriteFrameDriverBuffer(NTV2DMAEngine DMAEngin
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
     dmaControlBuf.frameBuffer = (PULWord)dmaBufferFrame;
     dmaControlBuf.frameOffsetSrc = 0;
@@ -1786,6 +1798,7 @@ bool CNTV2LinuxDriverInterface::DmaWriteFrameDriverBuffer(NTV2DMAEngine DMAEngin
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
 	dmaControlBuf.frameBuffer = (PULWord)dmaBufferFrame;
     dmaControlBuf.frameOffsetSrc = offsetSrc;
@@ -1830,6 +1843,7 @@ bool CNTV2LinuxDriverInterface::DmaReadFrameDriverBuffer(NTV2DMAEngine DMAEngine
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
 	dmaControlBuf.frameBuffer = (PULWord)dmaBufferFrame;
     dmaControlBuf.frameOffsetSrc = 0;
@@ -1883,6 +1897,7 @@ bool CNTV2LinuxDriverInterface::DmaReadFrameDriverBuffer(NTV2DMAEngine DMAEngine
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
 	dmaControlBuf.frameBuffer = (PULWord)dmaBufferFrame;
     dmaControlBuf.frameOffsetSrc = offsetSrc;
@@ -1927,6 +1942,7 @@ CNTV2LinuxDriverInterface::DmaWriteWithOffsets(
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
 	dmaControlBuf.frameBuffer = pFrameBuffer;
     dmaControlBuf.frameOffsetSrc = offsetSrc;
@@ -1984,6 +2000,7 @@ CNTV2LinuxDriverInterface::DmaReadWithOffsets(
     NTV2_DMA_CONTROL_STRUCT dmaControlBuf;
 
     dmaControlBuf.engine = DMAEngine;
+	dmaControlBuf.dmaChannel = NTV2_CHANNEL1;
     dmaControlBuf.frameNumber = frameNumber;
 	dmaControlBuf.frameBuffer = pFrameBuffer;
     dmaControlBuf.frameOffsetSrc = offsetSrc;
@@ -2101,6 +2118,9 @@ CNTV2LinuxDriverInterface::DriverSetBitFileInformation(
 bool
 CNTV2LinuxDriverInterface::SwitchBitfile(NTV2DeviceID boardID, NTV2BitfileType bitfile)
 {
+    (void)boardID;
+    (void)bitfile;
+
 	// Bitfiles are no longer dynamically loaded
 	return true;
 }
@@ -2252,26 +2272,10 @@ bool CNTV2LinuxDriverInterface::LockFormat( void )
 //--------------------------------------------------------------------------------------------------------------------
 bool CNTV2LinuxDriverInterface::StartDriver( DriverStartPhase phase )
 {
+    (void)phase;
+
 	//stub
 	return false;
-}
-
-bool CNTV2LinuxDriverInterface::GetQuicktimeUsingBoard( ULWord* qtApp )
-{
-	return ReadRegister(kVRegQuicktimeUsingBoard, qtApp);
-}
-
-bool CNTV2LinuxDriverInterface::SetDefaultVideoOutMode ( uint32_t mode,
-													   uint32_t channel,
-													   uint32_t frameNum,
-													   uint32_t initializing )
-{
-	return WriteRegister(kVRegDefaultVideoOutMode, mode);
-}
-
-bool CNTV2LinuxDriverInterface::GetDefaultVideoOutMode( ULWord* pMode )
-{
-	return ReadRegister(kVRegDefaultVideoOutMode, pMode);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -2279,24 +2283,32 @@ bool CNTV2LinuxDriverInterface::GetDefaultVideoOutMode( ULWord* pMode )
 //--------------------------------------------------------------------------------------------------------------------
 bool CNTV2LinuxDriverInterface::SetUserModeDebugLevel( ULWord level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetUserModeDebugLevel( ULWord* level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::SetKernelModeDebugLevel( ULWord level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetKernelModeDebugLevel( ULWord* level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
@@ -2306,24 +2318,32 @@ bool CNTV2LinuxDriverInterface::GetKernelModeDebugLevel( ULWord* level )
 //--------------------------------------------------------------------------------------------------------------------
 bool CNTV2LinuxDriverInterface::SetUserModePingLevel( ULWord level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetUserModePingLevel( ULWord* level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::SetKernelModePingLevel( ULWord level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetKernelModePingLevel( ULWord* level )
 {
+    (void)level;
+
 	//stub
 	return false;
 }
@@ -2333,12 +2353,16 @@ bool CNTV2LinuxDriverInterface::GetKernelModePingLevel( ULWord* level )
 //--------------------------------------------------------------------------------------------------------------------
 bool CNTV2LinuxDriverInterface::SetLatencyTimerValue( ULWord value )
 {
+    (void)value;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetLatencyTimerValue( ULWord* value )
 {
+    (void)value;
+
 	//stub
 	return false;
 }
@@ -2348,6 +2372,9 @@ bool CNTV2LinuxDriverInterface::GetLatencyTimerValue( ULWord* value )
 //--------------------------------------------------------------------------------------------------------------------
 bool CNTV2LinuxDriverInterface::SetDebugFilterStrings( const char* includeString,const char* excludeString )
 {
+    (void)includeString;
+    (void)excludeString;
+
 	//stub
 	return false;
 }
@@ -2357,18 +2384,28 @@ bool CNTV2LinuxDriverInterface::SetDebugFilterStrings( const char* includeString
 //--------------------------------------------------------------------------------------------------------------------
 bool CNTV2LinuxDriverInterface::GetDebugFilterStrings( char* includeString,char* excludeString )
 {
+    (void)includeString;
+    (void)excludeString;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::ProgramXilinx( void* dataPtr, uint32_t dataSize )
 {
+    (void)dataPtr;
+    (void)dataSize;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::LoadBitFile( void* dataPtr, uint32_t dataSize, NTV2BitfileType bitFileType )
 {
+    (void)dataPtr;
+    (void)dataSize;
+    (void)bitFileType;
+
 	//stub
 	return false;
 }
@@ -2509,6 +2546,8 @@ bool CNTV2LinuxDriverInterface::AcquireStreamForApplication( ULWord appCode, int
 
 bool CNTV2LinuxDriverInterface::ReleaseStreamForApplication( ULWord appCode, int32_t pid )
 {
+    (void)appCode;
+
 	if(WriteRegister(kVRegReleaseApplication, (ULWord)pid))
 	{
 		WriteRegister(kVRegAcquireLinuxReferenceCount, 0);
@@ -2536,12 +2575,16 @@ bool CNTV2LinuxDriverInterface::GetStreamingApplication( ULWord *appCode, int32_
 
 bool CNTV2LinuxDriverInterface::SetDefaultDeviceForPID( int32_t pid )
 {
+    (void)pid;
+
 	//stub
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::IsDefaultDeviceForPID( int32_t pid )
 {
+    (void)pid;
+
 	//stub
 	return false;
 }

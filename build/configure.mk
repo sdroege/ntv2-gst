@@ -148,25 +148,6 @@ LIB_OR_LIB64 := $(LIB)
 X11LIBDIR := $(X11LIBDIR)/$(LIB)
 export X11LIBDIR 
 
-# setup the QT Dirs
-ifeq ($(QTDIR),)
-    QTDIR := $(dir $(lastword $(shell qmake -v 2>&1)))
-    ifeq ($(QTDIR),)
-        $(warning QTDIR environment variable not set, skipping applications that require Qt. Try installing the appropriate Qt package.)
-    endif
-endif
-ifneq ($(QTDIR),)
-  ifeq ($(QTBIN),)
-    QTBIN := $(QTDIR)/bin
-  endif
-  ifeq ($(QTLIB),)
-    QTLIB := $(QTDIR)/lib
-  endif
-  ifeq ($(QTLIBDIR),)
-    QTLIBDIR := $(QTDIR)/lib
-  endif
-endif	
-
 #.PHONY : setup_vars
 #setup_vars: 
 #   @echo "Building for LINUX_DISTRO $(LINUX_DISTRO)"

@@ -1,7 +1,7 @@
 /**
-	@file		ntv2_2022_registers.h
-	@brief		Defines the Sarek board's registers.
-	@copyright	(C) 2014-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+    @file		ntv2_2022_registers.h
+    @brief		Defines the Sarek board's registers.
+    @copyright	(C) 2014-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef REGISTERS_MB_H
@@ -9,6 +9,9 @@
 
 #define SAREK_MAX_CHANS 4
 #define SAREK_MAX_PORTS 2
+
+#define SAREK_IF_VERSION 4  // update this if mb protocol is changed (here and in mb)
+
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -20,11 +23,10 @@
 #define SAREK_GENLOCK_SPI           (0x101000/4)
 #define SAREK_MAILBOX               (0x107000/4)
 #define SAREK_PLL                   (0x108000/4)
-
 #define SAREK_REGS2                 (0x10e000/4)
-
 #define SAREK_10G_EMAC_0            (0x180000/4)
 #define SAREK_10G_EMAC_1            (0x1a0000/4)
+#define SAREK_CSREGS                (0x080000/4)
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -42,14 +44,12 @@
 #define kRegSarekSerialLow          7
 #define kRegSarekSerialHi           8
 #define kRegSarekIGMPVersion        9
-
 #define kRegSarekMiscState          10
-#define kRegSarekTxAutoMAC          11
-#define kRegSarekunused12           12
-#define kRegSarekunused13           13
+#define kRegSarekPackageVersion     11
+#define kRegSarekIfVersion          12
+#define kRegSarekLinkStatus         13
 #define kRegSarekunused14           14
 #define kRegSarekunused15           15
-
 #define kRegSarekMAC                16
 #define kRegSarekMAC1               17
 #define kRegSarekMAC2               18
@@ -60,24 +60,25 @@
 #define kRegSarekNET1               23
 #define kRegSarekGATE0              24
 #define kRegSarekGATE1              25
-#define kRegSarekunused26           26
-#define kRegSarekunused27           27
-#define kRegSarekunused28           28
-#define kRegSarekunused29           29
+#define kRegSarekLinkModes          26
+#define kRegSarekRxMatchesA         27
+#define kRegSarekRxMatchesB         28
+#define kRegSarekTxFmts             29
 #define kSarekRegIGMPDisable        30
 #define kSarekRegIGMPDisable2       31
 #define kRegSarekFwCfg              32
 #define kRegSarekDDRStatus          33
 #define kRegSarekXrefStatus         34
-
+#define kRegSarekSFPStatus          35
 #define kRegSarekDNALow             36
 #define kRegSarekDNAHi              37
 #define kRegSarekLicenseStatus      38
-
+#define kRegSarekunused39           39
 #define kRegSarekRx1Drops           40
 #define kRegSarekRx2Drops           41
 #define kRegSarekRx3Drops           42
 #define kRegSarekRx4Drops           43
+#define kRegSarekTReady             44
 
 // second block
 #define TS_BLOCK_BASE               0
@@ -109,6 +110,9 @@
 #define kRegSarekPGMPIDs            40
 #define kRegSarekAudioPIDs          56
 
+#define kRegSarekBlk2Unused         72
+#define kRegSarek2022_7enb          80
+
 // Encoder block regs
 #define kRegSarekEncodeVideoFormat1     (ENCODER_BLOCK_BASE+0)
 #define kRegSarekEncodeUllMode1         (ENCODER_BLOCK_BASE+1)
@@ -116,22 +120,23 @@
 #define kRegSarekEncodeChromaSubSamp1   (ENCODER_BLOCK_BASE+3)
 #define kRegSarekEncodeMbps1            (ENCODER_BLOCK_BASE+4)
 #define kRegSarekEncodeStreamType1      (ENCODER_BLOCK_BASE+5)
-#define kRegSarekEncodeProgramPid1      (ENCODER_BLOCK_BASE+6)
-#define kRegSarekEncodeVideoPid1        (ENCODER_BLOCK_BASE+7)
-#define kRegSarekEncodePcrPid1          (ENCODER_BLOCK_BASE+8)
-#define kRegSarekEncodeAudio1Pid1       (ENCODER_BLOCK_BASE+9)
+#define kRegSarekEncodeAudioChannels1   (ENCODER_BLOCK_BASE+6)
+#define kRegSarekEncodeProgramPid1      (ENCODER_BLOCK_BASE+7)
+#define kRegSarekEncodeVideoPid1        (ENCODER_BLOCK_BASE+8)
+#define kRegSarekEncodePcrPid1          (ENCODER_BLOCK_BASE+9)
+#define kRegSarekEncodeAudio1Pid1       (ENCODER_BLOCK_BASE+10)
 
-#define kRegSarekEncodeVideoFormat2     (ENCODER_BLOCK_BASE+10)
-#define kRegSarekEncodeUllMode2         (ENCODER_BLOCK_BASE+11)
-#define kRegSarekEncodeBitDepth2        (ENCODER_BLOCK_BASE+12)
-#define kRegSarekEncodeChromaSubSamp2   (ENCODER_BLOCK_BASE+13)
-#define kRegSarekEncodeMbps2            (ENCODER_BLOCK_BASE+14)
-#define kRegSarekEncodeStreamType2      (ENCODER_BLOCK_BASE+15)
-#define kRegSarekEncodeProgramPid2      (ENCODER_BLOCK_BASE+16)
-#define kRegSarekEncodeVideoPid2        (ENCODER_BLOCK_BASE+17)
-#define kRegSarekEncodePcrPid2          (ENCODER_BLOCK_BASE+18)
-#define kRegSarekEncodeAudio1Pid2       (ENCODER_BLOCK_BASE+19)
-
+#define kRegSarekEncodeVideoFormat2     (ENCODER_BLOCK_BASE+11)
+#define kRegSarekEncodeUllMode2         (ENCODER_BLOCK_BASE+12)
+#define kRegSarekEncodeBitDepth2        (ENCODER_BLOCK_BASE+13)
+#define kRegSarekEncodeChromaSubSamp2   (ENCODER_BLOCK_BASE+14)
+#define kRegSarekEncodeMbps2            (ENCODER_BLOCK_BASE+15)
+#define kRegSarekEncodeStreamType2      (ENCODER_BLOCK_BASE+16)
+#define kRegSarekEncodeAudioChannels2   (ENCODER_BLOCK_BASE+17)
+#define kRegSarekEncodeProgramPid2      (ENCODER_BLOCK_BASE+18)
+#define kRegSarekEncodeVideoPid2        (ENCODER_BLOCK_BASE+19)
+#define kRegSarekEncodePcrPid2          (ENCODER_BLOCK_BASE+20)
+#define kRegSarekEncodeAudio1Pid2       (ENCODER_BLOCK_BASE+21)
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -162,6 +167,7 @@
 #define SAREK_PTP_PLL				BIT(5)
 #define SAREK_TX_TOP34              BIT(6)
 #define SAREK_2110                  BIT(7)
+#define SAREK_CS                    BIT(8)
 
 #define SAREK_TX0_MASK              (BIT(31) + BIT(30) + BIT(29) + BIT(28))
 #define SAREK_RX0_MASK              (BIT(27) + BIT(26) + BIT(25) + BIT(24))
@@ -182,6 +188,17 @@
 #define SAREK_LICENSE_PRESENT       BIT(31)
 #define SAREK_LICENSE_VALID         BIT(30)
 #define SAREK_LICENSE_J2K           BIT(1)
+
+#define SFP_1_NOT_PRESENT           BIT(0)
+#define SFP_1_TX_FAULT              BIT(1)
+#define SFP_1_RX_LOS                BIT(2)
+#define SFP_2_NOT_PRESENT           BIT(16)
+#define SFP_2_TX_FAULT              BIT(17)
+#define SFP_2_RX_LOS                BIT(18)
+
+#define LINK_A_UP                   BIT(0)
+#define LINK_B_UP                   BIT(1)
+
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -355,7 +372,17 @@
 #define kRegPll_PTP_CurPtpSecHi                 0x24
 #define kRegPll_PTP_CurPtpSecLo                 0x25
 #define kRegPll_PTP_CurPtpNSec                  0x26
-#define kRegPll_NTP_Timestamp                   0x27
+#define kRegPll_90KHzRTP_TS                     0x27
+#define kRegPll_48KHzRTP_TS                     0x28
+#define kRegPll_Intr_Reg                        0x29
+#define kRegPll_ptp_dst_mac_addr_hi             0x2a
+#define kRegPll_ptp_dst_mac_addr_lo             0x2b
+#define kRegPll_ptp_dst_ipv4_addr               0x2c
+#define kRegPll_ptp_sync_cnt                    0x2d
+#define kRegPll_ptp_follow_up_cnt               0x2e
+#define kRegPll_ptp_delay_req_cnt               0x2f
+#define kRegPll_ptp_delay_resp_cnt              0x30
+#define kRegPll_ptp_announce_cnt                0x31
 
 /////////////////////////////////////////////////////////////////////
 //

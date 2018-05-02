@@ -155,9 +155,11 @@ AJAExport void CopyRGBAImageToFrame(ULWord* pSrcBuffer, ULWord srcHeight, ULWord
 										Must exceed zero.
 	@param[in]	inDstTotalLines			The total number of raster lines to set to legal black. Must exceed zero.
 	@bug		Need implementations for NTV2_FBF_8BIT_YCBCR_YUY2, NTV2_FBF_10BIT_DPX, NTV2_FBF_10BIT_YCBCR_DPX, NTV2_FBF_24BIT_RGB,
-				NTV2_FBF_24BIT_BGR, NTV2_FBF_10BIT_YCBCRA, NTV2_FBF_10BIT_DPX_LITTLEENDIAN, NTV2_FBF_48BIT_RGB, NTV2_FBF_10BIT_RGB_PACKED,
-				NTV2_FBF_10BIT_ARGB, NTV2_FBF_16BIT_ARGB, NTV2_FBF_10BIT_YCBCR_420PL, NTV2_FBF_10BIT_YCBCR_422PL, NTV2_FBF_8BIT_YCBCR_420PL,
-				and NTV2_FBF_8BIT_YCBCR_422PL.
+				NTV2_FBF_24BIT_BGR, NTV2_FBF_10BIT_YCBCRA, NTV2_FBF_10BIT_DPX_LE, NTV2_FBF_48BIT_RGB, NTV2_FBF_10BIT_RGB_PACKED,
+				NTV2_FBF_10BIT_ARGB, NTV2_FBF_16BIT_ARGB, the 3-plane planar formats NTV2_FBF_8BIT_YCBCR_420PL3,
+				NTV2_FBF_8BIT_YCBCR_422PL3, NTV2_FBF_10BIT_YCBCR_420PL3_LE, and NTV2_FBF_10BIT_YCBCR_422PL3_LE, plus the 2-plane
+				planar formats NTV2_FBF_10BIT_YCBCR_420PL2, NTV2_FBF_10BIT_YCBCR_422PL2, NTV2_FBF_8BIT_YCBCR_420PL2, and
+				NTV2_FBF_8BIT_YCBCR_422PL2.
 	@return		True if successful;  otherwise false.
 **/
 AJAExport bool	SetRasterLinesBlack (const NTV2FrameBufferFormat	inPixelFormat,
@@ -214,8 +216,10 @@ AJAExport bool	SetRasterLinesBlack (const NTV2FrameBufferFormat	inPixelFormat,
 	@note		The use of unsigned values precludes positioning the source raster above the top line of the destination raster,
 				or to the left of the destination raster's left edge. This function will, however, clip the source raster if it
 				overhangs the bottom and/or right edge of the destination raster.
-	@bug		Needs implementations for NTV2_FBF_10BIT_YCBCRA, NTV2_FBF_10BIT_RGB_PACKED, NTV2_FBF_10BIT_ARGB, NTV2_FBF_16BIT_ARGB,
-				NTV2_FBF_10BIT_YCBCR_420PL, NTV2_FBF_10BIT_YCBCR_422PL, NTV2_FBF_8BIT_YCBCR_420PL, and NTV2_FBF_8BIT_YCBCR_422PL.
+	@bug		Needs implementations for NTV2_FBF_10BIT_YCBCRA, NTV2_FBF_10BIT_RGB_PACKED, NTV2_FBF_10BIT_ARGB,
+				NTV2_FBF_16BIT_ARGB, the 3-plane planar formats NTV2_FBF_8BIT_YCBCR_420PL3, NTV2_FBF_8BIT_YCBCR_422PL3,
+				NTV2_FBF_10BIT_YCBCR_420PL3_LE, and NTV2_FBF_10BIT_YCBCR_422PL3_LE, plus the 2-plane planar formats
+				NTV2_FBF_10BIT_YCBCR_420PL2, NTV2_FBF_10BIT_YCBCR_422PL2, NTV2_FBF_8BIT_YCBCR_420PL2, and NTV2_FBF_8BIT_YCBCR_422PL2.
 **/
 AJAExport bool	CopyRaster (const NTV2FrameBufferFormat	inPixelFormat,
 							UByte *						pDstBuffer,
@@ -276,6 +280,14 @@ AJAExport NTV2FrameGeometry Get4xSizedGeometry(NTV2FrameGeometry geometry);
 
 AJAExport double GetFramesPerSecond(NTV2FrameRate frameRate);
 AJAExport double GetFrameTime(NTV2FrameRate frameRate);
+/**
+	@return		The first NTV2VideoFormat that matches the given frame rate and raster dimensions (and whether it's interlaced or not).
+	@param[in]	inFrameRate		Specifies the frame rate of interest.
+	@param[in]	inHeightLines	Specifies the raster height, in lines of visible video.
+	@param[in]	inWidthPixels	Specifies the raster width, in pixels.
+	@param[in]	inIsInterlaced	Specify true for interlaced/psf video, or false for progressive.
+**/
+AJAExport NTV2VideoFormat	GetFirstMatchingVideoFormat (const NTV2FrameRate inFrameRate, const UWord inHeightLines, const UWord inWidthPixels, const bool inIsInterlaced);
 
 /**
 	@brief		Answers with the given frame rate, in frames per second, as two components:
@@ -289,6 +301,20 @@ AJAExport double GetFrameTime(NTV2FrameRate frameRate);
 	@return		True if successful;  otherwise false.
 **/
 AJAExport bool GetFramesPerSecond (const NTV2FrameRate inFrameRate, ULWord & outFractionNumerator, ULWord & outFractionDenominator);
+
+/**
+	@deprecated	Call NTV2DeviceCanDoVideoFormat instead.
+	@param[in]	inDeviceID		Specifies the ID of the device of interest.
+	@param[in]	inFrameRate		Specifies the frame rate.
+	@param[in]	inFrameGeometry	Specifies the frame geometry.
+	@param[in]	inStandard		Specifies the video standard.
+	@note		This function was moved from the C-only "ntv2devicefeatures" module because its implementation now uses functions in the C++ "ntv2utils" module.
+	@return		True if the device having the given NTV2DeviceID supports the given NTV2VideoFormat as specified by frame rate, geometry and standard.
+**/
+AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoFormat(NTV2DeviceID		inDeviceID,
+													NTV2FrameRate		inFrameRate,
+													NTV2FrameGeometry	inFrameGeometry, 
+													NTV2Standard		inStandard);
 
 /**
 	@brief	Returns the number of audio samples for a given video frame rate, audio sample rate, and frame number.
@@ -310,6 +336,11 @@ AJAExport ULWord				GetVaricamRepeatCount (NTV2FrameRate sequenceRate, NTV2Frame
 AJAExport ULWord				GetScaleFromFrameRate (NTV2FrameRate playFrameRate);
 AJAExport NTV2FrameRate			GetFrameRateFromScale (long scale, long duration, NTV2FrameRate playFrameRate);
 AJAExport NTV2FrameRate			GetNTV2FrameRateFromVideoFormat (NTV2VideoFormat videoFormat);
+/**
+	@return	The equivalent non-VANC NTV2FrameGeometry value for the given frame geometry.
+	@param[in]	inFrameGeometry	Specifies the frame geometry to be normalized to its non-VANC equivalent.
+**/
+AJAExport NTV2FrameGeometry		GetNormalizedFrameGeometry (const NTV2FrameGeometry inFrameGeometry);
 AJAExport ULWord				GetNTV2FrameGeometryWidth (NTV2FrameGeometry geometry);
 AJAExport ULWord				GetNTV2FrameGeometryHeight (NTV2FrameGeometry geometry);
 AJAExport ULWord				GetDisplayWidth (NTV2VideoFormat videoFormat);
@@ -760,10 +791,6 @@ AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2Smpt
 **/
 inline NTV2SmpteLineNumber GetSmpteLineNumber (const NTV2Standard inStandard)	{return NTV2SmpteLineNumber (inStandard);}
 
-#if !defined (NTV2_DEPRECATE)
-	extern AJAExport const NTV2FormatDescriptor formatDescriptorTable [NTV2_NUM_STANDARDS] [NTV2_FBF_NUMFRAMEBUFFERFORMATS];
-#endif	//	!defined (NTV2_DEPRECATE)
-
 
 typedef std::set <NTV2DeviceID>			NTV2DeviceIDSet;			///< @brief	A set of NTV2DeviceIDs.
 typedef NTV2DeviceIDSet::iterator		NTV2DeviceIDSetIter;		///< @brief	A convenient non-const iterator for NTV2DeviceIDSet.
@@ -805,6 +832,7 @@ AJAExport std::string NTV2OutputDestinationToString		(const NTV2OutputDestinatio
 AJAExport std::string NTV2ReferenceSourceToString		(const NTV2ReferenceSource		inValue,	const bool inForRetailDisplay = false);
 AJAExport std::string NTV2RegisterWriteModeToString		(const NTV2RegisterWriteMode	inValue,	const bool inForRetailDisplay = false);
 AJAExport std::string NTV2InterruptEnumToString			(const INTERRUPT_ENUMS			inInterruptEnumValue);
+AJAExport std::string NTV2IpErrorEnumToString           (const NTV2IpError              inIpErrorEnumValue);
 AJAExport std::string NTV2ChannelToString				(const NTV2Channel				inValue,	const bool inForRetailDisplay = false);
 AJAExport std::string NTV2AudioSystemToString			(const NTV2AudioSystem			inValue,	const bool inCompactDisplay = false);
 AJAExport std::string NTV2AudioRateToString				(const NTV2AudioRate			inValue,	const bool inForRetailDisplay = false);
@@ -843,6 +871,10 @@ typedef std::vector <std::string>		NTV2StringList;
 typedef NTV2StringList::const_iterator	NTV2StringListConstIter;
 typedef std::set <std::string>			NTV2StringSet;
 typedef NTV2StringSet::const_iterator	NTV2StringSetConstIter;
+
+//	New in 13.0 SDK...
+AJAExport std::string NTV2EmbeddedAudioInputToString	(const NTV2EmbeddedAudioInput	inValue,	const bool inCompactDisplay = false);
+AJAExport std::string NTV2AudioSourceToString			(const NTV2AudioSource			inValue,	const bool inCompactDisplay = false);
 
 AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2StringSet & inData);
 

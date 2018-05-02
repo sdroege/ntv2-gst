@@ -3,11 +3,14 @@
 # Proprietary and Confidential information.
 # All righs reserved
 #
-CPP =   g++
+
+CXX ?= g++
+CPP = $(CXX)
+
 CPPFLAGS += -DAJALinux -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 			-pedantic -Wall -Wno-long-long  -Wwrite-strings -c -pipe -fPIC $(DBG)
 
-LD = g++
+LD = $(CXX)
 LDFLAGS = 
 
 VPATH		:= $(VPATH):$(A_LIB_NTV2_INC):$(A_LIB_NTV2_SRC):$(A_LIB_NTV2_SRC_LINUX):$(A_UBER_LIB):$(SRCDIR)
@@ -155,7 +158,7 @@ endif
 realclean: clean cleandeps
 
 clean:
-	rm -f *.o *~  errors.txt
+	rm -f *.o *.d *~  errors.txt
 	rm -f $(AJA_APP)
 ifdef AJA_APP2
 	rm -f $(AJA_APP2)
@@ -170,8 +173,12 @@ ifdef AJA_LIB_PATH
 	rm -f $(AJA_LIB_PATH)
 endif
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
-	rm -f $(LIB_AJANTV2)
 	rm -f $(LIB_AJABASE)
+	rm -f $(A_LIB_BASE_PATH)/build/$(OBJDIR)/*.o
+	rm -f $(A_LIB_BASE_PATH)/build/$(OBJDIR)/*.d
+	rm -f $(LIB_AJANTV2)
+	rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.o
+	rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.d
 endif
 
 cleandeps:

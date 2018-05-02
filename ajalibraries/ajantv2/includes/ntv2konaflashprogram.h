@@ -17,6 +17,7 @@
 #include <iostream>
 #include "ntv2debug.h"
 #include "ntv2mcsfile.h"
+#include "ntv2spiinterface.h"
 
 #if defined(AJALinux) || defined(AJAMac)
 #include <netinet/in.h>	// htons and friends
@@ -73,15 +74,15 @@ public:
     bool            ProgramFromMCS(bool verify);
     bool            ProgramSOC(bool verify = true);
 	void			ProgramCustom ( const char *sCustomFileName, const uint32_t addr);
-	void			EraseBlock ();
 	void			EraseBlock (FlashBlockID blockNumber);
 	bool			EraseChip (UWord chip = 0);
 	bool			CreateSRecord ();
 	bool			CreateEDIDIntelRecord ();
-	void			SetQuietMode ()		{_bQuiet = true;}
+    void			SetQuietMode ();
 	bool			VerifyFlash (FlashBlockID flashBlockNumber);
 	bool			SetBankSelect (BankSelect bankNumber);
 	bool			SetFlashBlockIDBank(FlashBlockID blockID);
+    bool            ROMHasBankSelect();
 	uint32_t			ReadBankSelect ();
 
 	std::string & GetDesignName()
@@ -254,6 +255,7 @@ public:
 		READBANKSELECT_COMMAND=0x16
 	} _FLASH_STUFF ;
 
+    CNTV2SpiFlash*   _spiFlash;
 };
 
 #endif	//	NTV2KONAFLASHPROGRAM_H

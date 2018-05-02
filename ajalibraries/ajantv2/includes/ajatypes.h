@@ -12,9 +12,11 @@
 #endif	//	if not MSWindows
 #define NTV2_DEPRECATE				//	If defined, excludes all symbols/APIs first deprecated in SDK 12.4 or earlier
 #define NTV2_DEPRECATE_12_5			//	If defined, excludes all symbols/APIs first deprecated in SDK 12.5
-#define	NTV2_DEPRECATE_12_6			//	If defined, excludes all symbols/APIs first deprecated in SDK 12.6
-#define	NTV2_DEPRECATE_12_7			//	If defined, excludes all symbols/APIs first deprecated in SDK 12.7
-//#define	NTV2_DEPRECATE_13_0			//	First deprecated in SDK 13.0
+#define NTV2_DEPRECATE_12_6			//	If defined, excludes all symbols/APIs first deprecated in SDK 12.6
+#define NTV2_DEPRECATE_12_7			//	If defined, excludes all symbols/APIs first deprecated in SDK 12.7
+//#define NTV2_DEPRECATE_13_0			//	First deprecated in SDK 13.0
+//#define NTV2_DEPRECATE_13_1			//	First deprecated in SDK 13.1
+//#define NTV2_DEPRECATE_14_0			//	First deprecated in SDK 14.0
 #define NTV2_NUB_CLIENT_SUPPORT		//	If defined, includes nub client support;  otherwise, excludes it
 
 #define	AJA_VIRTUAL		virtual		//	Force use of virtual functions in CNTV2Card, etc.
@@ -70,6 +72,9 @@
 // Platform dependent
 
 #if defined (MSWindows)				/////////////// WINDOWS/////////////////////////
+
+    #define	_WINSOCK_DEPRECATED_NO_WARNINGS		1
+
 	#if !defined (NTV2_BUILDING_DRIVER)
 		#ifndef WIN32_LEAN_AND_MEAN
 		#define WIN32_LEAN_AND_MEAN
@@ -183,6 +188,8 @@
 				#define	NTV2_DEPRECATED		//	__declspec unavailable until Xcode 5
 			#elif __clang_major__ == 7  &&  __clang_minor__ == 3
 				#define	NTV2_DEPRECATED		//	__declspec broken in Xcode 7.3
+			#elif __clang_major__ == 8
+				#define	NTV2_DEPRECATED		//	__declspec broken in Xcode 8
 			#else
 				#define	NTV2_DEPRECATED		__declspec(deprecated)
 			#endif
@@ -195,6 +202,8 @@
 				#define	NTV2_DEPRECATED_12_5	//	__declspec unavailable until Xcode 5
 			#elif __clang_major__ == 7  &&  __clang_minor__ == 3
 				#define	NTV2_DEPRECATED_12_5	//	__declspec broken in Xcode 7.3
+			#elif __clang_major__ == 8
+				#define	NTV2_DEPRECATED_12_5	//	__declspec broken in Xcode 8
 			#else
 				#define	NTV2_DEPRECATED_12_5	__declspec(deprecated)
 			#endif
@@ -207,6 +216,8 @@
 				#define	NTV2_DEPRECATED_12_6	//	__declspec unavailable until Xcode 5
 			#elif __clang_major__ == 7  &&  __clang_minor__ == 3
 				#define	NTV2_DEPRECATED_12_6	//	__declspec broken in Xcode 7.3
+			#elif __clang_major__ == 8
+				#define	NTV2_DEPRECATED_12_6	//	__declspec broken in Xcode 8
 			#else
 				#define	NTV2_DEPRECATED_12_6	__declspec(deprecated)
 			#endif
@@ -219,6 +230,8 @@
 				#define	NTV2_DEPRECATED_12_7	//	__declspec unavailable until Xcode 5
 			#elif __clang_major__ == 7  &&  __clang_minor__ == 3
 				#define	NTV2_DEPRECATED_12_7	//	__declspec broken in Xcode 7.3
+			#elif __clang_major__ == 8
+				#define	NTV2_DEPRECATED_12_7	//	__declspec broken in Xcode 8
 			#else
 				#define	NTV2_DEPRECATED_12_7	__declspec(deprecated)
 			#endif
@@ -231,6 +244,8 @@
 				#define	NTV2_DEPRECATED_13_0	//	__declspec unavailable until Xcode 5
 			#elif __clang_major__ == 7  &&  __clang_minor__ == 3
 				#define	NTV2_DEPRECATED_13_0	//	__declspec broken in Xcode 7.3
+			#elif __clang_major__ == 8
+				#define	NTV2_DEPRECATED_13_0	//	__declspec broken in Xcode 8
 			#else
 				#define	NTV2_DEPRECATED_13_0	__declspec(deprecated)
 			#endif

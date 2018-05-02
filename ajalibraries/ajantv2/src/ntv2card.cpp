@@ -276,7 +276,7 @@ bool CNTV2Card::IS_OUTPUT_SPIGOT_INVALID (const UWord inOutputSpigot) const
 {
 	if (inOutputSpigot >= ::NTV2DeviceGetNumVideoOutputs (_boardID))
 	{
-		if ((_boardID == DEVICE_ID_IO4KUFC || _boardID == DEVICE_ID_IO4KUFC) && inOutputSpigot == 4)
+		if (NTV2DeviceCanDoWidget(_boardID, NTV2_WgtSDIMonOut1) && inOutputSpigot == 4)
 			return false;	//	Io4K Monitor Output exception
 		return true;		//	Invalid
 	}
@@ -340,12 +340,18 @@ string CNTV2Card::SerialNum64ToString (const uint64_t inSerialNumber)	//	Class m
 
 bool CNTV2Card::GetSerialNumberString (string & outSerialNumberString)
 {
-	outSerialNumberString = SerialNum64ToString (GetSerialNumber ());
-	if (outSerialNumberString.empty ())
+	outSerialNumberString = SerialNum64ToString(GetSerialNumber());
+	if (outSerialNumberString.empty())
 	{
 		outSerialNumberString = "INVALID?";
 		return false;
 	}
+
+	const ULWord	deviceID	(GetDeviceID());
+	if (deviceID == DEVICE_ID_IO4KPLUS)							//	Io4K+/DNxIV?
+		outSerialNumberString = "5" + outSerialNumberString;	//		prepend with "5"
+    else if ((deviceID == DEVICE_ID_IOIP_2022) || (deviceID == DEVICE_ID_IOIP_2110))	//	IoIP/DNxIP?
+		outSerialNumberString = "6" + outSerialNumberString;	//		prepend with "6"
 	return true;
 
 }	//	GetSerialNumberString
@@ -559,6 +565,33 @@ bool CNTV2Card::DeviceCanDoInputSource (const NTV2InputSource inInputSource)
 	return ::NTV2DeviceCanDoInputSource (GetDeviceID(), inInputSource);
 }
 
+bool CNTV2Card::DeviceCanDoAudioMixer ()
+{
+	ULWord isMixerSupported = 0;
+	ReadRegister(kRegGlobalControl2, &isMixerSupported, BIT(18), 18);
+	if(isMixerSupported == 1)
+		return true;
+	return false;
+}
+
+bool CNTV2Card::DeviceIsDNxIV ()
+{
+	ULWord isMicSupported = 0;
+	ReadRegister(kRegGlobalControl2, &isMicSupported, BIT(19), 19);
+	if(isMicSupported == 1)
+		return true;
+	return false;
+}
+
+bool CNTV2Card::DeviceHasMicInput ()
+{
+	ULWord isMicSupported = 0;
+	ReadRegister(kRegGlobalControl2, &isMicSupported, BIT(19), 19);
+	if(isMicSupported == 1)
+		return true;
+	return false;
+}
+
 bool CNTV2Card::GetBoolParam (const NTV2BoolParamID inParamID, bool & outValue)
 {
 	uint32_t	regValue	(0);
@@ -698,7 +731,7 @@ bool CNTV2Card::GetNumericParam (const NTV2NumericParamID inParamID, uint32_t & 
 		case kDeviceGetNumAnalogAudioOutputChannels:	outValue = ::NTV2DeviceGetNumAnalogAudioOutputChannels		(GetDeviceID());	break;
 		case kDeviceGetNumAnalogVideoInputs:			outValue = ::NTV2DeviceGetNumAnalogVideoInputs				(GetDeviceID());	break;
 		case kDeviceGetNumAnalogVideoOutputs:			outValue = ::NTV2DeviceGetNumAnalogVideoOutputs				(GetDeviceID());	break;
-		case kDeviceGetNumAudioSystems:					outValue = ::NTV2DeviceGetNumAudioSystems					(GetDeviceID());	break;
+		case kDeviceGetNumAudioSystems:					outValue = (::NTV2DeviceGetNumAudioSystems					(GetDeviceID()) + (DeviceCanDoAudioMixer() ? 1 : 0));	break;
 		case kDeviceGetNumCrossConverters:				outValue = ::NTV2DeviceGetNumCrossConverters				(GetDeviceID());	break;
 		case kDeviceGetNumCSCs:							outValue = ::NTV2DeviceGetNumCSCs							(GetDeviceID());	break;
 		case kDeviceGetNumDownConverters:				outValue = ::NTV2DeviceGetNumDownConverters					(GetDeviceID());	break;
@@ -750,8 +783,11 @@ bool CNTV2Card::GetRegInfoForNumericParam (const NTV2NumericParamID inParamID, N
 
 ostream & operator << (ostream & inOutStr, const NTV2AudioChannelPairs & inSet)
 {
-	for (NTV2AudioChannelPairsConstIter iter (inSet.begin ());  iter != inSet.end ();  ++iter)
-		inOutStr << (iter != inSet.begin () ? ", " : "") << ::NTV2AudioChannelPairToString (*iter, true);
+	if (inSet.empty())
+		inOutStr << "(none)";
+	else
+		for (NTV2AudioChannelPairsConstIter iter (inSet.begin ());  iter != inSet.end ();  ++iter)
+			inOutStr << (iter != inSet.begin() ? ", " : "") << ::NTV2AudioChannelPairToString (*iter, true);
 	return inOutStr;
 }
 
@@ -777,6 +813,136 @@ ostream &	operator << (ostream & inOutStr, const NTV2DoubleArray & inVector)
 	for (NTV2DoubleArrayConstIter iter (inVector.begin ());  iter != inVector.end ();  ++iter)
 		inOutStr << *iter << endl;
 	return inOutStr;
+}
+
+
+ostream &	operator << (ostream & inOutStr, const NTV2DIDSet & inDIDs)
+{
+	for (NTV2DIDSetConstIter it (inDIDs.begin());  it != inDIDs.end();  )
+	{
+		inOutStr << xHEX0N(uint16_t(*it),2);
+		if (++it != inDIDs.end())
+			inOutStr << ", ";
+	}
+	return inOutStr;
+}
+
+
+//										SDI Spigot:		   1	   2	   3	   4	   5	   6	   7	   8
+static const ULWord	sAncExtCtrlRegNums[]		=	{	4096,	4160,	4224,	4288,	4352,	4416,	4480,	4544,	0};
+static const ULWord	sAncInsCtrlRegNums[]		=	{	4609,	4673,	4737,	4801,	4865,	4929,	4993,	5057,	0};
+static const ULWord	sFirstIgnoreDIDRegNums[]	=	{	4108,	4172,	4236,	4300,	4364,	4428,	4492,	4556,	0};
+static const ULWord	sLastIgnoreDIDRegNums[]		=	{	4112,	4176,	4240,	4304,	4368,	4432,	4496,	4560,	0};
+static const ULWord	kNumIgnoreDIDRegisters			(sLastIgnoreDIDRegNums[0] - sFirstIgnoreDIDRegNums[0] + 1);
+static const ULWord	kNumDIDsPerRegister				(4);
+static const ULWord	kMaxNumIgnoreDIDs				(kNumDIDsPerRegister * kNumIgnoreDIDRegisters);
+
+
+bool CNTV2Card::GetAncExtractorRunState (const UWord inSDIInput, bool & outIsRunning)
+{
+	outIsRunning = false;
+	if (!::NTV2DeviceCanDoCapture(_boardID))
+		return false;
+	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
+		return false;
+	if (inSDIInput >= ::NTV2DeviceGetNumVideoInputs(_boardID))
+		return false;
+
+	ULWord	value(0);
+	if (!ReadRegister(sAncExtCtrlRegNums[inSDIInput], &value))
+		return false;
+	outIsRunning = (value & BIT(28)) ? false : true;
+	return true;
+}
+
+bool CNTV2Card::GetAncInserterRunState (const UWord inSDIOutput, bool & outIsRunning)
+{
+	outIsRunning = false;
+	if (!::NTV2DeviceCanDoPlayback(_boardID))
+		return false;
+	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
+		return false;
+	if (inSDIOutput >= ::NTV2DeviceGetNumVideoOutputs(_boardID))
+		return false;
+
+	ULWord	value(0);
+	if (!ReadRegister(sAncInsCtrlRegNums[inSDIOutput], &value))
+		return false;
+	outIsRunning = (value & BIT(28)) ? false : true;
+	return true;
+}
+
+
+bool CNTV2Card::GetAncExtractorFilterDIDs (const UWord inSDIInput, NTV2DIDSet & outDIDs)
+{
+	outDIDs.clear();
+	if (!::NTV2DeviceCanDoCapture(_boardID))
+		return false;
+	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
+		return false;
+	if (inSDIInput >= ::NTV2DeviceGetNumVideoInputs(_boardID))
+		return false;
+
+	const ULWord	firstIgnoreRegNum	(sFirstIgnoreDIDRegNums [inSDIInput]);
+	for (ULWord regNdx(0);  regNdx < kNumIgnoreDIDRegisters;  regNdx++)
+	{
+		ULWord	regValue	(0);
+		ReadRegister (firstIgnoreRegNum + regNdx,  &regValue);
+		for (unsigned regByte(0);  regByte < 4;  regByte++)
+		{
+			const NTV2DID	theDID	((regValue >> (regByte*8)) & 0x000000FF);
+			if (theDID)
+				outDIDs.insert(theDID);
+		}
+	}
+	return true;
+}
+
+
+bool CNTV2Card::SetAncExtractorFilterDIDs (const UWord inSDIInput, const NTV2DIDSet & inDIDs)
+{
+	if (!::NTV2DeviceCanDoCapture(_boardID))
+		return false;
+	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
+		return false;
+	if (inSDIInput >= ::NTV2DeviceGetNumVideoInputs(_boardID))
+		return false;
+
+	const ULWord		firstIgnoreRegNum	(sFirstIgnoreDIDRegNums [inSDIInput]);
+	NTV2DIDSetConstIter iter				(inDIDs.begin());
+
+	for (ULWord regNdx(0);  regNdx < kNumIgnoreDIDRegisters;  regNdx++)
+	{
+		ULWord	regValue	(0);
+		for (unsigned regByte(0);  regByte < 4;  regByte++)
+		{
+			const NTV2DID	theDID	(iter != inDIDs.end()  ?  *iter++  :  0);
+			regValue |= (ULWord(theDID) << (regByte*8));
+		}
+		WriteRegister (firstIgnoreRegNum + regNdx,  regValue);
+	}
+	return true;
+}
+
+
+UWord CNTV2Card::GetMaxNumAncExtractorFilterDIDs (void)
+{
+	return UWord(kMaxNumIgnoreDIDs);
+}
+
+
+NTV2DIDSet CNTV2Card::GetDefaultAncExtractorDIDs (void)
+{
+	//												SMPTE299 HD Audio Grp 1-4	SMPTE299 HD Audio Ctrl Grp 1-4
+	static const NTV2DID	sDefaultDIDs[]	=	{	0xE7,0xE6,0xE5,0xE4,		0xE3,0xE2,0xE1,0xE0,
+	//												SMPTE299 HD Audio Grp 5-8	SMPTE299 HD Audio Ctrl Grp 5-8
+													0xA7,0xA6,0xA5,0xA4,		0xA3,0xA2,0xA1,0xA0,
+													0x00};
+	NTV2DIDSet	result;
+	for (unsigned ndx(0);  sDefaultDIDs[ndx];  ndx++)
+		result.insert(sDefaultDIDs[ndx]);
+
+	return result;
 }
 
 

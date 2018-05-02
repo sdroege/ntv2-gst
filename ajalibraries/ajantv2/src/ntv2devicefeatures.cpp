@@ -13,381 +13,134 @@
 //	Most of the device features functions are generated using a Python script from '.csv' files exported from a spreadsheet.
 //	The script writes the declarations into 'ntv2devicefeatures.hh', and implementations into 'ntv2devicefeatures.hpp'...
 #include "ntv2devicefeatures.hpp"
+#include "xpt_c44.h"
+#include "xpt_c88.h"
+#include "xpt_io4k.h"
+#include "xpt_io4k_ufc.h"
+#include "xpt_io4kplus.h"
+#include "xpt_ioip_2022.h"
+#include "xpt_kona4_ufc.h"
+#include "xpt_kona4.h"
+#include "xpt_kip_4rxtx.h"
+#include "xpt_kip_2p2rxtc.h"
+#include "xpt_kip_j2k1rxtx.h"
+#include "xpt_kip_j2k2tx.h"
+#include "xpt_kip_2100_4tx.h"
+#include "xpt_kip_2100_1rxtx.h"
 
+///////////////////////////////////////////////////////////////////////////
+//	The rest of the non-sdkgen-generated function implementations follow...
+///////////////////////////////////////////////////////////////////////////
 
-
-//	The rest of the non-auto-generated function implementations follow...
-
-
-bool NTV2DeviceCanDoFormat(NTV2DeviceID		boardID,
-						  NTV2FrameRate		inFrameRate,
-  			              NTV2FrameGeometry inFrameGeometry,
-						  NTV2Standard		inStandard)
+//	This needs to go into sdkgen's CanDo table...
+bool NTV2DeviceHasLEDAudioMeters(const NTV2DeviceID inDeviceID)
 {
-	switch (boardID)
-	{
-	case DEVICE_ID_CORVID22:
-	case DEVICE_ID_CORVID3G:
-	case DEVICE_ID_LHI:
-	case DEVICE_ID_KONALHIDVI:
-	#if !defined (NTV2_DEPRECATE)
-	//case BOARD_ID_LHI_DVI:
-	case BOARD_ID_LHI_T:
-	#endif	//	!defined (NTV2_DEPRECATE)
-		switch (inStandard)
-		{
-		case NTV2_STANDARD_1080p:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_6000:
-			case NTV2_FRAMERATE_5994:
-			case NTV2_FRAMERATE_5000:
-			case NTV2_FRAMERATE_3000:
-			case NTV2_FRAMERATE_2997:
-			case NTV2_FRAMERATE_2500:
-			case NTV2_FRAMERATE_2400:
-			case NTV2_FRAMERATE_2398:	
-				return (inFrameGeometry == NTV2_FG_1920x1080 || inFrameGeometry == NTV2_FG_1920x1112 ||
-						inFrameGeometry == NTV2_FG_2048x1080 || inFrameGeometry == NTV2_FG_2048x1112);
-			default:					
-				return false;
-			}
-		case NTV2_STANDARD_1080:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_3000:
-			case NTV2_FRAMERATE_2997:
-			case NTV2_FRAMERATE_2500:
-			case NTV2_FRAMERATE_2400:
-			case NTV2_FRAMERATE_2398:	
-				return (inFrameGeometry == NTV2_FG_1920x1080 || inFrameGeometry == NTV2_FG_1920x1112 ||
-						inFrameGeometry == NTV2_FG_2048x1080 || inFrameGeometry == NTV2_FG_2048x1112);
-			default:					
-				return false;
-			}
-		case NTV2_STANDARD_720:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_6000:
-			case NTV2_FRAMERATE_5994:
-			case NTV2_FRAMERATE_5000:
-			case NTV2_FRAMERATE_2500:
-			case NTV2_FRAMERATE_2398:
-				return (inFrameGeometry == NTV2_FG_1280x720 || inFrameGeometry == NTV2_FG_1280x740);
-			default:
-				return false;
-			}
-		case NTV2_STANDARD_525:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_2997:
-				return (inFrameGeometry == NTV2_FG_720x486 || inFrameGeometry == NTV2_FG_720x508 || inFrameGeometry == NTV2_FG_720x514);
-			default:
-				return false;
-			}
-		case NTV2_STANDARD_625:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_2500:
-				return (inFrameGeometry == NTV2_FG_720x576 || inFrameGeometry == NTV2_FG_720x598 || inFrameGeometry == NTV2_FG_720x612);
-			default:
-				return false;
-			}
-		default:
-			return false;
-		}
-		
-	case DEVICE_ID_LHE_PLUS:
-		switch (inStandard)
-		{
-		case NTV2_STANDARD_1080p:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_3000:
-			case NTV2_FRAMERATE_2997:
-			case NTV2_FRAMERATE_2500:
-			case NTV2_FRAMERATE_2400:
-			case NTV2_FRAMERATE_2398:	
-				return (inFrameGeometry == NTV2_FG_1920x1080 || inFrameGeometry == NTV2_FG_1920x1112 ||
-						inFrameGeometry == NTV2_FG_2048x1080 || inFrameGeometry == NTV2_FG_2048x1112);
-			default:					
-				return false;
-			}
-		case NTV2_STANDARD_1080:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_3000:
-			case NTV2_FRAMERATE_2997:
-			case NTV2_FRAMERATE_2500:
-			case NTV2_FRAMERATE_2400:
-			case NTV2_FRAMERATE_2398:	
-				return (inFrameGeometry == NTV2_FG_1920x1080 || inFrameGeometry == NTV2_FG_1920x1112 ||
-						inFrameGeometry == NTV2_FG_2048x1080 || inFrameGeometry == NTV2_FG_2048x1112);
-			default:					
-				return false;
-			}
-		case NTV2_STANDARD_720:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_6000:
-			case NTV2_FRAMERATE_5994:
-			case NTV2_FRAMERATE_5000:
-				return (inFrameGeometry == NTV2_FG_1280x720 || inFrameGeometry == NTV2_FG_1280x740);
-			default:
-				return false;
-			}
-		case NTV2_STANDARD_525:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_2997:
-				return (inFrameGeometry == NTV2_FG_720x486 || inFrameGeometry == NTV2_FG_720x508 || inFrameGeometry == NTV2_FG_720x514);
-			default:
-				return false;
-			}
-		case NTV2_STANDARD_625:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_2500:
-				return (inFrameGeometry == NTV2_FG_720x576 || inFrameGeometry == NTV2_FG_720x598 || inFrameGeometry == NTV2_FG_720x612);
-			default:
-				return false;
-			}
-		default:
-			return false;
-		}
-		
-	case DEVICE_ID_IOEXPRESS:
-	case DEVICE_ID_CORVID1:
-	case DEVICE_ID_TTAP:
-		switch (inStandard)
-		{
-		case NTV2_STANDARD_1080p:
-		case NTV2_STANDARD_1080:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_3000:
-			case NTV2_FRAMERATE_2997:
-			case NTV2_FRAMERATE_2500:
-			case NTV2_FRAMERATE_2400:
-			case NTV2_FRAMERATE_2398:	
-				return (inFrameGeometry == NTV2_FG_1920x1080 || inFrameGeometry == NTV2_FG_1920x1112 ||
-						inFrameGeometry == NTV2_FG_2048x1080 || inFrameGeometry == NTV2_FG_2048x1112);
-			default:					
-				return false;
-			}
-		case NTV2_STANDARD_720:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_6000:
-			case NTV2_FRAMERATE_5994:
-			case NTV2_FRAMERATE_5000:
-				return (inFrameGeometry == NTV2_FG_1280x720 || inFrameGeometry == NTV2_FG_1280x740);
-			default:
-				return false;
-			}
-		case NTV2_STANDARD_525:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_2997:
-				return (inFrameGeometry == NTV2_FG_720x486 || inFrameGeometry == NTV2_FG_720x508 || inFrameGeometry == NTV2_FG_720x514);
-			default:
-				return false;
-			}
-		case NTV2_STANDARD_625:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_2500:
-				return (inFrameGeometry == NTV2_FG_720x576 || inFrameGeometry == NTV2_FG_720x598 || inFrameGeometry == NTV2_FG_720x612);
-			default:
-				return false;
-			}
-		default:
-			return false;
-		}
-
-	#if !defined (NTV2_DEPRECATE)
-	case BOARD_ID_XENA2:	// defined by what it can't do for now
-		switch (inStandard)
-		{
-		case NTV2_STANDARD_1080p:
-			switch (inFrameRate)
-			{
-			case NTV2_FRAMERATE_6000:	// can't do 1080p60 "a" formats
-			case NTV2_FRAMERATE_5994:
-			case NTV2_FRAMERATE_5000:
-				return false;
-			default:					
-				return true;
-			}
-		default:
-			return true;
-		}
-	#endif	//	!defined (NTV2_DEPRECATE)
-
-	case DEVICE_ID_KONA3G:
-		switch (inFrameGeometry)
-		{
-		case NTV2_FG_4x1920x1080:
-		case NTV2_FG_4x2048x1080:
-			return false;
-		default:
-			return true;
-		}
-
-	case DEVICE_ID_IOXT:
-	case DEVICE_ID_IO4KUFC:
-	case DEVICE_ID_KONA4UFC:
-		switch (inFrameGeometry)
-		{
-		case NTV2_FG_4x1920x1080:
-		case NTV2_FG_4x2048x1080:
-		case NTV2_FG_2048x1556:
-		case NTV2_FG_2048x1588:
-			return false;
-		default:
-			return true;
-		}
-		
-	case DEVICE_ID_KONA3GQUAD:
-	case DEVICE_ID_CORVID24:
-	case DEVICE_ID_IO4K:
-	case DEVICE_ID_KONA4:
-	case DEVICE_ID_CORVID88:
-	case DEVICE_ID_CORVID44:
-	case DEVICE_ID_CORVIDHEVC:
-	case DEVICE_ID_KONAIP_4CH_1SFP:
-	case DEVICE_ID_KONAIP_4CH_2SFP:
-	case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-	case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-	case DEVICE_ID_CORVIDHBR:
-	case DEVICE_ID_KONAIP_1RX_1TX_2110:
-		switch (inStandard)
-		{
-		case NTV2_STANDARD_525:
-			return (inFrameRate != NTV2_FRAMERATE_2398 && inFrameRate != NTV2_FRAMERATE_2400);	// eg NTV2_FORMAT_525_2398 requires conversion which is not available
-		case NTV2_STANDARD_720:
-			return (inFrameRate != NTV2_FRAMERATE_2398 && inFrameRate != NTV2_FRAMERATE_2500);	// eg NTV2_FORMAT_720p_2398 requires conversion which is not available
-		default:
-			return true;		// pretty much everything else
-		}
-
-	default:
-		return false;
-	}
+    switch(inDeviceID)
+    {
+        case DEVICE_ID_IOXT:
+        case DEVICE_ID_IO4K:
+        case DEVICE_ID_IO4KUFC:
+        case DEVICE_ID_IO4KPLUS:
+        case DEVICE_ID_IOIP_2022:
+        case DEVICE_ID_IOIP_2110:
+            return true;
+        default:
+            break;
+    }
+    return false;
 }
 
+//	This needs to go into sdkgen's CanDo table...
+bool NTV2DeviceHasHeadphoneJack(const NTV2DeviceID inDeviceID)
+{
+    switch(inDeviceID)
+    {
+        case DEVICE_ID_IOEXPRESS:
+        case DEVICE_ID_IOXT:
+        case DEVICE_ID_IO4K:
+        case DEVICE_ID_IO4KUFC:
+        case DEVICE_ID_IO4KPLUS:
+        case DEVICE_ID_IOIP_2022:
+        case DEVICE_ID_IOIP_2110:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+//	This needs to go into sdkgen's CanDo table...
+bool NTV2DeviceHasAudioMonitorRCAJacks(const NTV2DeviceID inDeviceID)
+{
+    switch(inDeviceID)
+    {
+        case DEVICE_ID_IOEXPRESS:
+        case DEVICE_ID_IO4K:
+        case DEVICE_ID_IO4KUFC:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+//	This needs to go into sdkgen's CanDo table...
+bool NTV2DeviceHasBiDirectionalAnalogAudio(const NTV2DeviceID inDeviceID)
+{
+    switch(inDeviceID)
+    {
+        case DEVICE_ID_IO4KPLUS:
+        case DEVICE_ID_IOIP_2022:
+        case DEVICE_ID_IOIP_2110:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool NTV2DeviceCanDoAudioOut(const NTV2DeviceID inDeviceID)
+{
+    UWord outputs = 0;
+    outputs += NTV2DeviceGetNumVideoOutputs(inDeviceID);
+    outputs += NTV2DeviceGetNumHDMIAudioOutputChannels(inDeviceID);
+    outputs += NTV2DeviceGetNumAnalogAudioOutputChannels(inDeviceID);
+    return outputs > 0 ? true : false;
+}
+
+bool NTV2DeviceCanDoAudioIn(const NTV2DeviceID inDeviceID)
+{
+    UWord inputs = 0;
+    inputs += NTV2DeviceGetNumVideoInputs(inDeviceID);
+    inputs += NTV2DeviceGetNumHDMIAudioInputChannels(inDeviceID);
+    inputs += NTV2DeviceGetNumAnalogAudioInputChannels(inDeviceID);
+    return inputs > 0 ? true : false;
+}
 
 bool NTV2DeviceCanDo3GOut (NTV2DeviceID boardID, UWord index0)
 {
 	switch (index0)
 	{
-	case 0:
-		switch (boardID)
-		{
-		#if !defined (NTV2_DEPRECATE)
-		//case BOARD_ID_LHI_DVI:
-		case BOARD_ID_LHI_T:
-		#endif	//	!defined (NTV2_DEPRECATE)
-		case DEVICE_ID_KONALHIDVI:
-		case DEVICE_ID_CORVID22:
-		case DEVICE_ID_CORVID3G:
-		case DEVICE_ID_LHI:
-		case DEVICE_ID_KONA3G:
-		case DEVICE_ID_KONA3GQUAD:
-		case DEVICE_ID_IOXT:
-		case DEVICE_ID_CORVID24:
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_IO4KUFC:
-		case DEVICE_ID_KONA4:
-		case DEVICE_ID_KONA4UFC:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVID44:
-		case DEVICE_ID_CORVIDHEVC:
-		case DEVICE_ID_KONAIP_4CH_1SFP:
-		case DEVICE_ID_KONAIP_4CH_2SFP:
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:
-			return true;
-		default:
-			return false;
-		}
+		case 0:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut1);
+		case 1:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut2);
+		case 2:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut3);
+		case 3:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut4);
+		case 4:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut5);
+		case 5:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut6);
+		case 6:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut7);
+		case 7:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIOut8);
+		default:	return false;
+	}
+}	//	NTV2DeviceCanDo3GOut
 
-	case 1:
-		switch (boardID)
-		{
-		case DEVICE_ID_CORVID22:
-		case DEVICE_ID_KONA3G:
-		case DEVICE_ID_KONA3GQUAD:
-		case DEVICE_ID_IOXT:
-		case DEVICE_ID_CORVID24:
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_IO4KUFC:
-		case DEVICE_ID_KONA4:
-		case DEVICE_ID_KONA4UFC:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVID44:
-		case DEVICE_ID_CORVIDHEVC:
-		case DEVICE_ID_KONAIP_4CH_1SFP:
-		case DEVICE_ID_KONAIP_4CH_2SFP:
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:
-			return true;
-		default:
-			return false;
-		}
-
-	case 2:
-	case 3:
-		switch (boardID)
-		{
-		case DEVICE_ID_KONA3GQUAD:
-		case DEVICE_ID_CORVID24:
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_IO4KUFC:
-		case DEVICE_ID_KONA4:
-		case DEVICE_ID_KONA4UFC:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVID44:
-		case DEVICE_ID_CORVIDHEVC:
-		case DEVICE_ID_KONAIP_4CH_1SFP:
-		case DEVICE_ID_KONAIP_4CH_2SFP:
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:
-			return true;
-		default:
-			return false;
-		}
-
-	case 4:
-		switch (boardID)
-		{
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_IO4KUFC:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVIDHEVC:
-			return true;
-		default:
-			return false;
-		}
-
-
-	case 5:
-	case 6:
-	case 7:
-		switch (boardID)
-		{
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVIDHEVC:
-			return true;
-		default:
-			return false;
-		}
-
-	default:
-		return false;
+bool NTV2DeviceCanDo12GOut(NTV2DeviceID boardID, UWord index0)
+{
+	switch (index0)
+	{
+		case 0:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIOut1);
+		case 1:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIOut2);
+		case 2:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIOut3);
+		case 3:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIOut4);
+		default:	return false;
 	}
 }	//	NTV2DeviceCanDo3GOut
 
@@ -396,101 +149,15 @@ bool NTV2DeviceCanDoLTCEmbeddedN (NTV2DeviceID boardID, UWord index0)
 {
 	switch (index0)
 	{
-	case 0:
-		switch (boardID)
-		{
-		#if !defined (NTV2_DEPRECATE)
-		case BOARD_ID_XENA2:
-		//case BOARD_ID_LHI_DVI:
-		case BOARD_ID_LHI_T:
-		#endif	//	!defined (NTV2_DEPRECATE)
-		case DEVICE_ID_KONALHIDVI:
-		case DEVICE_ID_LHE_PLUS:
-		case DEVICE_ID_LHI:
-		case DEVICE_ID_CORVID1:
-		case DEVICE_ID_IOEXPRESS:
-		case DEVICE_ID_CORVID22:
-		case DEVICE_ID_CORVID3G:
-		case DEVICE_ID_IOXT:
-		case DEVICE_ID_CORVID24:
-		case DEVICE_ID_KONA3G:
-		case DEVICE_ID_KONA3GQUAD:
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_IO4KUFC:
-		case DEVICE_ID_KONA4:
-		case DEVICE_ID_KONA4UFC:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVID44:
-        case DEVICE_ID_CORVIDHEVC:
-		case DEVICE_ID_KONAIP_4CH_1SFP:
-		case DEVICE_ID_KONAIP_4CH_2SFP:
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:
-            return true;
-		default:
-			return false;
-		}
-
-	case 1:
-		switch (boardID)
-		{
-		case DEVICE_ID_CORVID22:
-		case DEVICE_ID_CORVID24:
-		case DEVICE_ID_KONA3G:
-		case DEVICE_ID_KONA3GQUAD:
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_IO4KUFC:
-		case DEVICE_ID_KONA4:
-		case DEVICE_ID_KONA4UFC:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVID44:
-        case DEVICE_ID_CORVIDHEVC:
-		case DEVICE_ID_KONAIP_4CH_1SFP:
-		case DEVICE_ID_KONAIP_4CH_2SFP:
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:
-            return true;
-		default:
-			return false;
-		}
-
-	case 2:
-	case 3:
-		switch (boardID)
-		{
-		case DEVICE_ID_CORVID24:
-		case DEVICE_ID_KONA3GQUAD:
-		case DEVICE_ID_IO4K:
-		case DEVICE_ID_KONA4:
-		case DEVICE_ID_CORVID88:
-		case DEVICE_ID_CORVID44:
-        case DEVICE_ID_CORVIDHEVC:
-		case DEVICE_ID_KONAIP_4CH_1SFP:
-		case DEVICE_ID_KONAIP_4CH_2SFP:
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:
-            return true;
-		default:
-			return false;
-		}
-
-	case 4:
-	case 5:
-	case 6:
-	case 7:
-		switch (boardID)
-		{
-		case DEVICE_ID_CORVID88:
-			return true;
-		default:
-			return false;
-		}
-
-	default:
-		return false;
+		case 0:		return (NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn1) || NTV2DeviceCanDoWidget(boardID, NTV2_WgtSDIIn1) || NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIIn1));
+		case 1:		return (NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn2) || NTV2DeviceCanDoWidget(boardID, NTV2_WgtSDIIn2) || NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIIn2));
+		case 2:		return (NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn3) || NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIIn3));
+		case 3:		return (NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn4) || NTV2DeviceCanDoWidget(boardID, NTV2_Wgt12GSDIIn4));
+		case 4:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn5);
+		case 5:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn6);
+		case 6:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn7);
+		case 7:		return NTV2DeviceCanDoWidget(boardID, NTV2_Wgt3GSDIIn8);
+		default:	return false;
 	}
 }	//	NTV2DeviceCanDoLTCEmbeddedN
 
@@ -529,12 +196,16 @@ ULWord NTV2DeviceGetFrameBufferSize_Ex(NTV2DeviceID boardID)
 	case DEVICE_ID_CORVID88:
 	case DEVICE_ID_CORVID44:
     case DEVICE_ID_CORVIDHEVC:
-	case DEVICE_ID_KONAIP_4CH_1SFP:
+	case DEVICE_ID_KONAIP_2022:
 	case DEVICE_ID_KONAIP_4CH_2SFP:
 	case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
 	case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
 	case DEVICE_ID_CORVIDHBR:
 	case DEVICE_ID_KONAIP_1RX_1TX_2110:
+	case DEVICE_ID_IO4KPLUS:
+    case DEVICE_ID_IOIP_2022:
+    case DEVICE_ID_IOIP_2110:
+    case DEVICE_ID_KONAIP_2110:
         frameBufferSize = XENA2_FRAMEBUFFER_SIZE;
 		break;
 	default:
@@ -591,11 +262,15 @@ ULWord NTV2DeviceGetFrameBufferSize (NTV2DeviceID boardID, NTV2FrameGeometry inF
 	case DEVICE_ID_CORVID44:
     case DEVICE_ID_CORVIDHEVC:
 	case DEVICE_ID_CORVIDHBR:
-	case DEVICE_ID_KONAIP_4CH_1SFP:
+	case DEVICE_ID_KONAIP_2022:
 	case DEVICE_ID_KONAIP_4CH_2SFP:
 	case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
 	case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
 	case DEVICE_ID_KONAIP_1RX_1TX_2110:
+	case DEVICE_ID_IO4KPLUS:
+    case DEVICE_ID_IOIP_2022:
+    case DEVICE_ID_IOIP_2110:
+    case DEVICE_ID_KONAIP_2110:
         switch (inFrameGeometry)
 		{
 		case NTV2_FG_4x1920x1080:
@@ -691,11 +366,15 @@ ULWord NTV2DeviceGetNumberFrameBuffers_Ex(NTV2DeviceID boardID)
 	case DEVICE_ID_CORVID88:
 	case DEVICE_ID_CORVID44:
     case DEVICE_ID_CORVIDHEVC:
-	case DEVICE_ID_KONAIP_4CH_1SFP:
+	case DEVICE_ID_KONAIP_2022:
 	case DEVICE_ID_KONAIP_4CH_2SFP:
 	case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
 	case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
 	case DEVICE_ID_KONAIP_1RX_1TX_2110:
+	case DEVICE_ID_IO4KPLUS:
+    case DEVICE_ID_IOIP_2022:
+    case DEVICE_ID_IOIP_2110:
+    case DEVICE_ID_KONAIP_2110:
         return 111;
 	case DEVICE_ID_KONA3G:
 		return 56; // ufc uses 8 
@@ -749,12 +428,16 @@ ULWord NTV2DeviceGetNumberFrameBuffers (NTV2DeviceID boardID, NTV2FrameGeometry 
 	case DEVICE_ID_CORVID88:
 	case DEVICE_ID_CORVID44:
     case DEVICE_ID_CORVIDHEVC:
-	case DEVICE_ID_KONAIP_4CH_1SFP:
+	case DEVICE_ID_KONAIP_2022:
 	case DEVICE_ID_KONAIP_4CH_2SFP:
 	case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
 	case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
 	case DEVICE_ID_CORVIDHBR:
 	case DEVICE_ID_KONAIP_1RX_1TX_2110:
+	case DEVICE_ID_IO4KPLUS:
+    case DEVICE_ID_IOIP_2022:
+    case DEVICE_ID_IOIP_2110:
+    case DEVICE_ID_KONAIP_2110:
         switch (inFrameGeometry)
 		{
 		case NTV2_FG_4x1920x1080:
@@ -1134,12 +817,44 @@ bool NTV2DeviceGetVideoFormatFromState_Ex(	NTV2VideoFormat *		pOutValue,
 
 bool NTV2DeviceCanConnect (const NTV2DeviceID inDeviceID, const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt)
 {
-	//	FUTURE:	THIS MAY BE IMPLEMENTED IN A SEPARATE .hpp FILE GENERATED BY A SCRIPT THAT PARSES
-	//			THE SAME CROSSPOINT .csv TABLE THAT ALSO GENERATES THE CROSSPOINT CONNECTION VERILOG SOURCE
-	(void) inDeviceID;
-	(void) inInputXpt;
-	(void) inOutputXpt;
-	return true;
+    switch(inDeviceID)
+    {
+        case DEVICE_ID_CORVID44:
+            return xpt_c44Matrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_CORVID88:
+            return xpt_c88Matrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_IO4K:
+            return xpt_io4kMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_IO4KUFC:
+            return xpt_io4k_ufcMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_IO4KPLUS:
+            return xpt_io4kplusMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONA4:
+            return xpt_kona4Matrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONA4UFC:
+            return xpt_kona4_ufcMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONAIP_2022:
+            return xpt_kip_4rxtxMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONAIP_4CH_2SFP:
+            return xpt_kip_2p2rxtcMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONAIP_2TX_1SFP_J2K:
+            return xpt_kip_j2k2txMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONAIP_1RX_1TX_2110:
+            return xpt_kip_2100_1rxtxMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONAIP_2110:
+            return xpt_kip_2100_4txMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:
+            return xpt_kip_j2k1rxtxMatrix[inInputXpt][inOutputXpt];
+        case DEVICE_ID_IOIP_2022:
+            return xpt_ioip_2022Matrix[inInputXpt][inOutputXpt];
+        // PSM for now lets use the 4kplus matrix
+        // TODO: need to generate these for IOIP cards
+        case DEVICE_ID_IOIP_2110:
+            return xpt_io4kplusMatrix[inInputXpt][inOutputXpt];
+
+        default:
+            return true;
+    }
 }
 
 
@@ -1225,6 +940,20 @@ bool NTV2DeviceCanDoRS422N (const NTV2DeviceID inDeviceID, const NTV2Channel inC
 	return inChannel < NTV2DeviceGetNumSerialPorts (inDeviceID);
 }
 
+NTV2AudioSystem NTV2DeviceGetAudioMixerSystem(const NTV2DeviceID inDeviceID)
+{
+	if (inDeviceID == DEVICE_ID_IO4KPLUS  ||  inDeviceID == DEVICE_ID_IO4K)
+        return (NTV2AudioSystem)(NTV2DeviceGetNumAudioSystems(inDeviceID) + 1);
+	return NTV2_AUDIOSYSTEM_INVALID;
+}
+
+bool NTV2DeviceROMHasBankSelect (const NTV2DeviceID inDeviceID)
+{
+	if (NTV2DeviceHasSPIv3(inDeviceID) || NTV2DeviceHasSPIv4(inDeviceID) || NTV2DeviceHasSPIv5(inDeviceID))
+		return true;
+	else
+		return false;
+}
 
 #if !defined (NTV2_DEPRECATE)
 	bool NTV2DeviceCanDoProAudio(NTV2DeviceID boardID)

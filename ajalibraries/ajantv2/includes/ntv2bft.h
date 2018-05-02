@@ -27,8 +27,11 @@
 					#if defined (MSWindows)
 						DebugBreak ();
 					#else
-						//	SET A BREAKPOINT IN HERE!
+						//	FORCE TRIGGER DEBUGGER
 						STDERR << "Stop" << ENDL;
+						char *	pByte	(NULL);
+						char	byte	(*pByte);
+						byte++;
 					#endif	//	not Windows
 				}
 		};

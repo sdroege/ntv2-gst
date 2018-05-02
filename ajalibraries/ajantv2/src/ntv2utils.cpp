@@ -6,11 +6,12 @@
 #include "ajatypes.h"
 #include "ntv2utils.h"
 #include "ntv2formatdescriptor.h"
+#include "ntv2registerexpert.h"
 #include "videodefines.h"
 #include "audiodefines.h"
 #include "ntv2endian.h"
-#include "ntv2transcode.h"
 #include "ntv2debug.h"
+#include "ntv2transcode.h"
 #include "ntv2devicefeatures.h"
 #if defined(AJALinux)
 	#include <string.h>  // For memset
@@ -75,7 +76,7 @@ uint32_t CalcRowBytesForFormat (const NTV2FrameBufferFormat inPixelFormat, const
 		rowBytes = inPixelWidth * 6;
 		break;
 		
-	case NTV2_FBF_8BIT_QREZ:
+	case NTV2_FBF_8BIT_YCBCR_420PL3:
 	case NTV2_FBF_8BIT_HDV:
 	case NTV2_FBF_10BIT_YCBCRA:
 	case NTV2_FBF_PRORES:
@@ -83,16 +84,16 @@ uint32_t CalcRowBytesForFormat (const NTV2FrameBufferFormat inPixelFormat, const
 	case NTV2_FBF_PRORES_HDV:
 	case NTV2_FBF_10BIT_ARGB:
 	case NTV2_FBF_16BIT_ARGB:
-	case NTV2_FBF_UNUSED_23:
+	case NTV2_FBF_8BIT_YCBCR_422PL3:
 	case NTV2_FBF_10BIT_RAW_RGB:
 	case NTV2_FBF_10BIT_RAW_YCBCR:
 	case NTV2_FBF_NUMFRAMEBUFFERFORMATS:
-	case NTV2_FBF_UNUSED_26:
-	case NTV2_FBF_UNUSED_27:
-	case NTV2_FBF_10BIT_YCBCR_420PL:
-	case NTV2_FBF_10BIT_YCBCR_422PL:
-	case NTV2_FBF_8BIT_YCBCR_420PL:
-	case NTV2_FBF_8BIT_YCBCR_422PL:
+	case NTV2_FBF_10BIT_YCBCR_420PL3_LE:
+	case NTV2_FBF_10BIT_YCBCR_422PL3_LE:
+	case NTV2_FBF_10BIT_YCBCR_420PL2:
+	case NTV2_FBF_10BIT_YCBCR_422PL2:
+	case NTV2_FBF_8BIT_YCBCR_420PL2:
+	case NTV2_FBF_8BIT_YCBCR_422PL2:
 
 		//	TO DO.....add more
 		break;
@@ -703,7 +704,7 @@ void Fill10BitYCbCrVideoFrame(PULWord _baseVideoAddress,
 							 bool twoKby1080,
 							 bool wideVANC)
 {
-	NTV2FormatDescriptor fd = GetFormatDescriptor(standard,frameBufferFormat,vancEnabled,twoKby1080,wideVANC);
+	NTV2FormatDescriptor fd (standard,frameBufferFormat,vancEnabled,twoKby1080,wideVANC);
 	UWord lineBuffer[2048*2];
 	Make10BitLine(lineBuffer,color.y,color.cb,color.cr,fd.numPixels);
 	for ( UWord i= 0; i<fd.numLines; i++)
@@ -794,7 +795,7 @@ void Fill8BitYCbCrVideoFrame(PULWord _baseVideoAddress,
 							 bool twoKby1080,
 							 bool wideVANC)
 {
-	NTV2FormatDescriptor fd = GetFormatDescriptor(standard,frameBufferFormat,vancEnabled,twoKby1080,wideVANC);
+	NTV2FormatDescriptor fd (standard,frameBufferFormat,vancEnabled,twoKby1080,wideVANC);
 
 	for ( UWord i= 0; i<fd.numLines; i++)
 	{
@@ -1015,7 +1016,7 @@ bool SetRasterLinesBlack (const NTV2FrameBufferFormat	inPixelFormat,
 		case NTV2_FBF_10BIT_DPX:
 		case NTV2_FBF_10BIT_YCBCR_DPX:
 		case NTV2_FBF_8BIT_DVCPRO:
-		case NTV2_FBF_8BIT_QREZ:
+		case NTV2_FBF_8BIT_YCBCR_420PL3:
 		case NTV2_FBF_8BIT_HDV:
 		case NTV2_FBF_24BIT_RGB:
 		case NTV2_FBF_24BIT_BGR:
@@ -1028,11 +1029,11 @@ bool SetRasterLinesBlack (const NTV2FrameBufferFormat	inPixelFormat,
 		case NTV2_FBF_10BIT_RGB_PACKED:
 		case NTV2_FBF_10BIT_ARGB:
 		case NTV2_FBF_16BIT_ARGB:
-		case NTV2_FBF_UNUSED_23:
+		case NTV2_FBF_8BIT_YCBCR_422PL3:
 		case NTV2_FBF_10BIT_RAW_RGB:
 		case NTV2_FBF_10BIT_RAW_YCBCR:
-		case NTV2_FBF_UNUSED_26:
-		case NTV2_FBF_UNUSED_27:
+		case NTV2_FBF_10BIT_YCBCR_420PL3_LE:
+		case NTV2_FBF_10BIT_YCBCR_422PL3_LE:
 		case NTV2_FBF_10BIT_YCBCR_420PL:
 		case NTV2_FBF_10BIT_YCBCR_422PL:
 		case NTV2_FBF_8BIT_YCBCR_420PL:
@@ -1494,7 +1495,7 @@ bool CopyRaster (const NTV2FrameBufferFormat	inPixelFormat,			//	Pixel format of
 
 		case NTV2_FBF_8BIT_DVCPRO:	//	Lossy
 		case NTV2_FBF_8BIT_HDV:		//	Lossy
-		case NTV2_FBF_8BIT_QREZ:
+		case NTV2_FBF_8BIT_YCBCR_420PL3:
 		case NTV2_FBF_10BIT_YCBCRA:
 		case NTV2_FBF_PRORES:
 		case NTV2_FBF_PRORES_DVCPRO:
@@ -1503,9 +1504,9 @@ bool CopyRaster (const NTV2FrameBufferFormat	inPixelFormat,			//	Pixel format of
 		case NTV2_FBF_10BIT_ARGB:
 		case NTV2_FBF_16BIT_ARGB:
 		case NTV2_FBF_10BIT_RAW_RGB:
-		case NTV2_FBF_UNUSED_23:
-		case NTV2_FBF_UNUSED_26:
-		case NTV2_FBF_UNUSED_27:
+		case NTV2_FBF_8BIT_YCBCR_422PL3:
+		case NTV2_FBF_10BIT_YCBCR_420PL3_LE:
+		case NTV2_FBF_10BIT_YCBCR_422PL3_LE:
 		case NTV2_FBF_10BIT_YCBCR_420PL:
 		case NTV2_FBF_10BIT_YCBCR_422PL:
 		case NTV2_FBF_8BIT_YCBCR_420PL:
@@ -1650,6 +1651,18 @@ NTV2Standard GetNTV2StandardFromScanGeometry(UByte geometry, bool progressiveTra
 	}
 
 	return standard;
+}
+
+
+NTV2VideoFormat GetFirstMatchingVideoFormat (const NTV2FrameRate inFrameRate, const UWord inHeightLines, const UWord inWidthPixels, const bool inIsInterlaced)
+{
+	for (NTV2VideoFormat fmt(NTV2_FORMAT_FIRST_HIGH_DEF_FORMAT);  fmt < NTV2_MAX_NUM_VIDEO_FORMATS;  fmt = NTV2VideoFormat(fmt+1))
+		if (inFrameRate == ::GetNTV2FrameRateFromVideoFormat(fmt))
+			if (inHeightLines == ::GetDisplayHeight(fmt))
+				if (inWidthPixels == ::GetDisplayWidth(fmt))
+					if (inIsInterlaced == !::IsProgressiveTransport(fmt))
+						return fmt;
+	return NTV2_FORMAT_UNKNOWN;
 }
 
 
@@ -1891,16 +1904,18 @@ NTV2Standard GetNTV2StandardFromVideoFormat (const NTV2VideoFormat inVideoFormat
 		case NTV2_FORMAT_4x2048x1080p_12000:
 			standard = NTV2_STANDARD_4096HFR;
 			break;
-
+#if defined (_DEBUG)
+	//	Debug builds warn about missing values
 		case NTV2_FORMAT_UNKNOWN:
 		case NTV2_FORMAT_END_HIGH_DEF_FORMATS:
 		case NTV2_FORMAT_END_STANDARD_DEF_FORMATS:
 		case NTV2_FORMAT_END_2K_DEF_FORMATS:
 		case NTV2_FORMAT_END_HIGH_DEF_FORMATS2:
 			break;	// Unsupported
-
+#else
 		default:
 			break;
+#endif
     }
 	
 	return standard;
@@ -1911,7 +1926,7 @@ NTV2Standard GetNTV2StandardFromVideoFormat (const NTV2VideoFormat inVideoFormat
 //-------------------------------------------------------------------------------------------------------
 NTV2FrameGeometry GetNTV2FrameGeometryFromVideoFormat(NTV2VideoFormat videoFormat)
 {
-	NTV2FrameGeometry result = NTV2_FG_1920x1080;
+	NTV2FrameGeometry result = NTV2_FG_INVALID;
 
 	switch (videoFormat)
 	{
@@ -1941,9 +1956,13 @@ NTV2FrameGeometry GetNTV2FrameGeometryFromVideoFormat(NTV2VideoFormat videoForma
 		case NTV2_FORMAT_4x2048x1080p_3000:
 		case NTV2_FORMAT_4x2048x1080psf_2997:
 		case NTV2_FORMAT_4x2048x1080psf_3000:
+		case NTV2_FORMAT_4x2048x1080p_4795:
+		case NTV2_FORMAT_4x2048x1080p_4800:
 		case NTV2_FORMAT_4x2048x1080p_5000:
 		case NTV2_FORMAT_4x2048x1080p_5994:
 		case NTV2_FORMAT_4x2048x1080p_6000:
+		case NTV2_FORMAT_4x2048x1080p_11988:
+		case NTV2_FORMAT_4x2048x1080p_12000:
 			result = NTV2_FG_4x2048x1080;
 			break;
 
@@ -1985,16 +2004,24 @@ NTV2FrameGeometry GetNTV2FrameGeometryFromVideoFormat(NTV2VideoFormat videoForma
 		case NTV2_FORMAT_1080psf_2K_2500:
 		case NTV2_FORMAT_1080p_2K_2997:
 		case NTV2_FORMAT_1080p_2K_3000:
-		case NTV2_FORMAT_1080p_2K_5000_A:
-		case NTV2_FORMAT_1080p_2K_5994_A:
-		case NTV2_FORMAT_1080p_2K_6000_A:
+		case NTV2_FORMAT_1080p_2K_4795:
+		case NTV2_FORMAT_1080p_2K_4795_B:
+		case NTV2_FORMAT_1080p_2K_4800:
+		case NTV2_FORMAT_1080p_2K_4800_B:
+		case NTV2_FORMAT_1080p_2K_5000:
+		case NTV2_FORMAT_1080p_2K_5000_B:
+		case NTV2_FORMAT_1080p_2K_5994:
+		case NTV2_FORMAT_1080p_2K_5994_B:
+		case NTV2_FORMAT_1080p_2K_6000:
+		case NTV2_FORMAT_1080p_2K_6000_B:
 			result = NTV2_FG_2048x1080;
 			break;
 
+		case NTV2_FORMAT_720p_2398:
+		case NTV2_FORMAT_720p_2500:
 		case NTV2_FORMAT_720p_5994:
 		case NTV2_FORMAT_720p_6000:
 		case NTV2_FORMAT_720p_5000:
-		case NTV2_FORMAT_720p_2398:
 			result = NTV2_FG_1280x720;
 			break;
 
@@ -2010,8 +2037,18 @@ NTV2FrameGeometry GetNTV2FrameGeometryFromVideoFormat(NTV2VideoFormat videoForma
 			result = NTV2_FG_720x576;
 			break;
 
+#if defined (_DEBUG)
+	//	Debug builds warn about missing values
+		case NTV2_FORMAT_UNKNOWN:
+		case NTV2_FORMAT_END_HIGH_DEF_FORMATS:
+		case NTV2_FORMAT_END_STANDARD_DEF_FORMATS:
+		case NTV2_FORMAT_END_2K_DEF_FORMATS:
+		case NTV2_FORMAT_END_HIGH_DEF_FORMATS2:
+			break;	// Unsupported
+#else
 		default:
 			break;
+#endif
 	}
 
 	return result;
@@ -2954,6 +2991,71 @@ NTV2FrameRate GetNTV2FrameRateFromVideoFormat(NTV2VideoFormat videoFormat)
 }	//	GetNTV2FrameRateFromVideoFormat
 
 
+NTV2FrameGeometry GetNormalizedFrameGeometry (const NTV2FrameGeometry inFrameGeometry)
+{
+	switch (inFrameGeometry)
+	{
+		case NTV2_FG_1920x1080:	//	1080i, 1080p
+		case NTV2_FG_1280x720:	//	720p
+		case NTV2_FG_720x486:	//	ntsc 525i, 525p60
+		case NTV2_FG_720x576:	//	pal 625i
+			return inFrameGeometry;	//	No change
+
+		case NTV2_FG_1920x1114:	return NTV2_FG_1920x1080;	//	1920x1080 + taller vanc
+		case NTV2_FG_2048x1114:	return NTV2_FG_2048x1080;	//	2048x1080 + taller vanc
+		case NTV2_FG_720x508:	return NTV2_FG_720x486;		//	720x486 + tall vanc
+		case NTV2_FG_720x598:	return NTV2_FG_720x576;		//	pal 625i + tall vanc
+		case NTV2_FG_1920x1112:	return NTV2_FG_1920x1080;	//	1920x1080 + tall vanc
+		case NTV2_FG_1280x740:	return NTV2_FG_1280x720;	//	1280x720 + tall vanc
+
+		case NTV2_FG_2048x1080:	//	2k1080p
+		case NTV2_FG_2048x1556:	//	2k1556psf
+			return inFrameGeometry;	//	No change
+
+		case NTV2_FG_2048x1588:	return NTV2_FG_2048x1556;	//	2048x1556 + tall vanc
+		case NTV2_FG_2048x1112:	return NTV2_FG_2048x1080;	//	2048x1080 + tall vanc
+		case NTV2_FG_720x514:	return NTV2_FG_720x486;		//	720x486 + taller vanc (extra-wide ntsc)
+		case NTV2_FG_720x612:	return NTV2_FG_720x576;		//	720x576 + taller vanc (extra-wide pal)
+		case NTV2_FG_4x1920x1080:	//	UHD
+		case NTV2_FG_4x2048x1080:	//	4K
+			return inFrameGeometry;	//	No change
+#if defined (_DEBUG)
+		case NTV2_FG_INVALID:	break;
+#else
+		default:				break;
+#endif
+	}
+	return NTV2_FG_INVALID;	//	fail
+}
+
+
+bool NTV2DeviceCanDoFormat(NTV2DeviceID		inDeviceID,
+						  NTV2FrameRate		inFrameRate,
+  			              NTV2FrameGeometry inFrameGeometry,
+						  NTV2Standard		inStandard)
+{
+	//	This implementation is very inefficient, but...
+	//	a)	this function is deprecated;
+	//	b)	nobody should be calling it (they should be calling NTV2DeviceCanDoVideoFormat instead)
+	//	c)	they shouldn't be calling it every frame.
+	//	We could make it efficient by creating a static global rate/geometry/standard-to-videoFormat
+	//	map, but that has race/deadlock issues.
+
+	const NTV2FrameGeometry	fg	(::GetNormalizedFrameGeometry(inFrameGeometry));
+	//	Look for a video format that matches the given frame rate, geometry and standard...
+	for (NTV2VideoFormat vFmt(NTV2_FORMAT_FIRST_HIGH_DEF_FORMAT);  vFmt < NTV2_MAX_NUM_VIDEO_FORMATS;  vFmt = NTV2VideoFormat(vFmt+1))
+	{
+		if (!NTV2_IS_VALID_VIDEO_FORMAT(vFmt))
+			continue;
+		const NTV2FrameRate		fr	(::GetNTV2FrameRateFromVideoFormat(vFmt));
+		const NTV2Standard		std	(::GetNTV2StandardFromVideoFormat(vFmt));
+		const NTV2FrameGeometry	geo	(::GetNTV2FrameGeometryFromVideoFormat(vFmt));
+		if (fr == inFrameRate  &&  std == inStandard  &&  fg == geo)
+			return ::NTV2DeviceCanDoVideoFormat(inDeviceID, vFmt);
+	}
+	return false;
+}
+
 ULWord GetNTV2FrameGeometryHeight(NTV2FrameGeometry geometry)
 {
 	switch (geometry)
@@ -3442,7 +3544,7 @@ AJA_LOCAL_STATIC const char * NTV2VideoFormatStrings [NTV2_MAX_NUM_VIDEO_FORMATS
 		"10BIT_DPX",						//	NTV2_FBF_10BIT_DPX				//	7
 		"10BIT_YCBCR_DPX",					//	NTV2_FBF_10BIT_YCBCR_DPX		//	8
 		"",									//	NTV2_FBF_8BIT_DVCPRO			//	9
-		"",									//	NTV2_FBF_8BIT_QREZ				//	10
+		"I420",								//	NTV2_FBF_8BIT_YCBCR_420PL3		//	10
 		"",									//	NTV2_FBF_8BIT_HDV				//	11
 		"24BIT_RGB",						//	NTV2_FBF_24BIT_RGB				//	12
 		"24BIT_BGR",						//	NTV2_FBF_24BIT_BGR				//	13
@@ -3455,7 +3557,7 @@ AJA_LOCAL_STATIC const char * NTV2VideoFormatStrings [NTV2_MAX_NUM_VIDEO_FORMATS
 		"",									//	NTV2_FBF_10BIT_RGB_PACKED		//	20
 		"",									//	NTV2_FBF_10BIT_ARGB				//	21
 		"",									//	NTV2_FBF_16BIT_ARGB				//	22
-		"",									//	NTV2_FBF_UNUSED_23				//	23
+		"",									//	NTV2_FBF_8BIT_YCBCR_422PL3		//	23
 		"10BIT_RAW_RGB",					//	NTV2_FBF_10BIT_RAW_RGB			//	24
 		"10BIT_RAW_YCBCR"					//	NTV2_FBF_10BIT_RAW_YCBCR		//	25
 	};
@@ -3464,7 +3566,7 @@ AJA_LOCAL_STATIC const char * NTV2VideoFormatStrings [NTV2_MAX_NUM_VIDEO_FORMATS
 
 
 //	More UI-friendly versions of above (used in Cables app)...
-AJA_LOCAL_STATIC const char * frameBufferFormats [NTV2_FBF_NUMFRAMEBUFFERFORMATS] =
+AJA_LOCAL_STATIC const char * frameBufferFormats [NTV2_FBF_NUMFRAMEBUFFERFORMATS+1] =
 {
 	"10 Bit YCbCr",						//	NTV2_FBF_10BIT_YCBCR			//	0
 	"8 Bit YCbCr - UYVY",				//	NTV2_FBF_8BIT_YCBCR				//	1
@@ -3476,7 +3578,7 @@ AJA_LOCAL_STATIC const char * frameBufferFormats [NTV2_FBF_NUMFRAMEBUFFERFORMATS
 	"10 Bit RGB - DPX compatible",		//	NTV2_FBF_10BIT_DPX				//	7
 	"10 Bit YCbCr - DPX compatible",	//	NTV2_FBF_10BIT_YCBCR_DPX		//	8
 	"8 Bit DVCPro YCbCr - UYVY",		//	NTV2_FBF_8BIT_DVCPRO			//	9
-	"8 Bit QRez YCbCr - UYVY",			//	NTV2_FBF_8BIT_QREZ				//	10
+	"8 Bit YCbCr 420 3-plane [I420]",	//	NTV2_FBF_8BIT_YCBCR_420PL3		//	10
 	"8 Bit HDV YCbCr - UYVY",			//	NTV2_FBF_8BIT_HDV				//	11
 	"24 Bit RGB",						//	NTV2_FBF_24BIT_RGB				//	12
 	"24 Bit BGR",						//	NTV2_FBF_24BIT_BGR				//	13
@@ -3489,15 +3591,16 @@ AJA_LOCAL_STATIC const char * frameBufferFormats [NTV2_FBF_NUMFRAMEBUFFERFORMATS
 	"10 Bit RGB Packed",				//	NTV2_FBF_10BIT_RGB_PACKED		//	20
 	"10 Bit ARGB",						//	NTV2_FBF_10BIT_ARGB				//	21
 	"16 Bit ARGB",						//	NTV2_FBF_16BIT_ARGB				//	22
-	"Unknown 23",						//	NTV2_FBF_UNKNOWN_23				//	23
+	"8 Bit YCbCr 422 3-plane [Y42B]",	//	NTV2_FBF_8BIT_YCBCR_422PL3		//	23
 	"10 Bit Raw RGB",					//	NTV2_FBF_10BIT_RGB				//	24
 	"10 Bit Raw YCbCr",					//	NTV2_FBF_10BIT_YCBCR			//	25
-	"Unknown 26",						//	NTV2_FBF_UNKNOWN_26				//	26
-	"Unknown 27",						//	NTV2_FBF_UNKNOWN_27				//	27
-	"10 Bit YCbCr 420 Planar",			//	NTV2_FBF_10BIT_YCBCR_420PL		//	28
-	"10 Bit YCbCr 422 Planar",			//	NTV2_FBF_10BIT_YCBCR_422PL		//	29
-	"8 Bit YCbCr 420 Planar",			//	NTV2_FBF_8BIT_YCBCR_420PL		//	30
-	"8 Bit YCbCr 422 Planar",			//	NTV2_FBF_8BIT_YCBCR_422PL		//	31
+	"10 Bit YCbCr 420 3-plane LE",		//	NTV2_FBF_10BIT_YCBCR_420PL3_LE	//	26
+	"10 Bit YCbCr 422 3-plane LE",		//	NTV2_FBF_10BIT_YCBCR_422PL3_LE	//	27
+	"10 Bit YCbCr 420 2-Plane",			//	NTV2_FBF_10BIT_YCBCR_420PL2		//	28
+	"10 Bit YCbCr 422 2-Plane",			//	NTV2_FBF_10BIT_YCBCR_422PL2		//	29
+	"8 Bit YCbCr 420 2-Plane",			//	NTV2_FBF_8BIT_YCBCR_420PL2		//	30
+	"8 Bit YCbCr 422 2-Plane",			//	NTV2_FBF_8BIT_YCBCR_422PL2		//	31
+	""									//	NTV2_FBF_INVALID				//	32
 };
 
 
@@ -3946,7 +4049,7 @@ std::string NTV2DeviceIDToString (const NTV2DeviceID inValue,	const bool inForRe
         case DEVICE_ID_LHI_DVI:                 return inForRetailDisplay ?	"KONA LHi DVI"              : "OEM LHi DVI";
         case DEVICE_ID_IOEXPRESS:               return inForRetailDisplay ?	"IoExpress"                 : "OEM IoExpress";
 	#endif
-        case DEVICE_ID_NOTFOUND:                return inForRetailDisplay ?	"DEVICE NOT FOUND"          : "(Not Found)";
+        case DEVICE_ID_NOTFOUND:                return inForRetailDisplay ?	"AJA Device"                : "(Not Found)";
         case DEVICE_ID_CORVID1:                 return inForRetailDisplay ?	"Corvid 1"                  : "Corvid";
         case DEVICE_ID_CORVID22:                return inForRetailDisplay ?	"Corvid 22"                 : "Corvid22";
         case DEVICE_ID_CORVID3G:                return inForRetailDisplay ?	"Corvid 3G"                 : "Corvid3G";
@@ -3959,24 +4062,25 @@ std::string NTV2DeviceIDToString (const NTV2DeviceID inValue,	const bool inForRe
 		#if !defined (NTV2_DEPRECATE)
         case BOARD_ID_LHI_T:                    return inForRetailDisplay ?	"KONA LHi T"                : "KonaLHiT";
 		#endif	//	!defined (NTV2_DEPRECATE)
-        case DEVICE_ID_IO4K:                    return inForRetailDisplay ?	"Io4K"                      : "Io4K";
-        case DEVICE_ID_IO4KUFC:                 return inForRetailDisplay ?	"Io4K UFC"                  : "Io4KUfc";
-        case DEVICE_ID_KONA4:                   return inForRetailDisplay ?	"KONA 4"                    : "Kona4";
-        case DEVICE_ID_KONA4UFC:                return inForRetailDisplay ?	"KONA 4 UFC"                : "Kona4Ufc";
-        case DEVICE_ID_CORVID88:                return inForRetailDisplay ?	"Corvid 88"                 : "Corvid88";
-        case DEVICE_ID_CORVID44:                return inForRetailDisplay ?	"Corvid 44"                 : "Corvid44";
-        case DEVICE_ID_CORVIDHEVC:              return inForRetailDisplay ?	"Corvid HEVC"               : "CorvidHEVC";
-        case DEVICE_ID_KONAIP_4CH_1SFP:         return inForRetailDisplay ? "KONA IP 4CH 1SFP"          : "KonaIP4Ch1SFP";
-        case DEVICE_ID_KONAIP_4CH_2SFP:         return inForRetailDisplay ? "KONA IP 4CH 2SFP"          : "KonaIP4Ch2SFP";
-        case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:	return inForRetailDisplay ? "KONA IP 1RX 1TX 1SFP J2K"  : "KonaIP1Rx1Tx1SFPJ2K";
-        case DEVICE_ID_KONAIP_2TX_1SFP_J2K:     return inForRetailDisplay ? "KONA IP 2TX 1SFP J2K"      : "KonaIP2Tx1SFPJ2K";
-        case DEVICE_ID_KONAIP_2RX_1SFP_J2K:     return inForRetailDisplay ? "KONA IP 2RX 1SFP J2K"      : "KonaIP2Rx1SFPJ2K";
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:     return inForRetailDisplay ? "KONA IP 1RX 1TX 2110"      : "KonaIP1Rx1Tx2110";
-
-        case DEVICE_ID_CORVIDHBR:               return inForRetailDisplay ? "Corvid HB-R"               : "CorvidHBR";
-#if defined (AJA_DEBUG) || defined (_DEBUG)
-//	    default:					break;
-#else
+		case DEVICE_ID_IO4K:					return inForRetailDisplay ?	"Io4K"						: "Io4K";
+		case DEVICE_ID_IO4KUFC:					return inForRetailDisplay ?	"Io4K UFC"					: "Io4KUfc";
+		case DEVICE_ID_KONA4:					return inForRetailDisplay ?	"KONA 4"					: "Kona4";
+		case DEVICE_ID_KONA4UFC:				return inForRetailDisplay ?	"KONA 4 UFC"				: "Kona4Ufc";
+		case DEVICE_ID_CORVID88:				return inForRetailDisplay ?	"Corvid 88"					: "Corvid88";
+		case DEVICE_ID_CORVID44:				return inForRetailDisplay ?	"Corvid 44"					: "Corvid44";
+		case DEVICE_ID_CORVIDHEVC:				return inForRetailDisplay ?	"Corvid HEVC"				: "CorvidHEVC";
+        case DEVICE_ID_KONAIP_2022:             return "KonaIP s2022";
+        case DEVICE_ID_KONAIP_4CH_2SFP:			return "KonaIP s2022 2+2";
+        case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:	return "KonaIP J2K 1I 1O";
+        case DEVICE_ID_KONAIP_2TX_1SFP_J2K:		return "KonaIP J2K 2O";
+        case DEVICE_ID_KONAIP_2RX_1SFP_J2K:     return "KonaIP J2K 2I";
+        case DEVICE_ID_KONAIP_1RX_1TX_2110:     return "KonaIP s2110 1I 1O";
+		case DEVICE_ID_CORVIDHBR:               return inForRetailDisplay ? "Corvid HB-R"               : "CorvidHBR";
+        case DEVICE_ID_IO4KPLUS:				return inForRetailDisplay ? "Avid DNxIV"                : "Io4K PLUS";
+        case DEVICE_ID_IOIP_2022:				return inForRetailDisplay ? "Avid DNxIP s2022"          : "IoIP s2022";
+        case DEVICE_ID_IOIP_2110:				return inForRetailDisplay ? "Avid DNxIP s2110"          : "IoIP s2110";
+        case DEVICE_ID_KONAIP_2110:             return "KonaIP s2110";
+#if !defined (_DEBUG)
 	    default:					break;
 #endif
 	}
@@ -4991,7 +5095,7 @@ AJAExport bool IsVideoFormatJ2KSupported(NTV2VideoFormat format)
 		bool canHaveKeyOut = false;
 		switch (fbf)
 		{
-		case NTV2_FBF_8BIT_QREZ:
+		case NTV2_FBF_8BIT_YCBCR_420PL3:
 			// not supported
 			break;
 
@@ -5246,7 +5350,7 @@ AJAExport bool IsVideoFormatJ2KSupported(NTV2VideoFormat format)
 	{
 		(void) lut;
 		bool status = false;
-		if (fbf == NTV2_FBF_8BIT_QREZ)
+		if (fbf == NTV2_FBF_8BIT_YCBCR_420PL3)
 			return status;
 
 		if ( EtoE)
@@ -5387,7 +5491,7 @@ AJAExport bool IsVideoFormatJ2KSupported(NTV2VideoFormat format)
 		(void) convert;
 		(void) lut;
 		bool status = false;
-		if (fbf == NTV2_FBF_8BIT_QREZ)
+		if (fbf == NTV2_FBF_8BIT_YCBCR_420PL3)
 			return status;
 
 		if ( EtoE)
@@ -5513,7 +5617,7 @@ AJAExport bool IsVideoFormatJ2KSupported(NTV2VideoFormat format)
 		if ( dualLink )
 			inputSource = NTV2_INPUTSOURCE_DUALLINK;
 		bool status = false;
-		if (fbf == NTV2_FBF_8BIT_QREZ)
+		if (fbf == NTV2_FBF_8BIT_YCBCR_420PL3)
 			return status;
 
 		if ( EtoE)
@@ -6042,7 +6146,7 @@ string NTV2ChannelToString (const NTV2Channel inValue, const bool inForRetailDis
 		case NTV2_CHANNEL6:			return inForRetailDisplay ? "Ch6" : "NTV2_CHANNEL6";
 		case NTV2_CHANNEL7:			return inForRetailDisplay ? "Ch7" : "NTV2_CHANNEL7";
 		case NTV2_CHANNEL8:			return inForRetailDisplay ? "Ch8" : "NTV2_CHANNEL8";
-		case NTV2_MAX_NUM_CHANNELS:	return inForRetailDisplay ? "???" : "NTV2_CHANNEL_INVALID";
+		case NTV2_MAX_NUM_CHANNELS:	return inForRetailDisplay ? "n/a" : "NTV2_CHANNEL_INVALID";
 	}
 	return "";
 }
@@ -6517,7 +6621,7 @@ string NTV2WidgetIDToString (const NTV2WidgetID inValue, const bool inCompactDis
 		case NTV2_WgtCSC3:					return inCompactDisplay ? "CSC3"			: "NTV2_WgtCSC3";
 		case NTV2_WgtCSC4:					return inCompactDisplay ? "CSC4"			: "NTV2_WgtCSC4";
 		case NTV2_WgtHDMIIn1v2:				return inCompactDisplay ? "HDMIv2In1"		: "NTV2_WgtHDMIIn1v2";
-		case NTV2_WgtHDMIOut1v2:			return inCompactDisplay ? "HDMIv2Out2"		: "NTV2_WgtHDMIOut1v2";
+		case NTV2_WgtHDMIOut1v2:			return inCompactDisplay ? "HDMIv2Out1"		: "NTV2_WgtHDMIOut1v2";
 		case NTV2_WgtSDIMonOut1:			return inCompactDisplay ? "SDIMonOut1"		: "NTV2_WgtSDIMonOut1";
 		case NTV2_WgtCSC5:					return inCompactDisplay ? "CSC5"			: "NTV2_WgtCSC5";
 		case NTV2_WgtLUT5:					return inCompactDisplay ? "LUT5"			: "NTV2_WgtLUT5";
@@ -6556,6 +6660,16 @@ string NTV2WidgetIDToString (const NTV2WidgetID inValue, const bool inCompactDis
 		case NTV2_Wgt425Mux2:				return inCompactDisplay ? "425Mux2"			: "NTV2_Wgt425Mux2";
 		case NTV2_Wgt425Mux3:				return inCompactDisplay ? "425Mux3"			: "NTV2_Wgt425Mux3";
 		case NTV2_Wgt425Mux4:				return inCompactDisplay ? "425Mux4"			: "NTV2_Wgt425Mux4";
+		case NTV2_Wgt12GSDIIn1:				return inCompactDisplay ? "12GSDIIn1"		: "NTV2_Wgt12GSDIIn1";
+		case NTV2_Wgt12GSDIIn2:				return inCompactDisplay ? "12GSDIIn2"		: "NTV2_Wgt12GSDIIn2";
+		case NTV2_Wgt12GSDIIn3:				return inCompactDisplay ? "12GSDIIn3"		: "NTV2_Wgt12GSDIIn3";
+		case NTV2_Wgt12GSDIIn4:				return inCompactDisplay ? "12GSDIIn4"		: "NTV2_Wgt12GSDIIn4";
+		case NTV2_Wgt12GSDIOut1:			return inCompactDisplay ? "12GSDIOut1"		: "NTV2_Wgt12GSDIOut1";
+		case NTV2_Wgt12GSDIOut2:			return inCompactDisplay ? "12GSDIOut2"		: "NTV2_Wgt12GSDIOut2";
+		case NTV2_Wgt12GSDIOut3:			return inCompactDisplay ? "12GSDIOut3"		: "NTV2_Wgt12GSDIOut3";
+		case NTV2_Wgt12GSDIOut4:			return inCompactDisplay ? "12GSDIOut4"		: "NTV2_Wgt12GSDIOut4";
+		case NTV2_WgtHDMIIn1v4:				return inCompactDisplay ? "HDMIv4In1"		: "NTV2_WgtHDMIIn1v4";
+		case NTV2_WgtHDMIOut1v4:			return inCompactDisplay ? "HDMIv4Out1"		: "NTV2_WgtHDMIOut1v4";
 		case NTV2_WgtModuleTypeCount:		return inCompactDisplay ? "???"				: "???";
 	}
 	return "";
@@ -6725,6 +6839,32 @@ string NTV2VANCModeToString (const NTV2VANCMode inValue, const bool inCompactDis
 }
 
 
+string NTV2EmbeddedAudioInputToString (const NTV2EmbeddedAudioInput inValue,  const bool inCompactDisplay)
+{
+	ostringstream	oss;
+	if (NTV2_IS_VALID_EMBEDDED_AUDIO_INPUT(inValue))
+		oss << (inCompactDisplay ? "SDI" : "NTV2_EMBEDDED_AUDIO_INPUT_VIDEO_") << DEC(inValue+1);
+	else
+		oss << (inCompactDisplay ? "SDI?" : "NTV2_EMBEDDED_AUDIO_INPUT_INVALID");
+	return oss.str();
+}
+
+
+string NTV2AudioSourceToString (const NTV2AudioSource inValue,  const bool inCompactDisplay)
+{
+	switch (inValue)
+	{
+		case NTV2_AUDIO_EMBEDDED:	return inCompactDisplay ? "SDI"		: "NTV2_AUDIO_EMBEDDED";
+		case NTV2_AUDIO_AES:		return inCompactDisplay ? "AES"		: "NTV2_AUDIO_AES";
+		case NTV2_AUDIO_ANALOG:		return inCompactDisplay ? "Analog"	: "NTV2_AUDIO_ANALOG";
+		case NTV2_AUDIO_HDMI:		return inCompactDisplay ? "HDMI"	: "NTV2_AUDIO_HDMI";
+		case NTV2_AUDIO_MIC:		return inCompactDisplay ? "Mic"		: "NTV2_AUDIO_MIC";
+		default:					break;
+	}
+	return inCompactDisplay ? "" : "NTV2_AUDIO_SOURCE_INVALID";
+}
+
+
 string NTV2VideoFormatToString (const NTV2VideoFormat inFormat, const bool inUseFrameRate)
 {
 	if (inUseFrameRate && !NTV2_VIDEO_FORMAT_HAS_PROGRESSIVE_PICTURE (inFormat))
@@ -6762,7 +6902,7 @@ string NTV2StandardToString (const NTV2Standard inValue, const bool inForRetailD
 		case NTV2_STANDARD_4096x2160p:	return inForRetailDisplay ? "4K"		: "NTV2_STANDARD_4096x2160p";
 		case NTV2_STANDARD_3840HFR:		return inForRetailDisplay ? "UHD HFR"	: "NTV2_STANDARD_3840HFR";
 		case NTV2_STANDARD_4096HFR:		return inForRetailDisplay ? "4K HFR"	: "NTV2_STANDARD_4096HFR";
-		case NTV2_NUM_STANDARDS:		break;
+		case NTV2_STANDARD_INVALID:		return inForRetailDisplay ? ""			: "NTV2_STANDARD_INVALID";
 	}
 	return string ();
 }
@@ -6785,7 +6925,7 @@ string NTV2FrameBufferFormatToString (const NTV2FrameBufferFormat inValue,	const
 		case NTV2_FBF_10BIT_DPX:				return "NTV2_FBF_10BIT_DPX";
 		case NTV2_FBF_10BIT_YCBCR_DPX:			return "NTV2_FBF_10BIT_YCBCR_DPX";
 		case NTV2_FBF_8BIT_DVCPRO:				return "NTV2_FBF_8BIT_DVCPRO";
-		case NTV2_FBF_8BIT_QREZ:				return "NTV2_FBF_8BIT_QREZ";
+		case NTV2_FBF_8BIT_YCBCR_420PL3:		return "NTV2_FBF_8BIT_YCBCR_420PL3";
 		case NTV2_FBF_8BIT_HDV:					return "NTV2_FBF_8BIT_HDV";
 		case NTV2_FBF_24BIT_RGB:				return "NTV2_FBF_24BIT_RGB";
 		case NTV2_FBF_24BIT_BGR:				return "NTV2_FBF_24BIT_BGR";
@@ -6798,16 +6938,16 @@ string NTV2FrameBufferFormatToString (const NTV2FrameBufferFormat inValue,	const
 		case NTV2_FBF_10BIT_RGB_PACKED:			return "NTV2_FBF_10BIT_RGB_PACKED";
 		case NTV2_FBF_10BIT_ARGB:				return "NTV2_FBF_10BIT_ARGB";
 		case NTV2_FBF_16BIT_ARGB:				return "NTV2_FBF_16BIT_ARGB";
-		case NTV2_FBF_UNUSED_23:				return "NTV2_FBF_UNUSED_23";
+		case NTV2_FBF_8BIT_YCBCR_422PL3:		return "NTV2_FBF_8BIT_YCBCR_422PL3";
 		case NTV2_FBF_10BIT_RAW_RGB:			return "NTV2_FBF_10BIT_RAW_RGB";
 		case NTV2_FBF_10BIT_RAW_YCBCR:			return "NTV2_FBF_10BIT_RAW_YCBCR";
-		case NTV2_FBF_UNUSED_26:				return "NTV2_FBF_UNUSED_26";
-		case NTV2_FBF_UNUSED_27:				return "NTV2_FBF_UNUSED_27";
-		case NTV2_FBF_10BIT_YCBCR_420PL:		return "NTV2_FBF_10BIT_YCBCR_420PL";
-		case NTV2_FBF_10BIT_YCBCR_422PL:		return "NTV2_FBF_10BIT_YCBCR_422PL";
-		case NTV2_FBF_8BIT_YCBCR_420PL:			return "NTV2_FBF_8BIT_YCBCR_420PL";
-		case NTV2_FBF_8BIT_YCBCR_422PL:			return "NTV2_FBF_8BIT_YCBCR_422PL";
-		case NTV2_FBF_NUMFRAMEBUFFERFORMATS:	break;
+		case NTV2_FBF_10BIT_YCBCR_420PL3_LE:	return "NTV2_FBF_10BIT_YCBCR_420PL3_LE";
+		case NTV2_FBF_10BIT_YCBCR_422PL3_LE:	return "NTV2_FBF_10BIT_YCBCR_422PL3_LE";
+		case NTV2_FBF_10BIT_YCBCR_420PL2:		return "NTV2_FBF_10BIT_YCBCR_420PL2";
+		case NTV2_FBF_10BIT_YCBCR_422PL2:		return "NTV2_FBF_10BIT_YCBCR_422PL2";
+		case NTV2_FBF_8BIT_YCBCR_420PL2:		return "NTV2_FBF_8BIT_YCBCR_420PL2";
+		case NTV2_FBF_8BIT_YCBCR_422PL2:		return "NTV2_FBF_8BIT_YCBCR_422PL2";
+		case NTV2_FBF_INVALID:					return "NTV2_FBF_INVALID";
 	}
 	return string ();
 }
@@ -7196,11 +7336,8 @@ static const char * NTV2InterruptEnumStrings (const INTERRUPT_ENUMS inInterruptE
 														"eOutput5",
 														"eOutput6",
 														"eOutput7",
-														"eOutput8",
-														"<invalid>",
-														"<invalid>",
-														"<invalid>"};
-	if (inInterruptEnumValue >= eOutput1 && inInterruptEnumValue <= eNumInterruptTypes)
+                                                        "eOutput8"};
+    if (inInterruptEnumValue >= eOutput1 && inInterruptEnumValue < eNumInterruptTypes)
 		return sInterruptEnumStrings [inInterruptEnumValue];
 	else
 		return NULL;
@@ -7214,6 +7351,51 @@ std::string NTV2InterruptEnumToString (const INTERRUPT_ENUMS inInterruptEnumValu
 	return std::string (pString ? pString : "");
 }
 
+std::string NTV2IpErrorEnumToString (const NTV2IpError inIpErrorEnumValue)
+{
+    switch (inIpErrorEnumValue)
+    {
+        case NTV2IpErrNone:                         return "";
+        case NTV2IpErrInvalidChannel:               return "Invalid channel";
+        case NTV2IpErrInvalidFormat:                return "Invalid format";
+        case NTV2IpErrInvalidBitdepth:              return "Invalid bit depth";
+        case NTV2IpErrInvalidUllHeight:             return "Invalid height in ull mode";
+        case NTV2IpErrInvalidUllLevels:             return "Invalid number of levels in ull mode";
+        case NTV2IpErrUllNotSupported:              return "Ull mode not supported";
+        case NTV2IpErrNotReady:                     return "KonaIP card not ready";
+        case NTV2IpErrSoftwareMismatch:             return "Host software does not match device firmware";
+        case NTV2IpErrLinkANotConfigured:           return "SFP Top (Link A) not configured";
+        case NTV2IpErrLinkBNotConfigured:           return "SFP Bottom (Link B) not configured";
+        case NTV2IpErrInvalidIGMPVersion:           return "Invalid IGMP version";
+        case NTV2IpErrCannotGetMacAddress:          return "Failed to retrieve MAC address from ARP table";
+        case NTV2IpErr2022_7NotSupported:           return "2022-7 not supported for by this firmware";
+        case NTV2IpErrWriteSOMToMB:                 return "Could not write SOM to MB";
+        case NTV2IpErrWriteSeqToMB:                 return "Could not write sequence number to MB";
+        case NTV2IpErrWriteCountToMB:               return "Could not write count to MB";
+        case NTV2IpErrTimeoutNoSOM:                 return "MB response timeout (no SOM)";
+        case NTV2IpErrTimeoutNoSeq:                 return "MB response timeout (no sequence number)";
+        case NTV2IpErrTimeoutNoBytecount:           return "MB response timeout (no bytecount)";
+        case NTV2IpErrExceedsFifo:                  return "Response exceeds FIFO length";
+        case NTV2IpErrNoResponseFromMB:             return "No response from MB";
+        case NTV2IpErrAcquireMBTimeout:             return "AcquireMailBoxLock timeout";
+        case NTV2IpErrInvalidMBResponse:            return "Invalid response from MB";
+        case NTV2IpErrInvalidMBResponseSize:        return "Invalid response size from MB";
+        case NTV2IpErrInvalidMBResponseNoMac:       return "MAC Address not found in response from MB";
+        case NTV2IpErrMBStatusFail:                 return "MB Status Failure";
+        case NTV2IpErrGrandMasterInfo:              return "PTP Grand Master Info not found";
+        case NTV2IpErrSDPTooLong:                   return "SDP too long";
+        case NTV2IpErrSDPNotFound:                  return "SDP not found";
+        case NTV2IpErrSDPEmpty:                     return "SDP is empty";
+        case NTV2IpErrSDPInvalid:                   return "SDP is not valid";
+        case NTV2IpErrSDPURLInvalid:                return "Invalid SDP URL";
+        case NTV2IpErrSDPNoVideo:                   return "SDP does not contain video";
+        case NTV2IpErrSDPNoAudio:                   return "SDP does not contain audio";
+        case NTV2IpErrSDPNoANC:                     return "SDP does not contain metadata";
+        case NTV2IpErrSFPNotFound:                  return "SFP data not found";
+        case NTV2IpErrInvalidConfig:                return "Invalid configuration";
+        default:                                    return "Unknown IP error";
+    }
+}
 
 ostream & operator << (ostream & inOutStream, const RP188_STRUCT & inObj)
 {
@@ -7234,8 +7416,8 @@ string NTV2GetBitfileName (const NTV2DeviceID inBoardID)
 			case DEVICE_ID_CORVID22:					return "corvid22_pcie.bit";
 			case DEVICE_ID_CORVID24:					return "corvid24_pcie.bit";
 			case DEVICE_ID_CORVID3G:					return "corvid3G_pcie.bit";
-			case DEVICE_ID_CORVID44:					return "corvid_44_pcie.bit";
-			case DEVICE_ID_CORVID88:					return "corvid_88_pcie.bit";
+			case DEVICE_ID_CORVID44:					return "corvid44_pcie.bit";
+			case DEVICE_ID_CORVID88:					return "corvid88_pcie.bit";
 			case DEVICE_ID_CORVIDHEVC:					return "corvid_hevc.bit";
 			case DEVICE_ID_IO4K:						return "io4k_pcie.bit";
 			case DEVICE_ID_IO4KUFC:						return "io4k_ufc_pcie.bit";
@@ -7245,14 +7427,18 @@ string NTV2GetBitfileName (const NTV2DeviceID inBoardID)
 			case DEVICE_ID_KONA3GQUAD:					return "kona3g_quad_pcie.bit";
 			case DEVICE_ID_KONA4:						return "kona4_pcie.bit";
 			case DEVICE_ID_KONA4UFC:					return "kona4_ufc_pcie.bit";
-			case DEVICE_ID_KONAIP_4CH_1SFP:				return "s2022_56_4ch_rxtx.mcs";
+            case DEVICE_ID_KONAIP_2022:                 return "kip_s2022.mcs";
 			case DEVICE_ID_KONAIP_4CH_2SFP:				return "s2022_56_2p2ch_rxtx.mcs";
-			case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "s2022_12_1rx_1tx.mcs";
-			case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "s2022_12_2ch_tx.mcs";
+            case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "kip_j2k_1i1o.mcs";
+            case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "kip_j2k_2o.mcs";
 			case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "s2110_1rx_1tx.mcs";
 			case DEVICE_ID_LHE_PLUS:					return "lheplus_pcie.bit";
 			case DEVICE_ID_LHI:							return "lhi_pcie.bit";
 			case DEVICE_ID_TTAP:						return "ttap_pcie.bit";
+			case DEVICE_ID_IO4KPLUS:					return "io4kplus_pcie.bit";
+            case DEVICE_ID_IOIP_2022:					return "ioip_s2022.mcs";
+            case DEVICE_ID_IOIP_2110:					return "ioip_s2110.mcs";
+            case DEVICE_ID_KONAIP_2110:                 return "kip_s2110.mcs";
 			default:									return "";
 		}
 	#else
@@ -7321,14 +7507,19 @@ string NTV2GetBitfileName (const NTV2DeviceID inBoardID)
 			case DEVICE_ID_KONA3GQUAD:					return "k3g_quad.bit";
 			case DEVICE_ID_KONA4:						return "kona_4_quad.bit";
 			case DEVICE_ID_KONA4UFC:					return "kona_4_ufc.bit";
-			case DEVICE_ID_KONAIP_4CH_1SFP:				return "s2022_56_4ch_rxtx.mcs";
+            case DEVICE_ID_KONAIP_2022:                 return "kip_s2022.mcs";
 			case DEVICE_ID_KONAIP_4CH_2SFP:				return "s2022_56_2p2ch_rxtx.mcs";
-			case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "s2022_12_1rx_1tx.mcs";
-			case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "s2022_12_2ch_tx.mcs";
-			case DEVICE_ID_LHE_PLUS:					return "lhe_12_pcie.bit";
+            case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "kip_j2k_1i1o.mcs";
+            case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "kip_j2k_2o.mcs";
+            case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "s2110_1rx_1tx.mcs";
+            case DEVICE_ID_LHE_PLUS:					return "lhe_12_pcie.bit";
 			case DEVICE_ID_LHI:							return "top_pike.bit";
 			case DEVICE_ID_TTAP:						return "t_tap_top.bit";
-			default:									return "";
+            case DEVICE_ID_IO4KPLUS:					return "io4kp.bit";
+            case DEVICE_ID_IOIP_2022:					return "ioip_s2022.mcs";
+            case DEVICE_ID_IOIP_2110:					return "ioip_s2110.mcs";
+            case DEVICE_ID_KONAIP_2110:                 return "kip_s2110.mcs";
+            default:									return "";
 		}
 	#endif	//	else not MSWindows
 	return "";
@@ -7416,7 +7607,7 @@ NTV2DeviceIDSet NTV2GetSupportedDevices (void)
 														DEVICE_ID_KONA3GQUAD,
 														DEVICE_ID_KONA4,
 														DEVICE_ID_KONA4UFC,
-														DEVICE_ID_KONAIP_4CH_1SFP,
+														DEVICE_ID_KONAIP_2022,
 														DEVICE_ID_KONAIP_4CH_2SFP,
 														DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K,
 														DEVICE_ID_KONAIP_2TX_1SFP_J2K,
@@ -7425,6 +7616,10 @@ NTV2DeviceIDSet NTV2GetSupportedDevices (void)
 														DEVICE_ID_KONALHIDVI,
 														DEVICE_ID_TTAP,
 														DEVICE_ID_KONAIP_1RX_1TX_2110,
+														DEVICE_ID_IO4KPLUS,
+                                                        DEVICE_ID_IOIP_2022,
+                                                        DEVICE_ID_IOIP_2110,
+                                                        DEVICE_ID_KONAIP_2110,
 														DEVICE_ID_NOTFOUND	};
 	NTV2DeviceIDSet	result;
 	for (unsigned ndx (0);  ndx < sizeof (sValidDeviceIDs) / sizeof (NTV2DeviceID);  ndx++)
@@ -7464,10 +7659,13 @@ string NTV2RegisterNumberToString (const NTV2RegisterNumber inValue)
 	string	result	(::NTV2RegisterNameString (inValue));
 	if (result.empty ())
 	{
-		ostringstream	oss;
-		//oss << "0x" << hex << inValue << dec;
-		oss << inValue;
-		result = oss.str ();
+		result = CNTV2RegisterExpert::GetDisplayName(inValue);
+		if (result.empty())
+		{
+			ostringstream	oss;	//oss << "0x" << hex << inValue << dec;
+			oss << inValue;
+			result = oss.str();
+		}
 	}
 	return result;
 }
@@ -7539,11 +7737,7 @@ bool convertHDRRegisterToFloatValues(const HDRRegValues & inRegisterValues, HDRF
 		(inRegisterValues.redPrimaryX > 0xC350) ||
 		(inRegisterValues.redPrimaryY > 0xC350) ||
 		(inRegisterValues.whitePointX > 0xC350) ||
-		(inRegisterValues.whitePointY > 0xC350) ||
-        (inRegisterValues.maxMasteringLuminance < 0x0000) ||
-        (inRegisterValues.minMasteringLuminance < 0x0000) ||
-        (inRegisterValues.maxContentLightLevel < 0x0000)  ||
-        (inRegisterValues.maxFrameAverageLightLevel < 0x0000))
+        (inRegisterValues.whitePointY > 0xC350))
 		return false;
 	outFloatValues.greenPrimaryX = static_cast<float>(inRegisterValues.greenPrimaryX * 0.00002);
 	outFloatValues.greenPrimaryY = static_cast<float>(inRegisterValues.greenPrimaryY * 0.00002);

@@ -119,8 +119,8 @@ typedef enum
 	kRegFS1ProcAmpC2CROffsetY,		// 86
 	kRegFS1AudioDelay,				// 87
 	kRegAud2Delay = kRegFS1AudioDelay, //87
-	kRegAuxInterruptDelay,			// 88
-	kRegReserved89,					// 89
+	kRegBitfileDate,				// 88
+	kRegBitfileTime,				// 89
 	
 	kRegFS1I2CControl,				// 90
 	kRegFS1I2C1Address,				// 91
@@ -142,7 +142,7 @@ typedef enum
 	kRegDMA4HostAddrHigh,			// 106
 	kRegDMA4NextDescHigh,			// 107
 
-	kRegReserved108,				// 108	//kRegTestPatternGenerator = kRegReserved108, // Borg
+	kRegGlobalControl3,				// 108
 	kRegReserved109,				// 109	//	Used for camera record flag		kRegLANCAndLensTap = kRegReserved109, // Borg	//Note:  Lens Tap is no longer supported by software. ref bug 3342. 4/5/2012
 	kRegLTCEmbeddedBits0_31,        // 110
 	kRegLTCEmbeddedBits32_63,       // 111
@@ -704,6 +704,28 @@ typedef enum NTV2RXSDIStatusRegister
 	kRegNumRXSDIRegisters = 2113 - 2048 + 1
 } NTV2RXSDIStatusRegisters;
 
+typedef enum
+{
+	kRegAudioMixerInputSelects = 2304,		//	2304
+	kRegAudioMixerMainGain,					//	2305
+	kRegAudioMixerAux1GainCh1,				//	2306
+	kRegAudioMixerAux2GainCh1,				//	2307
+	kRegAudioMixerChannelSelect,			//	2308
+	kRegAudioMixerMutes,					//	2309
+	kRegAudioMixerAux1GainCh2,				//	2310
+	kRegAudioMixerAux2GainCh2,				//	2311
+	kRegAudioMixerAux1InputLevels = 2318,	//	2318
+	kRegAudioMixerAux2InputLevels,			//	2319
+	kRegAudioMixerMainInputLevelsPair0,		//	2320
+	kRegAudioMixerMainInputLevelsPair1,		//	2321
+	kRegAudioMixerMainInputLevelsPair2,		//	2322
+	kRegAudioMixerMainInputLevelsPair3,		//	2323
+	kRegAudioMixerMainInputLevelsPair4,		//	2324
+	kRegAudioMixerMainInputLevelsPair5,		//	2325
+	kRegAudioMixerMainInputLevelsPair6,		//	2326
+	kRegAudioMixerMainInputLevelsPair7,		//	2327
+	kRegAudioMixerMixedChannelOutputLevels	//	2328
+}NTV2AudioMixerRegisters;
 
 //	Discontinuous block of registers used for detecting non-PCM embedded audio.
 typedef enum _NTV2NonPCMAudioDetectRegisters
@@ -871,6 +893,12 @@ typedef enum
 	kRegEnhancedCSC8KeyGain			// 5584
 
 } NTV2EnhancedCSCRegisters;
+
+typedef enum
+{
+	kRegHDMIOutputAudioConfig = 0x1d4B
+}NTV2HDMIOutAudioRegisters;
+
 
 
 #if !defined (NTV2_DEPRECATE)
@@ -1145,7 +1173,10 @@ typedef enum
 		kRegDNX_NumberOfRegisters = ((kRegDNX_MaximumRegister - DNX_REG_START) + 1)
 	} DNXRegisterNum;
 #endif	//	!defined (NTV2_DEPRECATE)
-
+#if defined (NTV2_DEPRECATE_13_0)
+	#define	kRegAuxInterruptDelay	kRegBitfileDate			///< @deprecated		Use kRegBitfileDate instead.
+	#define	kRegReserved89			kRegBitfileTime			///< @deprecated		Use kRegBitfileTime instead.
+#endif	//	NTV2_DEPRECATE_13_0
 
 // Virtual registers
 #include "ntv2virtualregisters.h"
@@ -1251,6 +1282,8 @@ typedef enum
 	kRegMaskSmpte372Enable8		= BIT(15),
 	kRegMaskIndependentMode		= BIT(16),
 	kRegMask2MFrameSupport		= BIT(17),
+	kRegMaskAudioMixerPresent	= BIT(18),
+	kRegMaskIsDNXIV				= BIT(19),
 	kRegMask425FB12				= BIT(20),
 	kRegMask425FB34				= BIT(21),
 	kRegMask425FB56				= BIT(22),
@@ -1261,6 +1294,9 @@ typedef enum
 	kRegMaskRP188ModeCh6		= BIT(31),
 	kRegMaskRP188ModeCh7		= BIT(26),
 	kRegMaskRP188ModeCh8		= BIT(27),
+
+	// Global Control 3
+	kRegMaskAnalogIOControl			= BIT(1) + BIT(0),
 
 
 	// Channel Control - kRegCh1Control, kRegCh2Control, kRegCh3Control, kRegCh4Control
@@ -1384,13 +1420,6 @@ typedef enum
 	kRegMaskInput2FrameRateHigh		= BIT(29),
 	kRegMaskInput1GeometryHigh		= BIT(30),
 	kRegMaskInput2GeometryHigh		= BIT(31),
-
-#if !defined (NTV2_DEPRECATE)
-	// Pan (2K crop) - Xena 2
-	kRegMaskPanMode			= BIT(30) + BIT(31),
-	kRegMaskPanOffsetH		= BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7)+BIT(8)+BIT(9)+BIT(10)+BIT(11),
-	kRegMaskPanOffsetV		= BIT(12)+BIT(13)+BIT(14)+BIT(15)+BIT(16)+BIT(17)+BIT(18)+BIT(19)+BIT(20)+BIT(21)+BIT(22)+BIT(23),
-#endif	//	!defined (NTV2_DEPRECATE)
 
 	// RP-188 Source
 	kRegMaskRP188SourceSelect = BIT(24)+BIT(25)+BIT(26)+BIT(27)+BIT(28)+BIT(29)+BIT(30)+BIT(31),
@@ -1564,6 +1593,7 @@ typedef enum
 	//kRegHDMIOutControl
 	kRegMaskHDMIOutVideoStd		= BIT(2)+BIT(1)+BIT(0),
 	kRegMaskHDMIOutV2VideoStd	= BIT(3)+BIT(2)+BIT(1)+BIT(0),
+	kRegMaskHDMIOut8ChGroupSelect	= BIT(5),
 	kRegMaskHDMIV2TxBypass		= BIT(7),
 	kLHIRegMaskHDMIOutColorSpace = BIT(8),
 	kLHIRegMaskHDMIOutFPS		= BIT(12)+BIT(11)+BIT(10)+BIT(9),
@@ -1613,6 +1643,8 @@ typedef enum
 	kLHRegMaskVideoOutputDigitalSelect = BIT(4) + BIT(5),
 	kK2RegMaskSDIOutHBlankRGBRange  = BIT(7),
 	kLHRegMaskVideoOutputAnalogSelect = BIT(8) + BIT(9),
+	kRegMaskSDIOut6GbpsMode = BIT(16),
+	kRegMaskSDIOut12GbpsMode = BIT(17),
 	kRegMaskRGBLevelA = BIT(22),
 	kRegMaskSDIOutLevelAtoLevelB = BIT(23),
 	kLHIRegMaskSDIOut3GbpsMode = BIT(24),
@@ -1895,169 +1927,17 @@ typedef enum
 	kRegMaskLTC1InBypass = BIT(4),
 	kRegMaskLTC2InPresent	= BIT(8),
 	kRegMaskLTC2InBypass = BIT(12),
- 
-#if !defined (NTV2_DEPRECATE)
-	//
-	// Borg Fusion Registers
-	//
-
-	// Boot FPGA and BoardID
-	kRegMaskBorgFusionBootFPGAVer = BIT(4)+BIT(5)+BIT(6)+BIT(7),
-	kRegMaskBorgFusionBoardID = BIT(0)+BIT(1)+BIT(2),
-
-	// Codec and convert FPGA configuration control
-	kRegMaskBorgFusionCodecFPGAProgram = BIT(0),
-	kRegMaskBorgFusionCodecFPGAInit = BIT(1),
-	kRegMaskBorgFusionCodecFPGADone = BIT(2),
-
-	kRegMaskBorgFusionConvertFPGAProgram = BIT(4),
-	kRegMaskBorgFusionConvertFPGAInit = BIT(5),
-	kRegMaskBorgFusionConvertFPGADone = BIT(6),
-
-	// Panel Push buttons debounced and SATA drive present state
-	kRegMaskBorgFusionPushButtonSlotDebounced = BIT(0),
-	kRegMaskBorgFusionPushButtonAdjustDownDebounced = BIT(1),
-	kRegMaskBorgFusionPushButtonAdjustUpDebounced = BIT(2),
-	kRegMaskBorgFusionPushButtonDeleteClipDebounced = BIT(3),
-	kRegMaskBorgFusionPushButtonSelectDownDebounced = BIT(4),
-	kRegMaskBorgFusionPushButtonSelectUpDebounced = BIT(5),
-	kRegMaskBorgFusionPushButtonFastFwdDebounced = BIT(6),
-	kRegMaskBorgFusionPushButtonRecordDebounced = BIT(7),
-	kRegMaskBorgFusionPushButtonPlayDebounced = BIT(8),
-	kRegMaskBorgFusionPushButtonStopDebounced = BIT(9),
-	kRegMaskBorgFusionPushButtonRewindDebounced = BIT(10),
-	kRegMaskBorgFusionPushButtonMediaDebounced = BIT(11),
-	kRegMaskBorgFusionPushButtonConfigDebounced = BIT(12),
-	kRegMaskBorgFusionPushButtonStatusDebounced = BIT(13),
-	kRegMaskBorgFusionPushButtonSATADrivePresentDebounced = BIT(14),
-	kRegMaskBorgFusionPushButtonPowerDebounced = BIT(15),
-
-	// Panel Push buttons and SATA drive present changes
-	kRegMaskBorgFusionPushButtonSlotChange = BIT(0),
-	kRegMaskBorgFusionPushButtonAdjustDownChange = BIT(1),
-	kRegMaskBorgFusionPushButtonAdjustUpChange = BIT(2),
-	kRegMaskBorgFusionPushButtonDeleteClipChange = BIT(3),
-	kRegMaskBorgFusionPushButtonSelectDownChange = BIT(4),
-	kRegMaskBorgFusionPushButtonSelectUpChange = BIT(5),
-	kRegMaskBorgFusionPushButtonFastFwdChange = BIT(6),
-	kRegMaskBorgFusionPushButtonRecordChange = BIT(7),
-	kRegMaskBorgFusionPushButtonPlayChange = BIT(8),
-	kRegMaskBorgFusionPushButtonStopChange = BIT(9),
-	kRegMaskBorgFusionPushButtonRewindChange = BIT(10),
-	kRegMaskBorgFusionPushButtonMediaChange = BIT(11),
-	kRegMaskBorgFusionPushButtonConfigChange = BIT(12),
-	kRegMaskBorgFusionPushButtonStatusChange = BIT(13),
-	kRegMaskBorgFusionPushButtonSATADrivePresentChange = BIT(14),
-	kRegMaskBorgFusionPushButtonPowerButtonChange = BIT(15),
-
-	// LED Pulse Width Modulation Threshholds
-	kRegMaskBorgFusionPWMThreshExpressCard2 = BIT(0)+BIT(1)+BIT(2)+BIT(3),
-	kRegMaskBorgFusionPWMThreshExpressCard1 = BIT(4)+BIT(5)+BIT(6)+BIT(7),
-	kRegMaskBorgFusionPWMThreshPower = BIT(8)+BIT(9)+BIT(10)+BIT(11),
-	kRegMaskBonesFusionPWMThreshLCDBacklightLED = BIT(12)+BIT(13)+BIT(14)+BIT(15),
-
-	// Power control - System
-	kRegMaskBorgFusionPowerCtrlWiFiReset = BIT(0),
-	kRegMaskBorgFusionPowerCtrlFirewirePower = BIT(1),
-	kRegMaskBorgFusionPowerCtrlGigEthReset = BIT(2),
-	kRegMaskBorgFusionPowerCtrlPCIExpClockStop = BIT(3),
-
-	// Power control - Storage devices - Borg Fusion
-	kRegMaskBorgFusionPowerCtrlPCIExpCard1_3_3vPower = BIT(8),	// Express Card 1 3.3v power
-	kRegMaskBorgFusionPowerCtrlPCIExpCard1_1_5vPower = BIT(9),	// Express Card 1 1.5v power
-	kRegMaskBorgFusionPowerCtrlPCIExpCard2_3_3vPower = BIT(10),	// Express Card 2 3.3v power
-	kRegMaskBorgFusionPowerCtrlPCIExpCard2_1_5vPower = BIT(11),	// Express Card 2 1.5v power
-	kRegMaskBorgFusionPowerCtrlSata_12vPower = BIT(12),			// SATA Drive 12v power
-
-	// Power control - Storage devices - Bones Actel
-	kRegMaskBonesActelPowerCtrlCFSlot2_BridgeReset   = BIT(8),	// Bones Actel CF Slot 2 (CPU) Bridge Reset
-	kRegMaskBonesActelPowerCtrlCFSlot2_Power         = BIT(9),	// Bones Actel CF Slot 2 (CPU) Power
-	kRegMaskBonesActelPowerCtrlCFSlot1_Power         = BIT(10),	// Bones Actel CF Slot 1 (VIDeo) Power
-	kRegMaskBonesActelPowerCtrlCFSlot1_BridgeReset   = BIT(11),	// Bones Actel CF Slot 1 (VIDeo) Bridge Reset
-
-	// Power control - Storage devices - Barclay Actel Fusion
-	kRegMaskBarclayFusionPowerCtrlPS1Active = BIT(6), 			// Barclay Fusion Power Supply 1 active bit
-	kRegMaskBarclayFusionPowerCtrlPS2Active = BIT(5), 			// Barclay Fusion Power Supply 2 active bit
-
-	kRegMaskBarclayFusionIdentifyLEDCtrl = BIT(1), 	//Barclay Identify LED On/Off bit, Rear LED //RS
-
-	// Power control - Pushbutton LEDs
-	kRegMaskBorgFusionPowerCtrlPCIExpCard2LED = BIT(13),
-	kRegMaskBorgFusionPowerCtrlPCIExpCard1LED = BIT(14),
-	kRegMaskBorgFusionPowerCtrlPowerButtonLED = BIT(15),
-
-	// IRQ3n Interrupt control
-	kRegMaskBorgFusionIRQ3nIntCtrlPushButtonChangeEnable = BIT(0),
-	kRegMaskBorgFusionIRQ3nIntCtrlInputVoltageLow9vEnable = BIT(1),
-	kRegMaskBorgFusionIRQ3nIntCtrlDisplayFIFOFullEnable = BIT(2),
-	kRegMaskBorgFusionIRQ3nIntCtrlSATAPresentChangeEnable = BIT(3),
-	kRegMaskBorgFusionIRQ3nIntCtrlTemp1HighEnable = BIT(4),
-	kRegMaskBorgFusionIRQ3nIntCtrlTemp2HighEnable = BIT(5),
-	kRegMaskBorgFusionIRQ3nIntCtrlPowerButtonChangeEnable = BIT(6),
-
-	// IRQ3n Interrupt source
-	kRegMaskBorgFusionIRQ3nIntSrcPushButtonChange= BIT(0),
-	kRegMaskBorgFusionIRQ3nIntSrcInputVoltageLow9v= BIT(1),
-	kRegMaskBorgFusionIRQ3nIntSrcDisplayFIFOFull= BIT(2),
-	kRegMaskBorgFusionIRQ3nIntSrcSATAPresentChange= BIT(3),
-	kRegMaskBorgFusionIRQ3nIntSrcTemp1High= BIT(4),
-	kRegMaskBorgFusionIRQ3nIntSrcTemp2High= BIT(5),
-	kRegMaskBorgFusionIRQ3nIntSrcPowerButtonChange= BIT(6),
-
-	// Noritake Display Control/Status
-	kRegMaskBorgFusionDisplayCtrlReset = BIT (0),
-	kRegMaskBorgFusionDisplayStatusBusyRaw = BIT (1),		// Not needed by CPU, used internally by FPGA
-	kRegMaskBorgFusionDisplayStatusInterfaceBusy = BIT (7),	// FIFO full
-
-	// Analog ADC flags - battery
-	kRegMaskBorgFusionAnalogFlagsPowerLTE9v = BIT(0),	// +12 v supply <= 9.0 v battery critical
-	kRegMaskBorgFusionAnalogFlagsPowerLTE10v = BIT(1),	// +12 v supply <= 10.0 v battery depleting
-	kRegMaskBorgFusionAnalogFlagsPowerLTE11v = BIT(2),	// +12 v supply <= 11.0 v battery depleting
-	kRegMaskBorgFusionAnalogFlagsPowerGTE13v = BIT(3),	// +12 v supply >= 13.0 v battery charging
-
-	// Analog ADC flags - temperature sensor
-	kRegMaskBorgFusionAnalogFlagsPowerTemp1High = BIT(4),	// Temp sensor 1 > 65 C
-	kRegMaskBorgFusionAnalogFlagsPowerTemp2High = BIT(5),	// Temp sensor 2 > 65 C
-	
-	// Bones Actel Compact Flash Slot Debounced Card Present
-	kRegMaskBonesActelCFSlot1_Present   = BIT(1)+BIT(0),
-	kRegMaskBonesActelCFSlot2_Present   = BIT(3)+BIT(2),
-
-	// Bones Actel Compact Flash Slot Changes Present
-	kRegMaskBonesActelCFSlot1_Changes   = BIT(1)+BIT(0),
-	kRegMaskBonesActelCFSlot2_Changes   = BIT(3)+BIT(2),
-#endif	//	!defined (NTV2_DEPRECATE)
 
 	// kRegAudioOutputSourceMap
 	kRegMaskMonitorSource				= BIT(21)+BIT(20)+BIT(19)+BIT(18)+BIT(17)+BIT(16),
 	kRegMaskHDMIOutAudioSource			= BIT(31)+BIT(30)+BIT(29)+BIT(28)+BIT(27)+BIT(26)+BIT(25)+BIT(24),
-	
-#if !defined (NTV2_DEPRECATE)
-	// kRegSDIInput3GStatus
-	kLHIRegMaskSDIIn3GbpsMode = BIT(0),
-	kLHIRegMaskSDIIn3GbpsSMPTELevelBMode = BIT(1),
-	kLHIRegMaskSDIInVPIDLinkAValid = BIT(4),
-	kLHIRegMaskSDIInVPIDLinkBValid = BIT(5),
-	kLHIRegMaskSDIIn23GbpsMode = BIT(8),
-	kLHIRegMaskSDIIn23GbpsSMPTELevelBMode = BIT(9),
-	kLHIRegMaskSDIIn2VPIDLinkAValid = BIT(12),
-	kLHIRegMaskSDIIn2VPIDLinkBValid = BIT(13),
-
-	// kRegSDIInput3GStatus2
-	kLHIRegMaskSDIIn33GbpsMode = BIT(0),
-	kLHIRegMaskSDIIn33GbpsSMPTELevelBMode = BIT(1),
-	kLHIRegMaskSDIIn3VPIDLinkAValid = BIT(4),
-	kLHIRegMaskSDIIn3VPIDLinkBValid = BIT(5),
-	kLHIRegMaskSDIIn43GbpsMode = BIT(8),
-	kLHIRegMaskSDIIn43GbpsSMPTELevelBMode = BIT(9),
-	kLHIRegMaskSDIIn4VPIDLinkAValid = BIT(12),
-	kLHIRegMaskSDIIn4VPIDLinkBValid = BIT(13),
-#endif
 
 	// kRegSDIInput3GStatus
 	kRegMaskSDIIn3GbpsMode = BIT(0),
 	kRegMaskSDIIn3GbpsSMPTELevelBMode = BIT(1),
 	kRegMaskSDIIn1LevelBtoLevelA = BIT(2),
+	kRegMaskSDIIn16GbpsMode = BIT(6),
+	kRegMaskSDIIn112GbpsMode = BIT(7),
 	kRegMaskSDIInVPIDLinkAValid = BIT(4),
 	kRegMaskSDIInVPIDLinkBValid = BIT(5),
 	kRegMaskSDIIn23GbpsMode = BIT(8),
@@ -2065,6 +1945,9 @@ typedef enum
 	kRegMaskSDIIn2LevelBtoLevelA = BIT(10),
 	kRegMaskSDIIn2VPIDLinkAValid = BIT(12),
 	kRegMaskSDIIn2VPIDLinkBValid = BIT(13),
+	kRegMaskSDIIn26GbpsMode = BIT(14),
+	kRegMaskSDIIn212GbpsMode = BIT(15),
+
 
 	// kRegSDIInput3GStatus2
 	kRegMaskSDIIn33GbpsMode = BIT(0),
@@ -2072,11 +1955,15 @@ typedef enum
 	kRegMaskSDIIn3LevelBtoLevelA = BIT(2),
 	kRegMaskSDIIn3VPIDLinkAValid = BIT(4),
 	kRegMaskSDIIn3VPIDLinkBValid = BIT(5),
+	kRegMaskSDIIn36GbpsMode = BIT(6),
+	kRegMaskSDIIn312GbpsMode = BIT(7),
 	kRegMaskSDIIn43GbpsMode = BIT(8),
 	kRegMaskSDIIn43GbpsSMPTELevelBMode = BIT(9),
 	kRegMaskSDIIn4LevelBtoLevelA = BIT(10),
 	kRegMaskSDIIn4VPIDLinkAValid = BIT(12),
 	kRegMaskSDIIn4VPIDLinkBValid = BIT(13),
+	kRegMaskSDIIn46GbpsMode = BIT(14),
+	kRegMaskSDIIn412GbpsMode = BIT(15),
 
 	// kRegSDI5678Input3GStatus
 	kRegMaskSDIIn53GbpsMode = BIT(0),
@@ -2084,21 +1971,29 @@ typedef enum
 	kRegMaskSDIIn5LevelBtoLevelA = BIT(2),
 	kRegMaskSDIIn5VPIDLinkAValid = BIT(4),
 	kRegMaskSDIIn5VPIDLinkBValid = BIT(5),
+	kRegMaskSDIIn56GbpsMode = BIT(6),
+	kRegMaskSDIIn512GbpsMode = BIT(7),
 	kRegMaskSDIIn63GbpsMode = BIT(8),
 	kRegMaskSDIIn63GbpsSMPTELevelBMode = BIT(9),
 	kRegMaskSDIIn6LevelBtoLevelA = BIT(10),
 	kRegMaskSDIIn6VPIDLinkAValid = BIT(12),
 	kRegMaskSDIIn6VPIDLinkBValid = BIT(13),
+	kRegMaskSDIIn66GbpsMode = BIT(14),
+	kRegMaskSDIIn612GbpsMode = BIT(15),
 	kRegMaskSDIIn73GbpsMode = BIT(16),
 	kRegMaskSDIIn73GbpsSMPTELevelBMode = BIT(17),
 	kRegMaskSDIIn7LevelBtoLevelA = BIT(18),
 	kRegMaskSDIIn7VPIDLinkAValid = BIT(20),
 	kRegMaskSDIIn7VPIDLinkBValid = BIT(21),
+	kRegMaskSDIIn76GbpsMode = BIT(22),
+	kRegMaskSDIIn712GbpsMode = BIT(23),
 	kRegMaskSDIIn83GbpsMode = BIT(24),
 	kRegMaskSDIIn83GbpsSMPTELevelBMode = BIT(25),
 	kRegMaskSDIIn8LevelBtoLevelA = BIT(26),
 	kRegMaskSDIIn8VPIDLinkAValid = BIT(28),
 	kRegMaskSDIIn8VPIDLinkBValid = BIT(29),
+	kRegMaskSDIIn86GbpsMode = BIT(30),
+	kRegMaskSDIIn812GbpsMode = BIT(31),
 
 	// kRegVPID
 	kRegMaskVPIDBitDepth				= BIT(1)+BIT(0),
@@ -2111,7 +2006,7 @@ typedef enum
 	kRegMaskVPIDPictureRate				= BIT(19)+BIT(18)+BIT(17)+BIT(16),
 	kRegMaskVPIDProgressivePicture		= BIT(22),
 	kRegMaskVPIDProgressiveTransport	= BIT(23),
-	kRegMaskVPIDStandard				= BIT(24)+BIT(25)+BIT(26)+BIT(27)+BIT(28)+BIT(29)+BIT(30),
+	kRegMaskVPIDStandard				= BIT(24)+BIT(25)+BIT(26)+BIT(27)+BIT(28)+BIT(29)+BIT(30)+BIT(31),
 	kRegMaskVPIDVersionID				= BIT(31),
 	
 	//Borg Test Pattern Generator
@@ -2277,8 +2172,216 @@ typedef enum
     kRegMaskHDMIHDRDolbyVisionEnable = BIT(6),
 	kRegMaskHDMIHDREnable = BIT(7),
 	kRegMaskElectroOpticalTransferFunction = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23),
-	kRegMaskHDRStaticMetadataDescriptorID = BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31)
+	kRegMaskHDRStaticMetadataDescriptorID = BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
 
+	kRegMaskAudioMixerMainInputSelect = BIT(2) + BIT(1) + BIT(0),
+	kRegMaskAudioMixerAux1x2CHInput = BIT(6) + BIT(5) + BIT(4),
+	kRegMaskAudioMixerAux2x2CHInput = BIT(10) + BIT(9) + BIT(8),
+	kRegMaskAudioMixerChannelSelect = BIT(2) + BIT(1) + BIT(0),
+	kRegMaskAudioMixerOutputChannel1Mute =  BIT(0),
+	kRegMaskAudioMixerOutputChannel2Mute = BIT(1),
+	kRegMaskAudioMixerOutputChannel3Mute = BIT(2),
+	kRegMaskAudioMixerOutputChannel4Mute = BIT(3),
+	kRegMaskAudioMixerOutputChannel5Mute = BIT(4),
+	kRegMaskAudioMixerOutputChannel6Mute = BIT(5),
+	kRegMaskAudioMixerOutputChannel7Mute = BIT(6),
+	kRegMaskAudioMixerOutputChannel8Mute = BIT(7),
+	kRegMaskAudioMixerOutputChannel9Mute = BIT(8),
+	kRegMaskAudioMixerOutputChannel10Mute = BIT(9),
+	kRegMaskAudioMixerOutputChannel11Mute = BIT(10),
+	kRegMaskAudioMixerOutputChannel12Mute = BIT(11),
+	kRegMaskAudioMixerOutputChannel13Mute = BIT(12),
+	kRegMaskAudioMixerOutputChannel14Mute = BIT(13),
+	kRegMaskAudioMixerOutputChannel15Mute = BIT(14),
+	kRegMaskAudioMixerOutputChannel16Mute = BIT(15),
+	kRegMaskAudioMixerMainInputEnable = BIT(16)+BIT(17),
+	kRegMaskAudioMixerAux1InputEnable = BIT(18)+BIT(19),
+	kRegMaskAudioMixerAux2InputEnable = BIT(20)+BIT(21),
+	kRegMaskAudioMixerAux1Channel1Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerAux1Channel2Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerAux2Channel1Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerAux2Channel2Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel1Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel2Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel3Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel4Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel5Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel6Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel7Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel8Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel9Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel10Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel11Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel12Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel13Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel14Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainChannel15Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainChannel16Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerMainMixedOutputChannel1Level = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerMainMixedOutputChannel2Level = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+	kRegMaskAudioMixerInputLeftLevel = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	kRegMaskAudioMixerInputRightLevel = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26) + BIT(27) + BIT(28) + BIT(29) + BIT(30) + BIT(31),
+
+	kRegMaskHDMIOutAudioEngineSelect = BIT(20) + BIT(21) + BIT(22) + BIT(23),
+	kRegMaskHDMIOutAudio8Of16SelectMode = BIT(5),
+	kRegMaskHDMIOutAudio2ChannelSelect = BIT(29) + BIT(30),
+	kRegMaskHDMIOutUserOveride = BIT(1),
+	kRegMaskHDMIOutCropMode = BIT(24)
+
+#if !defined (NTV2_DEPRECATE)
+	// kRegSDIInput3GStatus
+	,kLHIRegMaskSDIIn3GbpsMode = BIT(0),
+	kLHIRegMaskSDIIn3GbpsSMPTELevelBMode = BIT(1),
+	kLHIRegMaskSDIInVPIDLinkAValid = BIT(4),
+	kLHIRegMaskSDIInVPIDLinkBValid = BIT(5),
+	kLHIRegMaskSDIIn23GbpsMode = BIT(8),
+	kLHIRegMaskSDIIn23GbpsSMPTELevelBMode = BIT(9),
+	kLHIRegMaskSDIIn2VPIDLinkAValid = BIT(12),
+	kLHIRegMaskSDIIn2VPIDLinkBValid = BIT(13),
+
+	// kRegSDIInput3GStatus2
+	kLHIRegMaskSDIIn33GbpsMode = BIT(0),
+	kLHIRegMaskSDIIn33GbpsSMPTELevelBMode = BIT(1),
+	kLHIRegMaskSDIIn3VPIDLinkAValid = BIT(4),
+	kLHIRegMaskSDIIn3VPIDLinkBValid = BIT(5),
+	kLHIRegMaskSDIIn43GbpsMode = BIT(8),
+	kLHIRegMaskSDIIn43GbpsSMPTELevelBMode = BIT(9),
+	kLHIRegMaskSDIIn4VPIDLinkAValid = BIT(12),
+	kLHIRegMaskSDIIn4VPIDLinkBValid = BIT(13),
+	//
+	// Borg Fusion Registers
+	//
+
+	// Boot FPGA and BoardID
+	kRegMaskBorgFusionBootFPGAVer = BIT(4)+BIT(5)+BIT(6)+BIT(7),
+	kRegMaskBorgFusionBoardID = BIT(0)+BIT(1)+BIT(2),
+
+	// Codec and convert FPGA configuration control
+	kRegMaskBorgFusionCodecFPGAProgram = BIT(0),
+	kRegMaskBorgFusionCodecFPGAInit = BIT(1),
+	kRegMaskBorgFusionCodecFPGADone = BIT(2),
+
+	kRegMaskBorgFusionConvertFPGAProgram = BIT(4),
+	kRegMaskBorgFusionConvertFPGAInit = BIT(5),
+	kRegMaskBorgFusionConvertFPGADone = BIT(6),
+
+	// Panel Push buttons debounced and SATA drive present state
+	kRegMaskBorgFusionPushButtonSlotDebounced = BIT(0),
+	kRegMaskBorgFusionPushButtonAdjustDownDebounced = BIT(1),
+	kRegMaskBorgFusionPushButtonAdjustUpDebounced = BIT(2),
+	kRegMaskBorgFusionPushButtonDeleteClipDebounced = BIT(3),
+	kRegMaskBorgFusionPushButtonSelectDownDebounced = BIT(4),
+	kRegMaskBorgFusionPushButtonSelectUpDebounced = BIT(5),
+	kRegMaskBorgFusionPushButtonFastFwdDebounced = BIT(6),
+	kRegMaskBorgFusionPushButtonRecordDebounced = BIT(7),
+	kRegMaskBorgFusionPushButtonPlayDebounced = BIT(8),
+	kRegMaskBorgFusionPushButtonStopDebounced = BIT(9),
+	kRegMaskBorgFusionPushButtonRewindDebounced = BIT(10),
+	kRegMaskBorgFusionPushButtonMediaDebounced = BIT(11),
+	kRegMaskBorgFusionPushButtonConfigDebounced = BIT(12),
+	kRegMaskBorgFusionPushButtonStatusDebounced = BIT(13),
+	kRegMaskBorgFusionPushButtonSATADrivePresentDebounced = BIT(14),
+	kRegMaskBorgFusionPushButtonPowerDebounced = BIT(15),
+
+	// Panel Push buttons and SATA drive present changes
+	kRegMaskBorgFusionPushButtonSlotChange = BIT(0),
+	kRegMaskBorgFusionPushButtonAdjustDownChange = BIT(1),
+	kRegMaskBorgFusionPushButtonAdjustUpChange = BIT(2),
+	kRegMaskBorgFusionPushButtonDeleteClipChange = BIT(3),
+	kRegMaskBorgFusionPushButtonSelectDownChange = BIT(4),
+	kRegMaskBorgFusionPushButtonSelectUpChange = BIT(5),
+	kRegMaskBorgFusionPushButtonFastFwdChange = BIT(6),
+	kRegMaskBorgFusionPushButtonRecordChange = BIT(7),
+	kRegMaskBorgFusionPushButtonPlayChange = BIT(8),
+	kRegMaskBorgFusionPushButtonStopChange = BIT(9),
+	kRegMaskBorgFusionPushButtonRewindChange = BIT(10),
+	kRegMaskBorgFusionPushButtonMediaChange = BIT(11),
+	kRegMaskBorgFusionPushButtonConfigChange = BIT(12),
+	kRegMaskBorgFusionPushButtonStatusChange = BIT(13),
+	kRegMaskBorgFusionPushButtonSATADrivePresentChange = BIT(14),
+	kRegMaskBorgFusionPushButtonPowerButtonChange = BIT(15),
+
+	// LED Pulse Width Modulation Threshholds
+	kRegMaskBorgFusionPWMThreshExpressCard2 = BIT(0)+BIT(1)+BIT(2)+BIT(3),
+	kRegMaskBorgFusionPWMThreshExpressCard1 = BIT(4)+BIT(5)+BIT(6)+BIT(7),
+	kRegMaskBorgFusionPWMThreshPower = BIT(8)+BIT(9)+BIT(10)+BIT(11),
+	kRegMaskBonesFusionPWMThreshLCDBacklightLED = BIT(12)+BIT(13)+BIT(14)+BIT(15),
+
+	// Power control - System
+	kRegMaskBorgFusionPowerCtrlWiFiReset = BIT(0),
+	kRegMaskBorgFusionPowerCtrlFirewirePower = BIT(1),
+	kRegMaskBorgFusionPowerCtrlGigEthReset = BIT(2),
+	kRegMaskBorgFusionPowerCtrlPCIExpClockStop = BIT(3),
+
+	// Power control - Storage devices - Borg Fusion
+	kRegMaskBorgFusionPowerCtrlPCIExpCard1_3_3vPower = BIT(8),	// Express Card 1 3.3v power
+	kRegMaskBorgFusionPowerCtrlPCIExpCard1_1_5vPower = BIT(9),	// Express Card 1 1.5v power
+	kRegMaskBorgFusionPowerCtrlPCIExpCard2_3_3vPower = BIT(10),	// Express Card 2 3.3v power
+	kRegMaskBorgFusionPowerCtrlPCIExpCard2_1_5vPower = BIT(11),	// Express Card 2 1.5v power
+	kRegMaskBorgFusionPowerCtrlSata_12vPower = BIT(12),			// SATA Drive 12v power
+
+	// Power control - Storage devices - Bones Actel
+	kRegMaskBonesActelPowerCtrlCFSlot2_BridgeReset   = BIT(8),	// Bones Actel CF Slot 2 (CPU) Bridge Reset
+	kRegMaskBonesActelPowerCtrlCFSlot2_Power         = BIT(9),	// Bones Actel CF Slot 2 (CPU) Power
+	kRegMaskBonesActelPowerCtrlCFSlot1_Power         = BIT(10),	// Bones Actel CF Slot 1 (VIDeo) Power
+	kRegMaskBonesActelPowerCtrlCFSlot1_BridgeReset   = BIT(11),	// Bones Actel CF Slot 1 (VIDeo) Bridge Reset
+
+	// Power control - Storage devices - Barclay Actel Fusion
+	kRegMaskBarclayFusionPowerCtrlPS1Active = BIT(6), 			// Barclay Fusion Power Supply 1 active bit
+	kRegMaskBarclayFusionPowerCtrlPS2Active = BIT(5), 			// Barclay Fusion Power Supply 2 active bit
+
+	kRegMaskBarclayFusionIdentifyLEDCtrl = BIT(1), 	//Barclay Identify LED On/Off bit, Rear LED //RS
+
+	// Power control - Pushbutton LEDs
+	kRegMaskBorgFusionPowerCtrlPCIExpCard2LED = BIT(13),
+	kRegMaskBorgFusionPowerCtrlPCIExpCard1LED = BIT(14),
+	kRegMaskBorgFusionPowerCtrlPowerButtonLED = BIT(15),
+
+	// IRQ3n Interrupt control
+	kRegMaskBorgFusionIRQ3nIntCtrlPushButtonChangeEnable = BIT(0),
+	kRegMaskBorgFusionIRQ3nIntCtrlInputVoltageLow9vEnable = BIT(1),
+	kRegMaskBorgFusionIRQ3nIntCtrlDisplayFIFOFullEnable = BIT(2),
+	kRegMaskBorgFusionIRQ3nIntCtrlSATAPresentChangeEnable = BIT(3),
+	kRegMaskBorgFusionIRQ3nIntCtrlTemp1HighEnable = BIT(4),
+	kRegMaskBorgFusionIRQ3nIntCtrlTemp2HighEnable = BIT(5),
+	kRegMaskBorgFusionIRQ3nIntCtrlPowerButtonChangeEnable = BIT(6),
+
+	// IRQ3n Interrupt source
+	kRegMaskBorgFusionIRQ3nIntSrcPushButtonChange= BIT(0),
+	kRegMaskBorgFusionIRQ3nIntSrcInputVoltageLow9v= BIT(1),
+	kRegMaskBorgFusionIRQ3nIntSrcDisplayFIFOFull= BIT(2),
+	kRegMaskBorgFusionIRQ3nIntSrcSATAPresentChange= BIT(3),
+	kRegMaskBorgFusionIRQ3nIntSrcTemp1High= BIT(4),
+	kRegMaskBorgFusionIRQ3nIntSrcTemp2High= BIT(5),
+	kRegMaskBorgFusionIRQ3nIntSrcPowerButtonChange= BIT(6),
+
+	// Noritake Display Control/Status
+	kRegMaskBorgFusionDisplayCtrlReset = BIT (0),
+	kRegMaskBorgFusionDisplayStatusBusyRaw = BIT (1),		// Not needed by CPU, used internally by FPGA
+	kRegMaskBorgFusionDisplayStatusInterfaceBusy = BIT (7),	// FIFO full
+
+	// Analog ADC flags - battery
+	kRegMaskBorgFusionAnalogFlagsPowerLTE9v = BIT(0),	// +12 v supply <= 9.0 v battery critical
+	kRegMaskBorgFusionAnalogFlagsPowerLTE10v = BIT(1),	// +12 v supply <= 10.0 v battery depleting
+	kRegMaskBorgFusionAnalogFlagsPowerLTE11v = BIT(2),	// +12 v supply <= 11.0 v battery depleting
+	kRegMaskBorgFusionAnalogFlagsPowerGTE13v = BIT(3),	// +12 v supply >= 13.0 v battery charging
+
+	// Analog ADC flags - temperature sensor
+	kRegMaskBorgFusionAnalogFlagsPowerTemp1High = BIT(4),	// Temp sensor 1 > 65 C
+	kRegMaskBorgFusionAnalogFlagsPowerTemp2High = BIT(5),	// Temp sensor 2 > 65 C
+
+	// Bones Actel Compact Flash Slot Debounced Card Present
+	kRegMaskBonesActelCFSlot1_Present   = BIT(1)+BIT(0),
+	kRegMaskBonesActelCFSlot2_Present   = BIT(3)+BIT(2),
+
+	// Bones Actel Compact Flash Slot Changes Present
+	kRegMaskBonesActelCFSlot1_Changes   = BIT(1)+BIT(0),
+	kRegMaskBonesActelCFSlot2_Changes   = BIT(3)+BIT(2),
+	// Pan (2K crop) - Xena 2
+	kRegMaskPanMode			= BIT(30) + BIT(31),
+	kRegMaskPanOffsetH		= BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7)+BIT(8)+BIT(9)+BIT(10)+BIT(11),
+	kRegMaskPanOffsetV		= BIT(12)+BIT(13)+BIT(14)+BIT(15)+BIT(16)+BIT(17)+BIT(18)+BIT(19)+BIT(20)+BIT(21)+BIT(22)+BIT(23)
+#endif	//	!defined (NTV2_DEPRECATE)
 
 } RegisterMask;
 
@@ -2319,6 +2422,8 @@ typedef enum
 	kRegShiftSmpte372Enable8			= 15,
 	kRegShiftIndependentMode			= 16,
 	kRegShift2MFrameSupport				= 17,
+	kRegShiftAudioMixerPresent			= 18,
+	kRegShiftIsDNXIV					= 19,
 	kRegShift425FB12					= 20,
 	kRegShift425FB34					= 21,
 	kRegShift425FB56					= 22,
@@ -2329,6 +2434,9 @@ typedef enum
 	kRegShiftRP188ModeCh6				= 31,
 	kRegShiftRP188ModeCh7				= 26,
 	kRegShiftRP188ModeCh8				= 27,
+
+	// Global Control 3
+	kRegShiftAnalogIOControl			= 0,
 
 	// Channel Control - kRegCh1Control, kRegCh2Control, kRegCh3Control, kRegCh4Control
 	kRegShiftMode						= 0,
@@ -2423,6 +2531,7 @@ typedef enum
 	// Audio Source Select
 	kRegShiftAudioSource				= 0,
 	kRegShiftEmbeddedAudioInput			= 16,
+	kRegShiftAudioAutoErase				= 19,
 	kRegShiftAnalogHDMIvsAES     		= 20,
 	kRegShift3GbSelect					= 21,
 	kRegShiftEmbeddedAudioClock			= 22,
@@ -2450,13 +2559,6 @@ typedef enum
 	kRegShiftInput2FrameRateHigh		= 29,
 	kRegShiftInput1GeometryHigh			= 30,
 	kRegShiftInput2GeometryHigh			= 31,
-
-#if !defined (NTV2_DEPRECATE)
-	// Pan (2K crop) - Xena 2
-	kRegShiftPanMode					= 30,
-	kRegShiftPanOffsetV					= 0,
-	kRegShiftPanOffsetH					= 12,
-#endif	//	!defined (NTV2_DEPRECATE)
 
 	// RP-188 Source
 	kRegShiftRP188Source				= 24,
@@ -2625,6 +2727,7 @@ typedef enum
 	
 	//kRegHDMIOutControl
 	kRegShiftHDMIOutVideoStd			= 0,
+	kRegShiftHDMIOut8ChGroupSelect		= 5,
 	kLHIRegShiftHDMIDownStreamDeviceYCbCrMode = 6,
 	kLHIRegShiftHDMIDownStreamDevice10BitMode = 7,
 	kRegShiftHDMIV2TxBypass				= 7,
@@ -2667,6 +2770,8 @@ typedef enum
 	kLHRegShiftVideoOutputDigitalSelect	= 4,
 	kK2RegShiftSDIOutHBlankRGBRange		= 7,
 	kLHRegShiftVideoOutputAnalogSelect  = 8,
+	kRegShiftSDIOut6GbpsMode			= 16,
+	kRegShiftSDIOut12GbpsMode			= 17,
 	kRegShiftRGBLevelA					= 22,
 	kRegShiftSDIOutLevelAtoLevelB		= 23,
 	kLHIRegShiftSDIOut3GbpsMode			= 24,
@@ -2937,149 +3042,9 @@ typedef enum
 	kRegShiftLTC2InPresent	= 8,
 	kRegShiftLTC2Bypass = 12,
 
-
-
-	#if !defined (NTV2_DEPRECATE)
-		//
-		// Borg Fusion Registers
-		//
-
-		// Boot FPGA and BoardID
-		kRegShiftBorgFusionBootFPGAVer = 4,
-		kRegShiftBorgFusionBoardID = 0,
-
-		// Codec and convert FPGA configuration control
-		kRegShiftBorgFusionCodecFPGAProgram = 0,
-		kRegShiftBorgFusionCodecFPGAInit = 1,
-		kRegShiftBorgFusionCodecFPGADone = 2,
-
-		kRegShiftBorgFusionConvertFPGAProgram = 4,
-		kRegShiftBorgFusionConvertFPGAInit = 5,
-		kRegShiftBorgFusionConvertFPGADone = 6,
-
-		// Panel Push buttons debounced and SATA drive present state
-		kRegShiftBorgFusionPushButtonStatusDebounced = 0,
-		kRegShiftBorgFusionPushButtonConfigDebounced = 1,
-		kRegShiftBorgFusionPushButtonMediaDebounced = 2,
-		kRegShiftBorgFusionPushButtonRewindDebounced = 3,
-		kRegShiftBorgFusionPushButtonStopDebounced = 4,
-		kRegShiftBorgFusionPushButtonPlayDebounced = 5,
-		kRegShiftBorgFusionPushButtonRecordDebounced = 6,
-		kRegShiftBorgFusionPushButtonFastFwdDebounced = 7,
-		kRegShiftBorgFusionPushButtonSelectUpDebounced = 8,
-		kRegShiftBorgFusionPushButtonSelectDownDebounced = 9,
-		kRegShiftBorgFusionPushButtonDeleteClipDebounced = 10,
-		kRegShiftBorgFusionPushButtonAdjustUpDebounced = 11,
-		kRegShiftBorgFusionPushButtonAdjustDownDebounced = 12,
-		kRegShiftBorgFusionPushButtonSlotDebounced = 13,
-		kRegShiftBorgFusionPushButtonSATADrivePresentDebounced = 14,
-
-		// Panel Push buttons and SATA drive present changes
-		kRegShiftBorgFusionPushButtonStatusChange = 0,
-		kRegShiftBorgFusionPushButtonConfigChange = 1,
-		kRegShiftBorgFusionPushButtonMediaChange = 2,
-		kRegShiftBorgFusionPushButtonRewindChange = 3,
-		kRegShiftBorgFusionPushButtonStopChange = 4,
-		kRegShiftBorgFusionPushButtonPlayChange = 5,
-		kRegShiftBorgFusionPushButtonRecordChange = 6,
-		kRegShiftBorgFusionPushButtonFastFwdChange = 7,
-		kRegShiftBorgFusionPushButtonSelectUpChange = 8,
-		kRegShiftBorgFusionPushButtonSelectDownChange = 9,
-		kRegShiftBorgFusionPushButtonDeleteClipChange = 10,
-		kRegShiftBorgFusionPushButtonAdjustUpChange = 11,
-		kRegShiftBorgFusionPushButtonAdjustDownChange = 12,
-		kRegShiftBorgFusionPushButtonSlotChange = 13,
-		kRegShiftBorgFusionPushButtonSATADrivePresentChange = 14,
-
-		// LED Pulse Width Modulation Threshholds
-		kRegShiftBorgFusionPWMThreshExpressCard2 = 0,
-		kRegShiftBorgFusionPWMThreshExpressCard1 = 4,
-		kRegShiftBorgFusionPWMThreshPower = 8,
-		kRegShiftBorgFusionPWMThreshLCDBacklightLED = 12,
-
-
-		// Power control - System
-		kRegShiftBorgFusionPowerCtrlWiFiReset = 0,
-		kRegShiftBorgFusionPowerCtrlFirewirePower = 1,
-		kRegShiftBorgFusionPowerCtrlGigEthReset = 2,
-		kRegShiftBorgFusionPowerCtrlPCIExpClockStop = 3,
-
-		// Power control - Storage devices
-		kRegShiftBorgFusionPowerCtrlPCIExpCard1_3_3vPower = 8,	// Express Card 1 3.3v power
-		kRegShiftBorgFusionPowerCtrlPCIExpCard1_1_5vPower = 9,	// Express Card 1 1.5v power
-		kRegShiftBorgFusionPowerCtrlPCIExpCard2_3_3vPower = 10,	// Express Card 2 3.3v power
-		kRegShiftBorgFusionPowerCtrlPCIExpCard2_1_5vPower = 11,	// Express Card 2 1.5v power
-		kRegShiftBorgFusionPowerCtrlSata_12vPower = 12,			// SATA Drive 12v power
-
-		kRegShiftBonesActelPowerCtrlCFSlot2_BridgeReset = 8,
-		kRegShiftBonesActelPowerCtrlCFSlot2_Power = 9,   // Compact Flash S2 Power
-		kRegShiftBonesActelPowerCtrlCFSlot1_Power = 10,  // Compact Flash S1 Power
-		kRegShiftBonesActelPowerCtrlCFSlot1_BridgeReset = 11,
-
-		// Power control - Pushbutton LEDs
-		kRegShiftBorgFusionPowerCtrlPCIExpCard2LED = 13,
-		kRegShiftBorgFusionPowerCtrlPCIExpCard1LED = 14,
-		kRegShiftBorgFusionPowerCtrlPowerButtonLED = 15,
-
-		// IRQ3n Interrupt control
-		kRegShiftBorgFusionIRQ3nIntCtrlPushButtonChangeEnable = 0,
-		kRegShiftBorgFusionIRQ3nIntCtrlInputVoltageLow9vEnable = 1,
-		kRegShiftBorgFusionIRQ3nIntCtrlDisplayFIFOFullEnable = 2,
-		kRegShiftBorgFusionIRQ3nIntCtrlSATAPresentChangeEnable = 3,
-		kRegShiftBorgFusionIRQ3nIntCtrlTemp1HighEnable = 4,
-		kRegShiftBorgFusionIRQ3nIntCtrlTemp2HighEnable = 5,
-		kRegShiftBorgFusionIRQ3nIntCtrlPowerButtonChangeEnable = 6,
-
-		// IRQ3n Interrupt source
-		kRegShiftBorgFusionIRQ3nIntSrcPushButtonChange= 0,
-		kRegShiftBorgFusionIRQ3nIntSrcInputVoltageLow9v= 1,
-		kRegShiftBorgFusionIRQ3nIntSrcDisplayFIFOFull= 2,
-		kRegShiftBorgFusionIRQ3nIntSrcSATAPresentChange= 3,
-		kRegShiftBorgFusionIRQ3nIntSrcTemp1High= 4,
-		kRegShiftBorgFusionIRQ3nIntSrcTemp2High= 5,
-		kRegShiftBorgFusionIRQ3nIntSrcPowerButtonChange= 6,
-
-		// Noritake Display Control/Status
-		kRegShiftBorgFusionDisplayCtrlReset = 0,
-		kRegShiftBorgFusionDisplayStatusBusyRaw = 1,		// Not needed by CPU, used internally by FPGA
-		kRegShiftBorgFusionDisplayStatusInterfaceBusy = 7,	// FIFO full
-
-		// Analog ADC flags - battery
-		kRegShiftBorgFusionAnalogFlagsPowerLTE9v = 0,	// +12 v supply <= 9.0 v battery critical
-		kRegShiftBorgFusionAnalogFlagsPowerLTE10v = 1,	// +12 v supply <= 10.0 v battery depleting
-		kRegShiftBorgFusionAnalogFlagsPowerLTE11v = 2,	// +12 v supply <= 11.0 v battery depleting
-		kRegShiftBorgFusionAnalogFlagsPowerGTE13v = 3,	// +12 v supply >= 13.0 v battery charging
-
-		// Analog ADC flags - temperature sensor
-		kRegShiftBorgFusionAnalogFlagsPowerTemp1High = 4,	// Temp sensor 1 > 65 C
-		kRegShiftBorgFusionAnalogFlagsPowerTemp2High = 5,	// Temp sensor 2 > 65 C
-	#endif	//	!defined (NTV2_DEPRECATE)
-
 	// kRegAudioOutputSourceMap
 	kRegShiftMonitorSource					= 16,
 	kRegShiftHDMIOutAudioSource				= 24,
-	
-	#if !defined (NTV2_DEPRECATE)
-		// kRegSDIInput3GStatus
-		kLHIRegShiftSDIIn3GbpsMode 				= 0,
-		kLHIRegShiftSDIIn3GbpsSMPTELevelBMode 	= 1,
-		kLHIRegShiftSDIInVPIDLinkAValid 		= 4,
-		kLHIRegShiftSDIInVPIDLinkBValid 		= 5,
-		kLHIRegShiftSDIIn23GbpsMode 			= 8,
-		kLHIRegShiftSDIIn23GbpsSMPTELevelBMode 	= 9,
-		kLHIRegShiftSDIIn2VPIDLinkAValid 		= 12,
-		kLHIRegShiftSDIIn2VPIDLinkBValid 		= 13,
-
-		// kRegSDIInput3GStatus2
-		kLHIRegShiftSDIIn33GbpsMode 			= 0,
-		kLHIRegShiftSDIIn33GbpsSMPTELevelBMode 	= 1,
-		kLHIRegShiftSDIIn3VPIDLinkAValid 		= 4,
-		kLHIRegShiftSDIIn3VPIDLinkBValid 		= 5,
-		kLHIRegShiftSDIIn43GbpsMode 			= 8,
-		kLHIRegShiftSDIIn43GbpsSMPTELevelBMode 	= 9,
-		kLHIRegShiftSDIIn4VPIDLinkAValid 		= 12,
-		kLHIRegShiftSDIIn4VPIDLinkBValid 		= 13,
-	#endif	//	!defined (NTV2_DEPRECATE)
 
 	// kRegSDIInput3GStatus
 	kRegShiftSDIIn3GbpsMode 			= 0,
@@ -3087,11 +3052,15 @@ typedef enum
 	kRegShiftSDIIn1LevelBtoLevelA		= 2,
 	kRegShiftSDIInVPIDLinkAValid 		= 4,
 	kRegShiftSDIInVPIDLinkBValid 		= 5,
+	kRegShiftSDIIn16GbpsMode			= 6,
+	kRegShiftSDIIn112GbpsMode			= 7,
 	kRegShiftSDIIn23GbpsMode 			= 8,
 	kRegShiftSDIIn23GbpsSMPTELevelBMode = 9,
 	kRegShiftSDIIn2LevelBtoLevelA		= 10,
 	kRegShiftSDIIn2VPIDLinkAValid 		= 12,
 	kRegShiftSDIIn2VPIDLinkBValid 		= 13,
+	kRegShiftSDIIn26GbpsMode			= 14,
+	kRegShiftSDIIn212GbpsMode			= 15,
 
 	// kRegSDIInput3GStatus2
 	kRegShiftSDIIn33GbpsMode 			= 0,
@@ -3099,11 +3068,15 @@ typedef enum
 	kRegShiftSDIIn3LevelBtoLevelA		= 2,
 	kRegShiftSDIIn3VPIDLinkAValid 		= 4,
 	kRegShiftSDIIn3VPIDLinkBValid 		= 5,
+	kRegShiftSDIIn36GbpsMode			= 6,
+	kRegShiftSDIIn312GbpsMode			= 7,
 	kRegShiftSDIIn43GbpsMode 			= 8,
 	kRegShiftSDIIn43GbpsSMPTELevelBMode = 9,
 	kRegShiftSDIIn4LevelBtoLevelA		= 10,
 	kRegShiftSDIIn4VPIDLinkAValid 		= 12,
 	kRegShiftSDIIn4VPIDLinkBValid 		= 13,
+	kRegShiftSDIIn46GbpsMode			= 14,
+	kRegShiftSDIIn412GbpsMode			= 15,
 
 	// kRegSDI5678Input3GStatus
 	kRegShiftSDIIn53GbpsMode			= 0,
@@ -3111,21 +3084,29 @@ typedef enum
 	kRegShiftSDIIn5LevelBtoLevelA		= 2,
 	kRegShiftSDIIn5VPIDLinkAValid		= 4,
 	kRegShiftSDIIn5VPIDLinkBValid		= 5,
+	kRegShiftSDIIn56GbpsMode			= 6,
+	kRegShiftSDIIn512GbpsMode			= 7,
 	kRegShiftSDIIn63GbpsMode			= 8,
 	kRegShiftSDIIn63GbpsSMPTELevelBMode	= 9,
 	kRegShiftSDIIn6LevelBtoLevelA		= 10,
 	kRegShiftSDIIn6VPIDLinkAValid		= 12,
 	kRegShiftSDIIn6VPIDLinkBValid		= 13,
+	kRegShiftSDIIn66GbpsMode			= 14,
+	kRegShiftSDIIn612GbpsMode			= 15,
 	kRegShiftSDIIn73GbpsMode			= 16,
 	kRegShiftSDIIn73GbpsSMPTELevelBMode	= 17,
 	kRegShiftSDIIn7LevelBtoLevelA		= 18,
 	kRegShiftSDIIn7VPIDLinkAValid		= 20,
 	kRegShiftSDIIn7VPIDLinkBValid		= 21,
+	kRegShiftSDIIn76GbpsMode			= 22,
+	kRegShiftSDIIn712GbpsMode			= 23,
 	kRegShiftSDIIn83GbpsMode			= 24,
 	kRegShiftSDIIn83GbpsSMPTELevelBMode	= 25,
 	kRegShiftSDIIn8LevelBtoLevelA		= 26,
 	kRegShiftSDIIn8VPIDLinkAValid		= 28,
 	kRegShiftSDIIn8VPIDLinkBValid		= 29,
+	kRegShiftSDIIn86GbpsMode			= 30,
+	kRegShiftSDIIn812GbpsMode			= 31,
 
 	// kRegVPID
 	kRegShiftVPIDBitDepth				= 0,
@@ -3302,8 +3283,202 @@ typedef enum
     kRegShiftHDMIHDRDolbyVisionEnable = 6,
 	kRegShiftHDMIHDREnable = 7,
 	kRegShiftElectroOpticalTransferFunction = 16,
-	kRegShiftHDRStaticMetadataDescriptorID = 24
-	
+	kRegShiftHDRStaticMetadataDescriptorID = 24,
+
+	kRegShiftAudioMixerMainInputSelect = 0,
+	kRegShiftAudioMixerAux1x2CHInput = 4,
+	kRegShiftAudioMixerAux2x2CHInput = 8,
+	kRegShiftAudioMixerChannelSelect = 0,
+	kRegShiftAudioMixerOutputChannel1Mute =  0,
+	kRegShiftAudioMixerOutputChannel2Mute = 1,
+	kRegShiftAudioMixerOutputChannel3Mute = 2,
+	kRegShiftAudioMixerOutputChannel4Mute = 3,
+	kRegShiftAudioMixerOutputChannel5Mute = 4,
+	kRegShiftAudioMixerOutputChannel6Mute = 5,
+	kRegShiftAudioMixerOutputChannel7Mute = 6,
+	kRegShiftAudioMixerOutputChannel8Mute = 7,
+	kRegShiftAudioMixerOutputChannel9Mute = 8,
+	kRegShiftAudioMixerOutputChannel10Mute = 9,
+	kRegShiftAudioMixerOutputChannel11Mute = 10,
+	kRegShiftAudioMixerOutputChannel12Mute = 11,
+	kRegShiftAudioMixerOutputChannel13Mute = 12,
+	kRegShiftAudioMixerOutputChannel14Mute = 13,
+	kRegShiftAudioMixerOutputChannel15Mute = 14,
+	kRegShiftAudioMixerOutputChannel16Mute = 15,
+	kRegShiftAudioMixerMainInputEnable = 16,
+	kRegShiftAudioMixerAux1InputEnable = 18,
+	kRegShiftAudioMixerAux2InputEnable = 20,
+	kRegShiftAudioMixerAux1Channel1Level = 0,
+	kRegShiftAudioMixerAux1Channel2Level = 16,
+	kRegShiftAudioMixerAux2Channel1Level = 0,
+	kRegShiftAudioMixerAux2Channel2Level = 16,
+	kRegShiftAudioMixerMainChannel1Level = 0,
+	kRegShiftAudioMixerMainChannel2Level = 16,
+	kRegShiftAudioMixerMainChannel3Level = 0,
+	kRegShiftAudioMixerMainChannel4Level = 16,
+	kRegShiftAudioMixerMainChannel5Level = 0,
+	kRegShiftAudioMixerMainChannel6Level = 16,
+	kRegShiftAudioMixerMainChannel7Level = 0,
+	kRegShiftAudioMixerMainChannel8Level = 16,
+	kRegShiftAudioMixerMainChannel9Level = 0,
+	kRegShiftAudioMixerMainChannel10Level = 16,
+	kRegShiftAudioMixerMainChannel11Level = 0,
+	kRegShiftAudioMixerMainChannel12Level = 16,
+	kRegShiftAudioMixerMainChannel13Level = 0,
+	kRegShiftAudioMixerMainChannel14Level = 16,
+	kRegShiftAudioMixerMainChannel15Level = 0,
+	kRegShiftAudioMixerMainChannel16Level = 16,
+	kRegShiftAudioMixerMainMixedOutputChannel1Level = 0,
+	kRegShiftAudioMixerMainMixedOutputChannel2Level = 16,
+	kRegShiftAudioMixerInputLeftLevel = 0,
+	kRegShiftAudioMixerInputRightLevel = 16,
+
+	kRegShiftHDMIOutAudioEngineSelect = 20,
+	kRegShiftHDMIOutAudio8Of16SelectMode = 5,
+	kRegShiftHDMIOutAudio2ChannelSelect = 29,
+	kRegShiftHDMIOutUserOveride = 1,
+	kRegShiftHDMIOutCropMode = 24
+
+
+#if !defined (NTV2_DEPRECATE)
+	// kRegSDIInput3GStatus
+	,kLHIRegShiftSDIIn3GbpsMode 			= 0,
+	kLHIRegShiftSDIIn3GbpsSMPTELevelBMode 	= 1,
+	kLHIRegShiftSDIInVPIDLinkAValid 		= 4,
+	kLHIRegShiftSDIInVPIDLinkBValid 		= 5,
+	kLHIRegShiftSDIIn23GbpsMode 			= 8,
+	kLHIRegShiftSDIIn23GbpsSMPTELevelBMode 	= 9,
+	kLHIRegShiftSDIIn2VPIDLinkAValid 		= 12,
+	kLHIRegShiftSDIIn2VPIDLinkBValid 		= 13,
+
+	// kRegSDIInput3GStatus2
+	kLHIRegShiftSDIIn33GbpsMode 			= 0,
+	kLHIRegShiftSDIIn33GbpsSMPTELevelBMode 	= 1,
+	kLHIRegShiftSDIIn3VPIDLinkAValid 		= 4,
+	kLHIRegShiftSDIIn3VPIDLinkBValid 		= 5,
+	kLHIRegShiftSDIIn43GbpsMode 			= 8,
+	kLHIRegShiftSDIIn43GbpsSMPTELevelBMode 	= 9,
+	kLHIRegShiftSDIIn4VPIDLinkAValid 		= 12,
+	kLHIRegShiftSDIIn4VPIDLinkBValid 		= 13,
+	//
+	// Borg Fusion Registers
+	//
+
+	// Boot FPGA and BoardID
+	kRegShiftBorgFusionBootFPGAVer = 4,
+	kRegShiftBorgFusionBoardID = 0,
+
+	// Codec and convert FPGA configuration control
+	kRegShiftBorgFusionCodecFPGAProgram = 0,
+	kRegShiftBorgFusionCodecFPGAInit = 1,
+	kRegShiftBorgFusionCodecFPGADone = 2,
+
+	kRegShiftBorgFusionConvertFPGAProgram = 4,
+	kRegShiftBorgFusionConvertFPGAInit = 5,
+	kRegShiftBorgFusionConvertFPGADone = 6,
+
+	// Panel Push buttons debounced and SATA drive present state
+	kRegShiftBorgFusionPushButtonStatusDebounced = 0,
+	kRegShiftBorgFusionPushButtonConfigDebounced = 1,
+	kRegShiftBorgFusionPushButtonMediaDebounced = 2,
+	kRegShiftBorgFusionPushButtonRewindDebounced = 3,
+	kRegShiftBorgFusionPushButtonStopDebounced = 4,
+	kRegShiftBorgFusionPushButtonPlayDebounced = 5,
+	kRegShiftBorgFusionPushButtonRecordDebounced = 6,
+	kRegShiftBorgFusionPushButtonFastFwdDebounced = 7,
+	kRegShiftBorgFusionPushButtonSelectUpDebounced = 8,
+	kRegShiftBorgFusionPushButtonSelectDownDebounced = 9,
+	kRegShiftBorgFusionPushButtonDeleteClipDebounced = 10,
+	kRegShiftBorgFusionPushButtonAdjustUpDebounced = 11,
+	kRegShiftBorgFusionPushButtonAdjustDownDebounced = 12,
+	kRegShiftBorgFusionPushButtonSlotDebounced = 13,
+	kRegShiftBorgFusionPushButtonSATADrivePresentDebounced = 14,
+
+	// Panel Push buttons and SATA drive present changes
+	kRegShiftBorgFusionPushButtonStatusChange = 0,
+	kRegShiftBorgFusionPushButtonConfigChange = 1,
+	kRegShiftBorgFusionPushButtonMediaChange = 2,
+	kRegShiftBorgFusionPushButtonRewindChange = 3,
+	kRegShiftBorgFusionPushButtonStopChange = 4,
+	kRegShiftBorgFusionPushButtonPlayChange = 5,
+	kRegShiftBorgFusionPushButtonRecordChange = 6,
+	kRegShiftBorgFusionPushButtonFastFwdChange = 7,
+	kRegShiftBorgFusionPushButtonSelectUpChange = 8,
+	kRegShiftBorgFusionPushButtonSelectDownChange = 9,
+	kRegShiftBorgFusionPushButtonDeleteClipChange = 10,
+	kRegShiftBorgFusionPushButtonAdjustUpChange = 11,
+	kRegShiftBorgFusionPushButtonAdjustDownChange = 12,
+	kRegShiftBorgFusionPushButtonSlotChange = 13,
+	kRegShiftBorgFusionPushButtonSATADrivePresentChange = 14,
+
+	// LED Pulse Width Modulation Threshholds
+	kRegShiftBorgFusionPWMThreshExpressCard2 = 0,
+	kRegShiftBorgFusionPWMThreshExpressCard1 = 4,
+	kRegShiftBorgFusionPWMThreshPower = 8,
+	kRegShiftBorgFusionPWMThreshLCDBacklightLED = 12,
+
+
+	// Power control - System
+	kRegShiftBorgFusionPowerCtrlWiFiReset = 0,
+	kRegShiftBorgFusionPowerCtrlFirewirePower = 1,
+	kRegShiftBorgFusionPowerCtrlGigEthReset = 2,
+	kRegShiftBorgFusionPowerCtrlPCIExpClockStop = 3,
+
+	// Power control - Storage devices
+	kRegShiftBorgFusionPowerCtrlPCIExpCard1_3_3vPower = 8,	// Express Card 1 3.3v power
+	kRegShiftBorgFusionPowerCtrlPCIExpCard1_1_5vPower = 9,	// Express Card 1 1.5v power
+	kRegShiftBorgFusionPowerCtrlPCIExpCard2_3_3vPower = 10,	// Express Card 2 3.3v power
+	kRegShiftBorgFusionPowerCtrlPCIExpCard2_1_5vPower = 11,	// Express Card 2 1.5v power
+	kRegShiftBorgFusionPowerCtrlSata_12vPower = 12,			// SATA Drive 12v power
+
+	kRegShiftBonesActelPowerCtrlCFSlot2_BridgeReset = 8,
+	kRegShiftBonesActelPowerCtrlCFSlot2_Power = 9,   // Compact Flash S2 Power
+	kRegShiftBonesActelPowerCtrlCFSlot1_Power = 10,  // Compact Flash S1 Power
+	kRegShiftBonesActelPowerCtrlCFSlot1_BridgeReset = 11,
+
+	// Power control - Pushbutton LEDs
+	kRegShiftBorgFusionPowerCtrlPCIExpCard2LED = 13,
+	kRegShiftBorgFusionPowerCtrlPCIExpCard1LED = 14,
+	kRegShiftBorgFusionPowerCtrlPowerButtonLED = 15,
+
+	// IRQ3n Interrupt control
+	kRegShiftBorgFusionIRQ3nIntCtrlPushButtonChangeEnable = 0,
+	kRegShiftBorgFusionIRQ3nIntCtrlInputVoltageLow9vEnable = 1,
+	kRegShiftBorgFusionIRQ3nIntCtrlDisplayFIFOFullEnable = 2,
+	kRegShiftBorgFusionIRQ3nIntCtrlSATAPresentChangeEnable = 3,
+	kRegShiftBorgFusionIRQ3nIntCtrlTemp1HighEnable = 4,
+	kRegShiftBorgFusionIRQ3nIntCtrlTemp2HighEnable = 5,
+	kRegShiftBorgFusionIRQ3nIntCtrlPowerButtonChangeEnable = 6,
+
+	// IRQ3n Interrupt source
+	kRegShiftBorgFusionIRQ3nIntSrcPushButtonChange= 0,
+	kRegShiftBorgFusionIRQ3nIntSrcInputVoltageLow9v= 1,
+	kRegShiftBorgFusionIRQ3nIntSrcDisplayFIFOFull= 2,
+	kRegShiftBorgFusionIRQ3nIntSrcSATAPresentChange= 3,
+	kRegShiftBorgFusionIRQ3nIntSrcTemp1High= 4,
+	kRegShiftBorgFusionIRQ3nIntSrcTemp2High= 5,
+	kRegShiftBorgFusionIRQ3nIntSrcPowerButtonChange= 6,
+
+	// Noritake Display Control/Status
+	kRegShiftBorgFusionDisplayCtrlReset = 0,
+	kRegShiftBorgFusionDisplayStatusBusyRaw = 1,		// Not needed by CPU, used internally by FPGA
+	kRegShiftBorgFusionDisplayStatusInterfaceBusy = 7,	// FIFO full
+
+	// Analog ADC flags - battery
+	kRegShiftBorgFusionAnalogFlagsPowerLTE9v = 0,	// +12 v supply <= 9.0 v battery critical
+	kRegShiftBorgFusionAnalogFlagsPowerLTE10v = 1,	// +12 v supply <= 10.0 v battery depleting
+	kRegShiftBorgFusionAnalogFlagsPowerLTE11v = 2,	// +12 v supply <= 11.0 v battery depleting
+	kRegShiftBorgFusionAnalogFlagsPowerGTE13v = 3,	// +12 v supply >= 13.0 v battery charging
+
+	// Analog ADC flags - temperature sensor
+	kRegShiftBorgFusionAnalogFlagsPowerTemp1High = 4,	// Temp sensor 1 > 65 C
+	kRegShiftBorgFusionAnalogFlagsPowerTemp2High = 5,	// Temp sensor 2 > 65 C
+	// Pan (2K crop) - Xena 2
+	kRegShiftPanMode					= 30,
+	kRegShiftPanOffsetV					= 0,
+	kRegShiftPanOffsetH					= 12
+#endif	//	!defined (NTV2_DEPRECATE)
+
 } RegisterShift;
 
 
@@ -3336,7 +3511,7 @@ typedef enum
 
 	kRegNwlC2S1Capabilities					= 0x0800+(NWL_REG_START),
 	kRegNwlC2S1ControlStatus				= 0x0801+(NWL_REG_START),
-	kRegNwlC2S1ChainStartAddressLow			= 0x0802+(NWL_REG_START),
+ 	kRegNwlC2S1ChainStartAddressLow			= 0x0802+(NWL_REG_START),
 	kRegNwlC2S1ChainStartAddressHigh		= 0x0803+(NWL_REG_START),
 	kRegNwlC2S1HardwareTime					= 0x0804+(NWL_REG_START),
 	kRegNwlC2S1ChainCompleteByteCount		= 0x0805+(NWL_REG_START),
@@ -3488,6 +3663,144 @@ typedef enum
 
 } NwlRegisterShift;
 
+// XLNX Registers
+#define XLNX_MAX_CHANNELS						4
+#define XLNX_REG_TARGET_SIZE					0x400
+#define XLNX_REG_CHANNEL_SIZE					0x40
+#define XLNX_SUBSYSTEM_ID						0x1fc
+
+typedef enum
+{
+	kRegXlnxTargetChannelH2C					= 0x0,
+	kRegXlnxTargetChannelC2H					= 0x1,
+	kRegXlnxTargetIRQ							= 0x2,
+	kRegXlnxTargetConfig						= 0x3,
+	kRegXlnxTargetSgdmaH2C						= 0x4,
+	kRegXlnxTargetSgdmaC2H						= 0x5,
+	kRegXlnxTargetSgdmaCommon					= 0x6,
+	kRegXlnxTargetMsiX							= 0x8
+} XlnxRegisterTarget;
+
+typedef enum
+{
+	kRegXlnxChannelIdentifier					= 0x00,
+	kRegXlnxChannelControl						= 0x01,
+	kRegXlnxChannelControlW1S					= 0x02,
+	kRegXlnxChannelControlW1C					= 0x03,
+	kRegXlnxChannelStatus						= 0x10,
+	kRegXlnxChannelStatusRC						= 0x11,
+	kRegXlnxChannelDescCompleteCount			= 0x12,
+	kRegXlnxChannelAlignments					= 0x13,
+	kRegXlnxChannelPollModeAddressLow			= 0x22,
+	kRegXlnxChannelPollModeAddressHigh			= 0x23,
+	kRegXlnxChannelInterruptEnable				= 0x24,
+	kRegXlnxChannelInterruptEnableW1S			= 0x25,
+	kRegXlnxChannelInterruptEnableW1C			= 0x26,
+	kRegXlnxChannelPerfControl					= 0x30,
+	kRegXlnxChannelPerfCycleCountLow			= 0x31,
+	kRegXlnxChannelPerfCycleCountHigh			= 0x32,
+	kRegXlnxChannelPerfDataCountLow				= 0x33,
+	kRegXlnxChannelPerfDataCountHigh			= 0x34,
+
+	kRegXlnxIrqIdentifier						= 0x00,
+	kRegXlnxIrqUserInterruptEnable				= 0x01,
+	kRegXlnxIrqUserInterruptEnableW1S			= 0x02,
+	kRegXlnxIrqUserInterruptEnableW1C			= 0x03,
+	kRegXlnxIrqChannelInterruptEnable			= 0x04,
+	kRegXlnxIrqChannelInterruptEnableW1S		= 0x05,
+	kRegXlnxIrqChannelInterruptEnableW1C		= 0x06,
+	kRegXlnxIrqUserInterruptRequest				= 0x10,
+	kRegXlnxIrqChannelInterruptRequest			= 0x11,
+	kRegXlnxIrqUserInterruptPending				= 0x12,
+	kRegXlnxIrqChannelInterruptPending			= 0x13,
+
+	kRegXlnxSgdmaIdentifier						= 0x00,
+	kRegXlnxSgdmaDescAddressLow					= 0x20,
+	kRegXlnxSgdmaDescAddressHigh				= 0x21,
+	kRegXlnxSgdmaDescAdjacent					= 0x22,
+	kRegXlnxSgdmaDescCredits					= 0x23
+
+} XlnxRegisterNum;
+
+typedef enum
+{
+	kRegMaskXlnxSubsystemId						= 0xfff00000,
+	kRegMaskXlnxTarget							= 0x000f0000,
+	kRegMaskXlnxStreamInterface					= 0x00008000,
+	kRegMaskXlnxIdTarget						= 0x00000f00,
+	kRegMaskXlnxVersion							= 0x000000ff,
+
+	kRegMaskXlnxStreamWriteBackDisable			= 0x08000000,
+	kRegMaskXlnxPollModeWriteBackEnable			= 0x04000000,
+	kRegMaskXlnxNonIncAddressMode				= 0x02000000,
+	kRegMaskXlnxRun								= 0x00000001,
+
+	kRegMaskXlnxAddressAlignment				= 0x00ff0000,
+	kRegMaskXlnxTransferAlignment				= 0x0000ff00,
+	kRegMaskXlnxAddressBits						= 0x000000ff,
+
+	kRegMaskXlnxIntDescError					= 0x00f80000,
+	kRegMaskXlnxIntWriteError					= 0x0007c000,
+	kRegMaskXlnxIntReadError					= 0x00003e00,
+	kRegMaskXlnxIntIdleStop						= 0x00000040,
+	kRegMaskXlnxIntInvalidLength				= 0x00000020,
+	kRegMaskXlnxIntMagicStop					= 0x00000010,
+	kRegMaskXlnxIntAlignMismatch				= 0x00000008,
+	kRegMaskXlnxIntDescComplete					= 0x00000004,
+	kRegMaskXlnxIntDescStop						= 0x00000002,
+
+	kRegMaskXlnxPerfRun							= 0x00000004,
+	kRegMaskXlnxPerfClear						= 0x00000002,
+	kRegMaskXlnxPerfAuto						= 0x00000001,
+
+	kRegMaskXlnxPerfCycleCountMax				= 0x00010000,
+	kRegMaskXlnxPerfCycleCountHigh				= 0x000003ff,
+
+	kRegMaskXlnxPerfDataCountMax				= 0x00010000,
+	kRegMaskXlnxPerfDataCountHigh				= 0x000003ff
+
+} XlnxRegisterMask;
+
+typedef enum
+{
+	kRegShiftXlnxSubsystemId					= 20,
+	kRegShiftXlnxTarget							= 16,
+	kRegShiftXlnxStreamInterface				= 15,
+	kRegShiftXlnxIdTarget						= 8,
+	kRegShiftXlnxVersion			   			= 0,
+
+	kRegShiftXlnxStreamWriteBackDisable			= 27,
+	kRegShiftXlnxPollModeWriteBackEnable		= 26,
+	kRegShiftXlnxNonIncAddressMode				= 25,
+	kRegShiftXlnxRun							= 0,
+
+	kRegShiftXlnxAddressAlignment				= 16,
+	kRegShiftXlnxTransferAlignment				= 8,
+	kRegShiftXlnxAddressBits					= 0,
+
+	kRegShiftXlnxIntDescError					= 19,
+	kRegShiftXlnxIntWriteError					= 14,
+	kRegShiftXlnxIntReadError					= 9,
+	kRegShiftXlnxIntIdleStop					= 6,
+	kRegShiftXlnxIntInvalidLength				= 5,
+	kRegShiftXlnxIntMagicStop					= 4,
+	kRegShiftXlnxIntAlignMismatch				= 3,
+	kRegShiftXlnxIntDescComplete				= 2,
+	kRegShiftXlnxIntDescStop					= 1,
+
+	kRegShiftXlnxPerfRun						= 2,
+	kRegShiftXlnxPerfClear						= 1,
+	kRegShiftXlnxPerfAuto						= 0,
+
+	kRegShiftXlnxPerfCycleCountMax				= 16,
+	kRegShiftXlnxPerfCycleCountHigh				= 0,
+
+	kRegShiftXlnxPerfDataCountMax				= 16,
+	kRegShiftXlnxPerfDataCountHigh				= 0
+
+} XlnxRegisterShift;
+
+// P2P Registers
 
 typedef enum
 {
@@ -3806,14 +4119,14 @@ typedef enum
 /**
 	@brief	Everything needed to call CNTV2Card::ReadRegister or CNTV2Card::WriteRegister functions.
 **/
-typedef /*AJAExport*/ struct NTV2RegInfo
+typedef struct NTV2RegInfo
 {
 	ULWord	registerNumber;		///< @brief	My register number to use in a ReadRegister or WriteRegister call.
 	ULWord	registerValue;		///< @brief	My register value to use in a ReadRegister or WriteRegister call.
 	ULWord	registerMask;		///< @brief	My register mask value to use in a ReadRegister or WriteRegister call.
 	ULWord	registerShift;		///< @brief	My register shift value to use in a ReadRegister or WriteRegister call.
 
-	#if !defined (NTV2_BUILDING_DRIVER)
+	#if !defined(NTV2_BUILDING_DRIVER)
 		/**
 			@brief	Constructs me from the given parameters.
 			@param[in]	inRegNum	Specifies the register number to use. If not specified, defaults to zero.
@@ -3821,7 +4134,7 @@ typedef /*AJAExport*/ struct NTV2RegInfo
 			@param[in]	inRegMask	Specifies the bit mask to use. If not specified, defaults to 0xFFFFFFFF.
 			@param[in]	inRegShift	Specifies the shift to use. If not specified, defaults to zero.
 		**/
-		NTV2RegInfo (const ULWord inRegNum = 0, const ULWord inRegValue = 0, const ULWord inRegMask = 0xFFFFFFFF, const ULWord inRegShift = 0)
+		AJAExport NTV2RegInfo (const ULWord inRegNum = 0, const ULWord inRegValue = 0, const ULWord inRegMask = 0xFFFFFFFF, const ULWord inRegShift = 0)
 			:	registerNumber	(inRegNum),
 				registerValue	(inRegValue),
 				registerMask	(inRegMask),
@@ -3836,31 +4149,31 @@ typedef /*AJAExport*/ struct NTV2RegInfo
 			@param[in]	inRegMask	Specifies the bit mask to use. If not specified, defaults to 0xFFFFFFFF.
 			@param[in]	inRegShift	Specifies the shift to use. If not specified, defaults to zero.
 		**/
-		inline void	Set (const ULWord inRegNum, const ULWord inRegValue, const ULWord inRegMask = 0xFFFFFFFF, const ULWord inRegShift = 0)
+		AJAExport inline void	Set (const ULWord inRegNum, const ULWord inRegValue, const ULWord inRegMask = 0xFFFFFFFF, const ULWord inRegShift = 0)
 													{registerNumber	= inRegNum; registerValue = inRegValue; registerMask = inRegMask; registerShift = inRegShift;}
 		/**
 			@brief	Invalidates me, setting my register number, value, mask and shift values to 0xFFFFFFFF.
 		**/
-		inline void	MakeInvalid (void)				{registerNumber	= registerValue	= registerMask	= registerShift	= 0xFFFFFFFF;}
+		AJAExport inline void	MakeInvalid (void)				{registerNumber	= registerValue	= registerMask	= registerShift	= 0xFFFFFFFF;}
 
 		/**
 			@return	True if I'm considered "valid", or false if my register number, value, mask and shift values are all 0xFFFFFFFF.
 		**/
-		inline bool	IsValid (void) const			{return registerNumber != 0xFFFFFFFF || registerValue != 0xFFFFFFFF || registerMask != 0xFFFFFFFF || registerShift != 0xFFFFFFFF;}
+		AJAExport inline bool	IsValid (void) const			{return registerNumber != 0xFFFFFFFF || registerValue != 0xFFFFFFFF || registerMask != 0xFFFFFFFF || registerShift != 0xFFFFFFFF;}
 
 		/**
 			@return		True if I'm identical to the right-hand-side NTV2RegInfo.
 			@param[in]	inRHS	Specifies the right-hand-side NTV2RegInfo that will be compared to me.
 			@note		To synthesize the other comparison operators (!=, <=, >, >=), in client code, add "#include <utility>", and "using namespace std::rel_ops;".
 		**/
-		inline bool	operator == (const NTV2RegInfo & inRHS) const	{return registerNumber == inRHS.registerNumber && registerValue == inRHS.registerValue
+		AJAExport inline bool	operator == (const NTV2RegInfo & inRHS) const	{return registerNumber == inRHS.registerNumber && registerValue == inRHS.registerValue
 																			&& registerMask == inRHS.registerMask && registerShift == inRHS.registerShift;}
 		/**
 			@return		True if I'm less than the right-hand-side NTV2RegInfo.
 			@param[in]	inRHS	Specifies the right-hand-side NTV2RegInfo that will be compared to me.
 			@note		To synthesize the other comparison operators (!=, <=, >, >=), in client code, add "#include <utility>", and "using namespace std::rel_ops;".
 		**/
-		bool		operator < (const NTV2RegInfo & inRHS) const;
+		AJAExport bool			operator < (const NTV2RegInfo & inRHS) const;
 	#endif	//	not NTV2_BUILDING_DRIVER
 } NTV2RegInfo;
 
@@ -3874,6 +4187,14 @@ typedef NTV2RegInfo	NTV2ReadWriteRegisterSingle;	///< @brief	This is an alias fo
 	typedef NTV2RegisterWrites					NTV2RegisterReads;				///< @brief	An ordered sequence of zero or more NTV2RegInfo structs intended for ReadRegister.
 	typedef NTV2RegisterWritesConstIter			NTV2RegisterReadsConstIter;		///< @brief	A handy const (read-only) iterator for iterating over the contents of an NTV2RegisterReads instance.
 	typedef NTV2RegisterWritesIter				NTV2RegisterReadsIter;			///< @brief	A handy non-const iterator for iterating over the contents of an NTV2RegisterReads instance.
+
+	/**
+		@brief		Returns a const iterator to the first entry in the NTV2RegInfo collection with a matching register number.
+		@param[in]	inRegNum	Specifies the register number of interest.
+		@param[in]	inRegInfos	Specifies the NTV2RegInfo collection to search.
+		@return		A const_iterator that references the entry in the NTV2RegInfo collection, or "end()" if not found.
+	**/
+	AJAExport NTV2RegisterReadsConstIter	FindFirstMatchingRegisterNumber (const uint32_t inRegNum, const NTV2RegisterReads & inRegInfos);
 
 	/**
 		@brief		Writes the given NTV2RegInfo to the specified output stream.
@@ -4944,6 +5265,8 @@ typedef enum
 	shiftSyncro = 24,
 	maskDisableExtractor = BIT(28),
 	shiftDisableExtractor = 28,
+	maskEnableSDMux = BIT(30),
+	shiftEnableSDMux = 30,
 	maskGrabLSBs = BIT(31),
 	shiftGrabLSBs = 31,
 	maskField1CutoffLine = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10),
@@ -5055,6 +5378,8 @@ typedef enum
 	shiftInsSetProgressive = 24,
 	maskInsDisableInserter = BIT(28),
 	shiftInsDisableInserter = 28,
+	maskInsEnablePktSplitSD = BIT(31),
+	shiftInsEnablePktSplitSD = 31,
 	maskInsHancDelay = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9),
 	shiftINsHancDelay = 0,
 	maskInsVancDelay = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26),
@@ -5131,7 +5456,8 @@ typedef enum
 		#define	NTV2_IS_VALID_HEADER_TAG(_x_)	((_x_) == NTV2_HEADER_TAG)
 		#define	NTV2_IS_VALID_TRAILER_TAG(_x_)	((_x_) == NTV2_TRAILER_TAG)
 
-		#define	NTV2_TYPE_BANKGETSET			NTV2_FOURCC ('b', 'n', 'k', 'S')	///< @brief	Identifies NTV2BankSelGetSetRegs struct
+        #define	NTV2_TYPE_VIRTUAL_DATA_RW		NTV2_FOURCC ('v', 'd', 'a', 't')	///< @brief	Identifies NTV2VirtualData struct
+        #define	NTV2_TYPE_BANKGETSET			NTV2_FOURCC ('b', 'n', 'k', 'S')	///< @brief	Identifies NTV2BankSelGetSetRegs struct
 		#define	AUTOCIRCULATE_TYPE_STATUS		NTV2_FOURCC ('s', 't', 'a', 't')	///< @brief	Identifies AUTOCIRCULATE_STATUS struct
 		#define	AUTOCIRCULATE_TYPE_XFER			NTV2_FOURCC ('x', 'f', 'e', 'r')	///< @brief	Identifies AUTOCIRCULATE_TRANSFER struct
 		#define	AUTOCIRCULATE_TYPE_XFERSTATUS	NTV2_FOURCC ('x', 'f', 's', 't')	///< @brief	Identifies AUTOCIRCULATE_TRANSFER_STATUS struct
@@ -5149,7 +5475,8 @@ typedef enum
 													(_x_) == AUTOCIRCULATE_TYPE_GETREGS		||	\
 													(_x_) == AUTOCIRCULATE_TYPE_SETREGS		||	\
 													(_x_) == AUTOCIRCULATE_TYPE_SDISTATS	||	\
-													(_x_) == NTV2_TYPE_BANKGETSET			)
+                                                    (_x_) == NTV2_TYPE_BANKGETSET			||	\
+                                                    (_x_) == NTV2_TYPE_VIRTUAL_DATA_RW      )
 
 
 		//	NTV2_POINTER FLAGS
@@ -6190,7 +6517,41 @@ typedef enum
 			#endif	//	!defined (NTV2_BUILDING_DRIVER)
 		NTV2_STRUCT_END (NTV2BankSelGetSetRegs)
 
-		
+
+        /**
+            @brief	This is used to perform virtual data reads or writes.
+            @note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+        **/
+        NTV2_STRUCT_BEGIN (NTV2VirtualData)
+            NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
+                ULWord			mTag;               ///< @brief	Tag for virtual data.  This value is used to recal saved data by tag.
+                ULWord			mIsWriting;			///< @brief	If non-zero, virtual data will be written;  otherwise, virtual data will be read.
+                NTV2_POINTER	mVirtualData;		///< @brief	Pointer object to virtual data. The SDK owns this memory.
+            NTV2_TRAILER	mTrailer;			///< @brief	The common structure trailer -- ALWAYS LAST!
+
+            #if !defined (NTV2_BUILDING_DRIVER)
+                /**
+                    @brief	Constructs an NTV2VirtualData struct for reading or writing virtual data.
+                    @param[in]	inTag               The tag to use.
+                    @param[in]	inVirtualData       Pointer to vitrual data.
+                    @param[in]	inVirtualDataSize   The size of the virtual data.
+                    @param[in]	inDoWrite           True if writing, false if reading.
+                **/
+                explicit	NTV2VirtualData (const ULWord inTag, const void* inVirtualData, const size_t inVirtualDataSize, const bool inDoWrite = false);
+
+                /**
+                    @brief	Prints a human-readable representation of me to the given output stream.
+                    @param	inOutStream		Specifies the output stream to use.
+                    @return	A reference to the output stream.
+                **/
+                std::ostream &	Print (std::ostream & inOutStream) const;
+
+                NTV2_IS_STRUCT_VALID_IMPL(mHeader,mTrailer)
+
+            #endif	//	!defined (NTV2_BUILDING_DRIVER)
+        NTV2_STRUCT_END (NTV2VirtualData)
+
+
 		/**
 			@brief	This is used by the CNTV2Card::ReadSDIStatistics function.
 			@note	There is no need to access any of this structure's fields directly. Simply call the CNTV2Card instance's ReadSDIStatistics function.
@@ -6245,7 +6606,7 @@ typedef enum
 					LWord64				acFrameTime;					///< @brief	On exit, contains host OS clock at time of capture/play.
 																		///<		On entry, contains NTV2Channel of interest, but only for new API \c FRAME_STAMP message.
 					ULWord				acRequestedFrame;				///< @brief	The frame requested (0xFFFFFFFF == "not available"), including for new API (\c FRAME_STAMP message).
-					ULWord64			acAudioClockTimeStamp;			///< @brief	48kHz clock (in reg 28, extended to 64 bits) at time of play or record.
+					ULWord64			acAudioClockTimeStamp;			///< @brief	Number of 10MHz ticks at moment of play or record, based on 48kHz clock (from register 28).
 					ULWord				acAudioExpectedAddress;			///< @brief	The address that was used to transfer
 					ULWord				acAudioInStartAddress;			///< @brief	For record - first position in buffer of audio (includes base offset) -- AudioInAddress at the time this Frame was stamped
 					ULWord				acAudioInStopAddress;			///< @brief	For record - end position (exclusive) in buffer of audio (includes base offset) -- AudioInAddress at the Frame AFTER this Frame was stamped
@@ -6273,7 +6634,7 @@ typedef enum
 																		///<		Granularity can vary depending on the HAL. acAudioClockCurrentTime is the recommended time-stamp to use instead of this.
 					ULWord				acCurrentFrame;					///< @brief	Last vertical blank frame for this autocirculate channel (when AutoCirculateGetFrameStamp was called)
 					LWord64				acCurrentFrameTime;				///< @brief	Vertical blank start of current frame
-					ULWord64			acAudioClockCurrentTime;		///< @brief	48kHz clock in reg 28 extended to 64 bits, consistent and accurate
+					ULWord64			acAudioClockCurrentTime;		///< @brief	Current time expressed as a count of 10MHz ticks, based on 48kHz clock (from register 28).
 					ULWord				acCurrentAudioExpectedAddress;	//	FIXFIXFIX	Document		What is this?!
 					ULWord				acCurrentAudioStartAddress;		///< @brief	As set by play
 					ULWord				acCurrentFieldCount;			///< @brief	As found by ISR at Call Field0 or Field1 _currently_ being OUTPUT (when AutoCirculateGetFrameStamp called)
@@ -6360,7 +6721,8 @@ typedef enum
 
 
 		/**
-			@brief	This is embedded in the AUTOCIRCULATE_TRANSFER struct that's returned from the CNTV2Card::AutoCirculateTransfer function.
+			@brief	This object is embedded in the AUTOCIRCULATE_TRANSFER struct that's returned from the CNTV2Card::AutoCirculateTransfer function,
+					and contains status information about the transfer and the state of AutoCirculate.
 			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (AUTOCIRCULATE_TRANSFER_STATUS)
@@ -6404,7 +6766,9 @@ typedef enum
 
 
 		/**
-			@brief	This is used in the CNTV2Card::AutoCirculateTransfer function.
+			@brief	This object specifies the information that will be transferred to or from the AJA device in the CNTV2Card::AutoCirculateTransfer
+					function call. It will be used by the device driver only if the AUTOCIRCULATE_WITH_ANC option was used in the call to
+					CNTV2Card::AutoCirculateInitForInput or CNTV2Card::AutoCirculateInitForOutput.
 			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (AUTOCIRCULATE_TRANSFER)
@@ -6429,8 +6793,9 @@ typedef enum
 								freeing it. If the pointer is NULL or the size is zero, no ancillary data will be transferred.
 								Use the AUTOCIRCULATE_TRANSFER::SetAncBuffers method to set or reset this field.
 						@note	If non-empty (i.e., non-NULL), be sure that the pointer address is aligned to the nearest 8-byte boundary. AJA recommends
-								using a full 2048-byte buffer. Note there is no need to fill the entire buffer, but whatever bytes it contains should be
-								compatible with what's documented in \ref ancillarydata.
+								using a full 2048-byte buffer. For playout, its content should be compatible with what's documented in \ref ancillarydata
+								and all subsequent bytes in the buffer should be zero. For capture, AJA recommends clearing (zeroing) the buffer prior to
+								each transfer.
 					**/
 					NTV2_POINTER					acANCBuffer;
 
@@ -6439,8 +6804,9 @@ typedef enum
 								and/or freeing it. If the pointer is NULL or the size is zero, no "Field 2" ancillary data will be transferred.
 								Use the AUTOCIRCULATE_TRANSFER::SetAncBuffers method to set or reset this field.
 						@note	If non-empty (i.e., non-NULL), be sure that the pointer address is aligned to the nearest 8-byte boundary. AJA recommends
-								using a full 2048-byte buffer. Note there is no need to fill the entire buffer, but whatever bytes it contains should be
-								compatible with what's documented in \ref ancillarydata.
+								using a full 2048-byte buffer. For playout, its content should be compatible with what's documented in \ref ancillarydata
+								and all subsequent bytes in the buffer should be zero. For capture, AJA recommends clearing (zeroing) the buffer prior to
+								each transfer.
 					**/
 					NTV2_POINTER					acANCField2Buffer;
 
@@ -6481,7 +6847,7 @@ typedef enum
 					AutoCircVidProcInfo				acVidProcInfo;				///< @brief	Specifies the mixer/keyer transition to make.  Ignored if AUTOCIRCULATE_WITH_VIDPROC option is not set.
 					NTV2QuarterSizeExpandMode		acVideoQuarterSizeExpand;	///< @brief	Turns on the "quarter-size expand" (2x H + 2x V) hardware. Defaults to off (1:1).
 
-					NTV2_POINTER					acReserved001;
+					NTV2_POINTER					acHDR10PlusDynamicMetaData;
 
 					/**
 						@name	Lesser-used and Deprecated Members
@@ -6504,32 +6870,26 @@ typedef enum
 													~AUTOCIRCULATE_TRANSFER ();		///< @brief	My default destructor, which frees all allocatable fields that I own.
 
 				/**
-					@brief	Constructs a default AUTOCIRCULATE_TRANSFER struct from the given information.
+					@brief	Constructs an AUTOCIRCULATE_TRANSFER object to use in a CNTV2Card::AutoCirculateTransfer call.
 					@param	pInVideoBuffer		Specifies a pointer to the host video buffer. On capture, this buffer will be written during the DMA operation.
 												On playout, this buffer will be read during the DMA operation. If NULL, no video will be transferred.
 					@param	inVideoByteCount	On capture, specifies the maximum capacity of the host video buffer, in bytes.
 												On playout, specifies the number of video bytes to transfer from the host buffer.
 												If zero, no video will be transferred.
-					@param	pInAudioBuffer		Specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd to this buffer.
+					@param	pInAudioBuffer		Optionally specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd to this buffer.
 												On playout, audio data will be read from this buffer. If NULL, no audio will be transferred.
 												Defaults to NULL.
-					@param	inAudioByteCount	On capture, specifies the maximum capacity of the host audio buffer, in bytes. After the transfer,
-												it will contain the actual number of bytes transferred.
-												On playout, specifies the number of audio bytes to transfer from the host buffer.
-												If zero, no audio will be transferred. Defaults to zero.
-					@param	pInANCBuffer		Specifies a pointer to the host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
-												On playout, ancillary data will be read from this buffer. If NULL, no ancillary data will be transferred.
+					@param	inAudioByteCount	Optionally specifies the maximum capacity of the host audio buffer, in bytes. If zero, no audio will be transferred.
+												Defaults to zero.
+					@param	pInANCBuffer		Optionally specifies a pointer to the host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
+												On playout, ancillary data will be read from this buffer. If NULL, no Field 1 ancillary data will be transferred.
 												Defaults to NULL.
-					@param	inANCByteCount		On capture, specifies the maximum capacity of the host ancillary data buffer, in bytes. After the transfer,
-												it will contain the actual number of bytes transferred.
-												On playout, specifies the number of ancillary data bytes to transfer from the host buffer.
+					@param	inANCByteCount		Optionally specifies the maximum capacity of the Field 1 host ancillary data buffer, in bytes.
 												If zero, no ancillary data (progressive or interlaced F1) will be transferred.  Defaults to zero.
-					@param	pInANCF2Buffer		Specifies a pointer to the host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
+					@param	pInANCF2Buffer		Optionally specifies a pointer to the Field 2 host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
 												On playout, ancillary data will be read from this buffer. If NULL, no ancillary data will be transferred.
 												Defaults to NULL.
-					@param	inANCF2ByteCount	On capture, specifies the maximum capacity of the host ancillary data buffer, in bytes. After the transfer,
-												it will contain the actual number of bytes transferred.
-												On playout, specifies the number of ancillary data bytes to transfer from the host buffer.
+					@param	inANCF2ByteCount	Optionally specifies the maximum capacity of the Field 2 host ancillary data buffer, in bytes.
 												If zero, no ancillary data (interlaced F2) will be transferred.  Defaults to zero.
 				**/
 				explicit							AUTOCIRCULATE_TRANSFER (ULWord * pInVideoBuffer, const ULWord inVideoByteCount, ULWord * pInAudioBuffer = 0,
@@ -6544,7 +6904,7 @@ typedef enum
 				NTV2_BEGIN_PRIVATE
 					inline explicit					AUTOCIRCULATE_TRANSFER (const AUTOCIRCULATE_TRANSFER & inObj)
 																									:	acHeader(0xFEFEFEFE, 0), acVideoBuffer(0), acAudioBuffer(0),
-																										acANCBuffer(0), acANCField2Buffer(0), acOutputTimeCodes(0), acReserved001(0)
+																										acANCBuffer(0), acANCField2Buffer(0), acOutputTimeCodes(0), acHDR10PlusDynamicMetaData(0)
 																										{(void) inObj;}		///< @brief	You cannot construct an AUTOCIRCULATE_TRANSFER from another.
 					inline AUTOCIRCULATE_TRANSFER &	operator = (const AUTOCIRCULATE_TRANSFER & inRHS)	{(void) inRHS; return *this;}	///< @brief	You cannot assign AUTOCIRCULATE_TRANSFERs.
 				NTV2_END_PRIVATE
@@ -6555,7 +6915,7 @@ typedef enum
 				**/
 				///@{
 				/**
-					@brief	Sets my buffers for use in AutoCirculateTransfer operations.
+					@brief	Sets my buffers for use in a subsequent call to CNTV2Card::AutoCirculateTransfer.
 					@param	pInVideoBuffer		Specifies a pointer to the host video buffer. On capture, this buffer will be written during the DMA operation.
 												On playout, this buffer will be read during the DMA operation. If NULL, no video will be transferred.
 					@param	inVideoByteCount	On capture, specifies the maximum capacity of the host video buffer, in bytes.
@@ -6563,25 +6923,21 @@ typedef enum
 												If zero, no video will be transferred.
 					@param	pInAudioBuffer		Specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd to this buffer.
 												On playout, audio data will be read from this buffer. If NULL, no audio will be transferred.
-												Defaults to NULL.
 					@param	inAudioByteCount	On capture, specifies the maximum capacity of the host audio buffer, in bytes. After the transfer,
 												it will contain the actual number of bytes transferred.
 												On playout, specifies the number of audio bytes to transfer from the host buffer.
-												If zero, no audio will be transferred. Defaults to zero.
+												If zero, no audio will be transferred.
 					@param	pInANCBuffer		Specifies a pointer to the host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
 												On playout, ancillary data will be read from this buffer. If NULL, no ancillary data will be transferred.
-												Defaults to NULL.
 					@param	inANCByteCount		On capture, specifies the maximum capacity of the host ancillary data buffer, in bytes. After the transfer,
 												it will contain the actual number of bytes transferred.
 												On playout, specifies the number of ancillary data bytes to transfer from the host buffer.
-												If zero, no ancillary data will be transferred.  Defaults to zero.
-					@param	pInANCF2Buffer		Specifies a pointer to the "field 2" host ancillary data buffer. On capture, ancillary data for Field 2
+												If zero, no ancillary data will be transferred.
+					@param	pInANCF2Buffer		Optionally specifies a pointer to the Field 2 host ancillary data buffer. On capture, ancillary data for Field 2
 												(interlaced video formats only) will be DMA'd into this buffer.
 												On playout, ancillary data for Field 2 (interlaced video formats only) will be read from this buffer.
 												If NULL, no Field 2 ancillary data will be transferred. Defaults to NULL.
-					@param	inANCF2ByteCount	On capture, specifies the maximum capacity of the Field 2 host ancillary data buffer, in bytes.
-												After the transfer, it will contain the actual number of Field 2 ancillary data bytes transferred.
-												On playout, specifies the number of Field 2 ancillary data bytes to transfer from the host buffer.
+					@param	inANCF2ByteCount	Optionally specifies the maximum capacity of the Field 2 host ancillary data buffer, in bytes.
 												If zero, no ancillary data (interlaced F2) will be transferred.  Defaults to zero.
 				**/
 				bool									SetBuffers (ULWord * pInVideoBuffer, const ULWord inVideoByteCount,
@@ -6590,11 +6946,10 @@ typedef enum
 																	ULWord * pInANCF2Buffer = 0, const ULWord inANCF2ByteCount = 0);
 
 				/**
-					@brief	Sets the AUTOCIRCULATE_TRANSFER's video buffer.
+					@brief	Sets my video buffer for use in a subsequent call to CNTV2Card::AutoCirculateTransfer.
 					@param	pInVideoBuffer		Specifies a pointer to the host video buffer. On capture, this buffer will be written during the DMA operation.
 												On playout, this buffer will be read during the DMA operation. If NULL, no video will be transferred.
-					@param	inVideoByteCount	On capture, specifies the maximum capacity of the host video buffer, in bytes.
-												On playout, specifies the number of video bytes to transfer from the host buffer.
+					@param	inVideoByteCount	Specifies the maximum capacity of the host video buffer, in bytes, or the maximum number of video data bytes to transfer.
 												If zero, no video will be transferred.
 					@return	True if successful;  otherwise false.
 					@note	Having the \c pInAudioBuffer address start on at least an 8-byte boundary or even better, on a page boundary,
@@ -6604,14 +6959,11 @@ typedef enum
 				bool									SetVideoBuffer (ULWord * pInVideoBuffer, const ULWord inVideoByteCount);
 
 				/**
-					@brief	Sets the AUTOCIRCULATE_TRANSFER's audio buffer.
-					@param	pInAudioBuffer		Specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd to this buffer.
-												On playout, audio data will be read from this buffer. If NULL, no audio will be transferred.
-												Defaults to NULL.
-					@param	inAudioByteCount	On capture, specifies the maximum capacity of the host audio buffer, in bytes. After the transfer,
-												it will contain the actual number of bytes transferred.
-												On playout, specifies the number of audio bytes to transfer from the host buffer.
-												If zero, no audio will be transferred. Defaults to zero.
+					@brief	Sets my audio buffer for use in a subsequent call to CNTV2Card::AutoCirculateTransfer.
+					@param	pInAudioBuffer		Specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd into this buffer.
+												On playout, audio data will be DMA'd from this buffer. If NULL, no audio will be transferred.
+					@param	inAudioByteCount	Specifies the maximum capacity of the host audio buffer, in bytes, or the maximum number of audio bytes to transfer.
+												If zero, no audio will be transferred.
 					@return	True if successful;  otherwise false.
 					@note	Having the \c pInAudioBuffer address start on at least an 8-byte boundary or even better, on a page boundary,
 							and the \c inAudioByteCount be a multiple of 8-bytes (or optimally a multiple of a page) increases PCIe DMA
@@ -6620,29 +6972,27 @@ typedef enum
 				bool									SetAudioBuffer (ULWord * pInAudioBuffer, const ULWord inAudioByteCount);
 
 				/**
-					@brief	Sets my ancillary data buffers.
+					@brief	Sets my ancillary data buffers for use in a subsequent call to CNTV2Card::AutoCirculateTransfer.
 					@param	pInANCBuffer		Specifies a pointer to the host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
 												On playout, ancillary data will be read from this buffer. If NULL, no ancillary data will be transferred.
-												Defaults to NULL.
 					@param	inANCByteCount		On capture, specifies the maximum capacity of the host ancillary data buffer, in bytes. After the transfer,
 												it will contain the actual number of bytes transferred.
 												On playout, specifies the number of ancillary data bytes to transfer from the host buffer.
-												If zero, no ancillary data will be transferred.  Defaults to zero.
-					@param	pInANCF2Buffer		Specifies a pointer to the "field 2" host ancillary data buffer. On capture, ancillary data for Field 2
+												If zero, no ancillary data will be transferred.
+					@param	pInANCF2Buffer		Optionally specifies a pointer to the Field 2 host ancillary data buffer. On capture, ancillary data for Field 2
 												(interlaced video formats only) will be DMA'd into this buffer.
 												On playout, ancillary data for Field 2 (interlaced video formats only) will be read from this buffer.
 												If NULL, no Field 2 ancillary data will be transferred. Defaults to NULL.
-					@param	inANCF2ByteCount	On capture, specifies the maximum capacity of the Field 2 host ancillary data buffer, in bytes.
-												After the transfer, it will contain the actual number of Field 2 ancillary data bytes transferred.
-												On playout, specifies the number of Field 2 ancillary data bytes to transfer from the host buffer.
-												If zero, no ancillary data (interlaced F2) will be transferred.  Defaults to zero.
+					@param	inANCF2ByteCount	Optionally specifies the maximum capacity of the Field 2 host ancillary data buffer, in bytes, or the maximum
+												number of Field 2 ancillary data bytes to transfer. If zero, no ancillary data (interlaced F2) will be transferred.
+												Defaults to zero.
 					@note	If using a non-NULL pointer address for either \c pInANCBuffer or \c pInANCF2Buffer, be sure they're aligned to the nearest 8-byte boundary.
 					@note	If using a non-zero byte count, AJA recommends using a 2048-byte buffer (per field). There's no need to fill the entire buffer,
 							but the data it contains should be compatible with what's documented in Chapter 10 (Ancillary Data) of the SDK Guide.
 					@return	True if successful;  otherwise false.
 				**/
 				bool									SetAncBuffers (ULWord * pInANCBuffer, const ULWord inANCByteCount,
-																		ULWord * pInANCF2Buffer = 0, const ULWord inANCF2ByteCount = 0);
+																		ULWord * pInANCF2Buffer = 0, const ULWord inANCF2ByteCount = 0 );
 				/**
 					@return		My video buffer.
 				**/
@@ -6765,8 +7115,8 @@ typedef enum
 				inline const AUTOCIRCULATE_TRANSFER_STATUS &	GetTransferStatus (void) const			{return acTransferStatus;}
 
 				/**
-					@brief	Returns a constant reference to my AUTOCIRCULATE_TRANSFER_STATUS.
-					@return	A constant reference to my AUTOCIRCULATE_TRANSFER_STATUS.
+					@brief	Returns a constant reference to my FRAME_STAMP.
+					@return	A constant reference to my FRAME_STAMP.
 				**/
 				inline const FRAME_STAMP &				GetFrameInfo (void) const						{return acTransferStatus.acFrameStamp;}
 
@@ -6841,6 +7191,9 @@ typedef enum
 			typedef std::set <NTV2FrameBufferFormat>			NTV2FrameBufferFormatSet;			///< @brief	A set of distinct NTV2FrameBufferFormat values.
 			typedef NTV2FrameBufferFormatSet::const_iterator	NTV2FrameBufferFormatSetConstIter;	///< @brief	A handy const iterator for iterating over an NTV2FrameBufferFormatSet.
 
+			typedef std::set <NTV2Standard>						NTV2StandardSet;					///< @brief	A set of distinct NTV2Standard values.
+			typedef NTV2StandardSet::const_iterator				NTV2StandardSetConstIter;			///< @brief	A handy const iterator for iterating over an NTV2StandardSet.
+
 			typedef std::set <NTV2InputSource>					NTV2InputSourceSet;					///< @brief	A set of distinct NTV2InputSource values.
 			typedef NTV2InputSourceSet::const_iterator			NTV2InputSourceSetConstIter;		///< @brief	A handy const interator for iterating over an NTV2InputSourceSet.
 
@@ -6891,6 +7244,31 @@ typedef enum
 				@return		A reference to the modified set.
 			**/
 			AJAExport NTV2FrameBufferFormatSet & operator += (NTV2FrameBufferFormatSet & inOutSet, const NTV2FrameBufferFormatSet inSet);
+
+			/**
+				@brief	Returns a set of distinct NTV2Standard values supported on the given device.
+				@param[in]	inDeviceID		Specifies the NTV2DeviceID of the device of interest.
+				@param[out]	outStandards	Receives the set of distinct NTV2Standard values supported by the device.
+				@return		True if successful;  otherwise false.
+				@todo	This needs to be moved to a C++ compatible "device features" module.
+			**/
+			AJAExport bool NTV2DeviceGetSupportedStandards (const NTV2DeviceID inDeviceID, NTV2StandardSet & outStandards);
+
+			/**
+				@brief		Prints the given NTV2StandardSet's contents into the given output stream.
+				@param		inOStream		The stream into which the human-readable list will be written.
+				@param[in]	inStandards		Specifies the set of NTV2Standard values to be streamed.
+				@return		The "inOStream" that was specified.
+			**/
+			AJAExport std::ostream & operator << (std::ostream & inOStream, const NTV2StandardSet & inStandards);
+
+			/**
+				@brief		Appends the given NTV2StandardSet's contents into the given set.
+				@param		inOutSet	The set to which the other set will be appended.
+				@param[in]	inSet		Specifies the set whose contents will be appended.
+				@return		A reference to the modified set.
+			**/
+			AJAExport NTV2StandardSet & operator += (NTV2StandardSet & inOutSet, const NTV2StandardSet inSet);
 
 			/**
 				@brief		Prints the given NTV2InputSourceSet's contents into the given output stream.

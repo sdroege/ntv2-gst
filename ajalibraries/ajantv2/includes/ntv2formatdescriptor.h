@@ -26,7 +26,7 @@
 			including the total number of lines, number of pixels per line, line pitch, and which line contains the start
 			of active video.
 **/
-typedef struct NTV2FormatDescriptor
+AJAExport typedef struct NTV2FormatDescriptor
 {
 	/**
 		@brief	My default constructor initializes me in an "invalid" state.
@@ -120,8 +120,29 @@ typedef struct NTV2FormatDescriptor
 	**/
 	inline ULWord	GetBytesPerRow (const UWord inPlaneIndex0 = 0) const	{return inPlaneIndex0 < mNumPlanes ? mLinePitch[inPlaneIndex0] : 0;}
 
-	inline ULWord	GetRasterWidth (void) const			{return numPixels;}			///< @return	The width of the raster, in pixels.
-	inline UWord	GetNumPlanes (void) const			{return mNumPlanes;}		///< @return	The number of planes in the raster.
+	inline ULWord	GetRasterWidth (void) const			{return numPixels;}		///< @return	The width of the raster, in pixels.
+	inline UWord	GetNumPlanes (void) const			{return mNumPlanes;}	///< @return	The number of planes in the raster.
+	std::string		PlaneToString (const UWord inPlaneIndex0) const;			///< @return	A string containing a human-readable name for the specified plane.
+
+	/**
+		@return		The zero-based index number of the plane that contains the byte at the given offset,
+					or 0xFFFF if the offset is not within any plane in the buffer.
+		@param[in]	inByteOffset	The offset, in bytes, to the byte of interest in the frame.
+	**/
+	UWord			ByteOffsetToPlane (const ULWord inByteOffset) const;
+
+	/**
+		@return		The zero-based index number of the raster line (row) that contains the byte at the given offset,
+					or 0xFFFF if the offset does not fall within any plane or line in the buffer.
+		@param[in]	inByteOffset	The offset, in bytes, to the byte of interest in the raster buffer.
+	**/
+	UWord			ByteOffsetToRasterLine (const ULWord inByteOffset) const;
+
+	/**
+		@return		True if the given byte offset is at the start of a new raster line (row);  otherwise false.
+		@param[in]	inByteOffset	The offset, in bytes, to the byte of interest in the frame.
+	**/
+	bool			IsAtLineStart (ULWord inByteOffset) const;
 
 	/**
 		@return	The height of the raster, in lines.
@@ -151,7 +172,16 @@ typedef struct NTV2FormatDescriptor
 		@param[in]	inRowIndex0			Specifies the row of interest in the buffer, where zero is the topmost row.
 		@param[in]	inPlaneIndex0		Specifies the plane of interest. Defaults to zero.
 	**/
-	const void *	GetRowAddress (const void * pInStartAddress, const ULWord inRowIndex0, const UWord inPlaneIndex0 = 0) const;
+	const void *					GetRowAddress (const void * pInStartAddress,  const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
+
+	/**
+		@return		The absolute byte offset from the start of the frame buffer to the start of the given raster line
+					in the given plane (or 0xFFFFFFFF if the row and/or plane indexes are bad).
+		@note		This function assumes that the planes contiguously abut each other in memory, in ascending address order.
+		@param[in]	inRowIndex0			Specifies the row of interest in the buffer, where zero is the topmost row.
+		@param[in]	inPlaneIndex0		Specifies the plane of interest. Defaults to zero.
+	**/
+	ULWord							RasterLineToByteOffset (const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
 
 	/**
 		@return		A pointer to the start of the first visible row in the given buffer, or NULL if invalid
@@ -203,6 +233,14 @@ typedef struct NTV2FormatDescriptor
 	bool							GetSMPTELineNumber (const ULWord inLineOffset, ULWord & outSMPTELine, bool & outIsField2) const;
 
 	/**
+		@brief		Answers with the equivalent line offset into the raster I describe for the given SMPTE line number.
+		@param[in]	inSMPTELine		Specifies the SMPTE line number.
+		@param[out]	outLineOffset	Receives the zero-based line offset into the raster I describe.
+		@return		True if successful;  otherwise false.
+	**/
+	bool							GetLineOffsetFromSMPTELine (const ULWord inSMPTELine, ULWord & outLineOffset) const;
+
+	/**
 		@return	True if I'm equal to the given NTV2FormatDescriptor.
 		@param[in]	inRHS	The right-hand-side operand that I'll be compared with.
 	**/
@@ -219,15 +257,17 @@ typedef struct NTV2FormatDescriptor
 	/**
 		@brief		Writes the given frame buffer line offset as a formatted SMPTE line number into the given output stream.
 		@param[in]	inLineOffset	Specifies the zero-based line offset in the frame buffer.
+		@param[in]	inForTextMode	Defaults to false. If true, omits the space between the field indicator and the line number, and adds leading zeroes to line number.
 		@return		The output stream I was handed.
 	**/
-	std::ostream &					PrintSMPTELineNumber (std::ostream & inOutStream, const ULWord inLineOffset) const;
+	std::ostream &					PrintSMPTELineNumber (std::ostream & inOutStream, const ULWord inLineOffset, const bool inForTextMode = false) const;
 
 	inline NTV2Standard				GetVideoStandard (void) const	{return mStandard;}							///< @return	The video standard I was created with.
 	inline NTV2VideoFormat			GetVideoFormat (void) const		{return mVideoFormat;}						///< @return	The video format I was created with.
 	inline NTV2FrameBufferFormat	GetPixelFormat (void) const		{return mPixelFormat;}						///< @return	The pixel format I was created with.
 	inline NTV2VANCMode				GetVANCMode (void) const		{return mVancMode;}							///< @return	The VANC mode I was created with.
 	inline bool						Is2KFormat (void) const			{return m2Kby1080;}							///< @return	True if I was created with a 2Kx1080 video format.
+	inline bool						IsSDFormat (void) const			{return NTV2_IS_SD_VIDEO_FORMAT(GetVideoFormat()) || NTV2_IS_SD_STANDARD(GetVideoStandard());}	///< @return	True if I was created with an SD video format or standard.
 	inline bool						IsQuadRaster (void) const		{return NTV2_IS_QUAD_STANDARD(mStandard) || NTV2_IS_4K_VIDEO_FORMAT(mVideoFormat);}	///< @return	True if I was created with a 4K/UHD video format or standard.
 	inline bool						IsTallVanc (void) const			{return mVancMode == NTV2_VANCMODE_TALL;}	///< @return	True if I was created with just "tall" VANC.
 	inline bool						IsTallerVanc (void) const		{return mVancMode == NTV2_VANCMODE_TALLER;}	///< @return	True if I was created with "taller" VANC.
@@ -251,7 +291,7 @@ typedef struct NTV2FormatDescriptor
 		bool					m2Kby1080;			///< @brief	My originating 2Kx1080 setting
 		ULWord					mLinePitch[4];		///< @brief	Number of bytes per row/line (per-plane)
 		UWord					mNumPlanes;			///< @brief	Number of planes
-		NTV2FrameGeometry		mFrameGeometry;		///< @brief My originating video geometry
+		NTV2FrameGeometry		mFrameGeometry;		///< @brief My originating frame geometry
 
 } NTV2FormatDescriptor;
 
@@ -262,7 +302,7 @@ typedef struct NTV2FormatDescriptor
 	@param[in]	inFormatDesc	Specifies the NTV2FormatDescriptor instance to print to the output stream.
 	@return	A non-constant reference to the specified output stream.
 **/
-inline std::ostream & operator << (std::ostream & inOutStream, const NTV2FormatDescriptor & inFormatDesc)	{return inFormatDesc.Print (inOutStream);}
+AJAExport inline std::ostream & operator << (std::ostream & inOutStream, const NTV2FormatDescriptor & inFormatDesc)	{return inFormatDesc.Print (inOutStream);}
 
 
 //#if !defined (NTV2_DEPRECATE_12_6)

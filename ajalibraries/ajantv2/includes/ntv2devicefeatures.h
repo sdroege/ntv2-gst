@@ -27,16 +27,44 @@
 #define	NTV2DeviceGetNumAudioEngines	NTV2DeviceGetNumAudioSystems
 
 
-//	Most of the device features functions are generated from '.csv' files exported from a spreadsheet using a Python script.
+//	Most of the device features functions are generated from '.csv' files using a Python script.
 //	The script writes the implementations into 'ntv2devicefeatures.hpp', and the declarations into 'ntv2devicefeatures.hh'...
 #include "ntv2devicefeatures.hh"
 
-AJAExport bool NTV2DeviceCanDoFormat(NTV2DeviceID boardID,
-									NTV2FrameRate		framerate,
-									NTV2FrameGeometry framegeometry, 
-									NTV2Standard		standard);
+/*
+	@return	True if the device having the given ID has LED audio meters;  otherwise false.
+	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
+*/
+AJAExport bool NTV2DeviceHasLEDAudioMeters(const NTV2DeviceID inDeviceID);
+/*
+	@return	True if the device having the given ID has a headphone jack;  otherwise false.
+	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
+*/
+AJAExport bool NTV2DeviceHasHeadphoneJack(const NTV2DeviceID inDeviceID);
+/*
+	@return	True if the device having the given ID has a pair of unbalanced RCA audio monitor output jacks;  otherwise false.
+	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
+*/
+AJAExport bool NTV2DeviceHasAudioMonitorRCAJacks(const NTV2DeviceID inDeviceID);
+/*
+	@return	True if the device having the given ID has a bi-directional analog audio connector;  otherwise false.
+	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
+*/
+AJAExport bool NTV2DeviceHasBiDirectionalAnalogAudio(const NTV2DeviceID inDeviceID);
+/*
+	@return	True if the device having the given ID can do audio output;  otherwise false.
+	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
+*/
+AJAExport bool NTV2DeviceCanDoAudioOut(const NTV2DeviceID inDeviceID);
+/*
+	@return	True if the device having the given ID can do audio input;  otherwise false.
+	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
+*/
+AJAExport bool NTV2DeviceCanDoAudioIn(const NTV2DeviceID inDeviceID);
+
 
 AJAExport bool NTV2DeviceCanDo3GOut (NTV2DeviceID boardID, UWord index0);
+AJAExport bool NTV2DeviceCanDo12GOut(NTV2DeviceID boardID, UWord index0);
 AJAExport bool NTV2DeviceCanDoLTCEmbeddedN (NTV2DeviceID boardID, UWord index0);
 
 // Overloading not supported by the ANSI C compiler used for Linux drivers.
@@ -80,7 +108,8 @@ AJAExport bool NTV2DeviceGetVideoFormatFromState_Ex (	NTV2VideoFormat *		pOutVal
 
 AJAExport bool NTV2DeviceCanConnect (const NTV2DeviceID inDeviceID, const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt);	///< @note	!!! NOT IMPLEMENTED YET !!!
 AJAExport bool NTV2DeviceCanDoTCIndex (const NTV2DeviceID inDeviceID, const NTV2TCIndex inTCIndex);	///< @return	True if the device having the given ID supports the specified NTV2TCIndex.
-
+AJAExport NTV2AudioSystem NTV2DeviceGetAudioMixerSystem(const NTV2DeviceID inDeviceID);
+AJAExport bool NTV2DeviceROMHasBankSelect (const NTV2DeviceID inDeviceID);
 AJAExport NTV2_DEPRECATED UWord NTV2DeviceGetNumAudioStreams (NTV2DeviceID boardID);		///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumAudioSystems instead.
 AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoAudioN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumAudioSystems instead.
 AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoLTCOutN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumLTCOutputs instead.
@@ -165,7 +194,7 @@ AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoRS422N (const NTV2DeviceID inDevic
 	#define	NTV2BoardCanDoDSKOpacity					NTV2DeviceCanDoDSKOpacity						///< @deprecated	Use NTV2DeviceCanDoDSKOpacity instead.
 	#define	NTV2BoardCanDoDualLink						NTV2DeviceCanDoDualLink							///< @deprecated	Use NTV2DeviceCanDoDualLink instead.
 	#define	NTV2BoardCanDoDVCProHD						NTV2DeviceCanDoDVCProHD							///< @deprecated	Use NTV2DeviceCanDoDVCProHD instead.
-	#define	NTV2BoardCanDoFormat						NTV2DeviceCanDoFormat							///< @deprecated	Use NTV2DeviceCanDoFormat instead.
+	#define	NTV2BoardCanDoFormat						NTV2DeviceCanDoFormat							///< @deprecated	Use NTV2DeviceCanDoVideoFormat instead.
 	#define	NTV2BoardCanDoFrameBufferFormat				NTV2DeviceCanDoFrameBufferFormat				///< @deprecated	Use NTV2DeviceCanDoFrameBufferFormat instead.
 	#define	NTV2BoardCanDoFreezeOutput					NTV2DeviceCanDoFreezeOutput						///< @deprecated	Use NTV2DeviceCanDoFreezeOutput instead.
 	#define	NTV2BoardCanDoHDMIOutStereo					NTV2DeviceCanDoHDMIOutStereo					///< @deprecated	Use NTV2DeviceCanDoHDMIOutStereo instead.

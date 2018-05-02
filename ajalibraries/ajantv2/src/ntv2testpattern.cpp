@@ -2510,7 +2510,7 @@ void CNTV2TESTPATTERNCLASS::DownloadSegmentedTestPattern(SegmentTestPatternData*
 					ReSampleYCbCrSampleLine((Word*)unPackedBuffer,(Word*)unPackedBuffer,numPixels,numOutputPixels);
 					ConvertLineto8BitYCbCr(unPackedBuffer,(UByte*)packedBuffer,numOutputPixels);
 					break;
-				case NTV2_FBF_8BIT_QREZ:
+/*				case NTV2_FBF_8BIT_QREZ:
 					// need to squeeze test pattern to 1/2 pixels and 1/2 lines
 					ReSampleYCbCrSampleLine((Word*)unPackedBuffer,(Word*)unPackedBuffer,numPixels,numOutputPixels);
 					ConvertLineto8BitYCbCr(unPackedBuffer,(UByte*)packedBuffer,numPixels);
@@ -2518,7 +2518,7 @@ void CNTV2TESTPATTERNCLASS::DownloadSegmentedTestPattern(SegmentTestPatternData*
 					nLines = (nLines/2);
 					//linePitch = 1280*2/4;
 					currentAddress = baseAddress + (startLine/2*linePitch);
-					break;
+					break;	*/
 				case NTV2_FBF_24BIT_RGB:
 					ConvertLinetoRGB(unPackedBuffer,(RGBAlphaPixel*)packedBuffer,numPixels, bIsSD);
 					ConvertARGBToRGB((UByte*)packedBuffer ,(UByte *) packedBuffer, numPixels);
@@ -2648,7 +2648,7 @@ void CNTV2TESTPATTERNCLASS::DownloadBlackTestPattern(  )
 	case NTV2_FBF_10BIT_YCBCR_DPX:
 	case NTV2_FBF_8BIT_DVCPRO:
 	case NTV2_FBF_8BIT_HDV:
-	case NTV2_FBF_8BIT_QREZ:
+	//case NTV2_FBF_8BIT_QREZ:
 	case NTV2_FBF_10BIT_YCBCRA:
 		{
 		// Assume 1080 format
@@ -3747,12 +3747,12 @@ void CNTV2TESTPATTERNCLASS::ConvertLinePixelFormat(UWord *unPackedBuffer, ULWord
 		case NTV2_FBF_8BIT_HDV:
 			ConvertLineto8BitYCbCr(unPackedBuffer, (UByte*)packedBuffer, numPixels);
 			break;
-
+/*
 		case NTV2_FBF_8BIT_QREZ:
 			ConvertLineto8BitYCbCr(unPackedBuffer, (UByte*)packedBuffer, numPixels);
 			Convert8BitYCbCrToYUY2((UByte*)packedBuffer, numPixels);
 			break;
-
+*/
 		case NTV2_FBF_24BIT_RGB:
 			ConvertLinetoRGB(unPackedBuffer, (RGBAlphaPixel*)packedBuffer, numPixels, bIsSD);
 			ConvertARGBToRGB((UByte*)packedBuffer ,(UByte *) packedBuffer, numPixels);
@@ -3834,7 +3834,7 @@ void CNTV2TESTPATTERNCLASS::AdjustFor2048x1080(ULWord& numPixels,ULWord& linePit
 		// Formats not yet supported, kill warning
 		case NTV2_FBF_10BIT_YCBCR_DPX:		
 		case NTV2_FBF_8BIT_DVCPRO:
-		case NTV2_FBF_8BIT_QREZ:
+		case NTV2_FBF_8BIT_YCBCR_420PL3:
 		case NTV2_FBF_8BIT_HDV:
 		case NTV2_FBF_10BIT_YCBCRA: 
 		case NTV2_FBF_PRORES:
@@ -3845,13 +3845,13 @@ void CNTV2TESTPATTERNCLASS::AdjustFor2048x1080(ULWord& numPixels,ULWord& linePit
 		case NTV2_FBF_NUMFRAMEBUFFERFORMATS:	// Error
 		case NTV2_FBF_10BIT_RAW_RGB:			//	TODO
 		case NTV2_FBF_10BIT_RAW_YCBCR:			//	TODO
-		case NTV2_FBF_UNUSED_23:
-		case NTV2_FBF_UNUSED_26:
-		case NTV2_FBF_UNUSED_27:
-		case NTV2_FBF_10BIT_YCBCR_420PL:
-		case NTV2_FBF_10BIT_YCBCR_422PL:
-		case NTV2_FBF_8BIT_YCBCR_420PL:
-		case NTV2_FBF_8BIT_YCBCR_422PL:
+		case NTV2_FBF_8BIT_YCBCR_422PL3:
+		case NTV2_FBF_10BIT_YCBCR_420PL3_LE:
+		case NTV2_FBF_10BIT_YCBCR_422PL3_LE:
+		case NTV2_FBF_10BIT_YCBCR_420PL2:
+		case NTV2_FBF_10BIT_YCBCR_422PL2:
+		case NTV2_FBF_8BIT_YCBCR_420PL2:
+		case NTV2_FBF_8BIT_YCBCR_422PL2:
 			numPixels = 0;
 			linePitch = 0;
 			break;
@@ -3903,7 +3903,7 @@ void CNTV2TESTPATTERNCLASS::AdjustFor3840x2160(ULWord& numPixels,ULWord& linePit
 		// Formats not yet supported, kill warning
 	case NTV2_FBF_10BIT_YCBCR_DPX:		
 	case NTV2_FBF_8BIT_DVCPRO:
-	case NTV2_FBF_8BIT_QREZ:
+	case NTV2_FBF_8BIT_YCBCR_420PL3:
 	case NTV2_FBF_8BIT_HDV:
 	case NTV2_FBF_10BIT_YCBCRA: 
 	case NTV2_FBF_PRORES:
@@ -3914,9 +3914,9 @@ void CNTV2TESTPATTERNCLASS::AdjustFor3840x2160(ULWord& numPixels,ULWord& linePit
 	case NTV2_FBF_NUMFRAMEBUFFERFORMATS:	// Error
 	case NTV2_FBF_10BIT_RAW_RGB:			//	TODO
 	case NTV2_FBF_10BIT_RAW_YCBCR:			//	TODO
-	case NTV2_FBF_UNUSED_23:
-	case NTV2_FBF_UNUSED_26:
-	case NTV2_FBF_UNUSED_27:
+	case NTV2_FBF_8BIT_YCBCR_422PL3:
+	case NTV2_FBF_10BIT_YCBCR_420PL3_LE:
+	case NTV2_FBF_10BIT_YCBCR_422PL3_LE:
 	case NTV2_FBF_10BIT_YCBCR_420PL:
 	case NTV2_FBF_10BIT_YCBCR_422PL:
 	case NTV2_FBF_8BIT_YCBCR_420PL:
@@ -3973,7 +3973,7 @@ void CNTV2TESTPATTERNCLASS::AdjustFor4096x2160(ULWord& numPixels,ULWord& linePit
 		// Formats not yet supported, kill warning
 	case NTV2_FBF_10BIT_YCBCR_DPX:		
 	case NTV2_FBF_8BIT_DVCPRO:
-	case NTV2_FBF_8BIT_QREZ:
+	case NTV2_FBF_8BIT_YCBCR_420PL3:
 	case NTV2_FBF_8BIT_HDV:
 	case NTV2_FBF_10BIT_YCBCRA: 
 	case NTV2_FBF_PRORES:
@@ -3984,9 +3984,9 @@ void CNTV2TESTPATTERNCLASS::AdjustFor4096x2160(ULWord& numPixels,ULWord& linePit
 	case NTV2_FBF_NUMFRAMEBUFFERFORMATS:	// Error
 	case NTV2_FBF_10BIT_RAW_RGB:			//	TODO
 	case NTV2_FBF_10BIT_RAW_YCBCR:			//	TODO
-	case NTV2_FBF_UNUSED_23:
-	case NTV2_FBF_UNUSED_26:
-	case NTV2_FBF_UNUSED_27:
+	case NTV2_FBF_8BIT_YCBCR_422PL3:
+	case NTV2_FBF_10BIT_YCBCR_420PL3_LE:
+	case NTV2_FBF_10BIT_YCBCR_422PL3_LE:
 	case NTV2_FBF_10BIT_YCBCR_420PL:
 	case NTV2_FBF_10BIT_YCBCR_422PL:
 	case NTV2_FBF_8BIT_YCBCR_420PL:

@@ -294,6 +294,8 @@ AJAThreadImpl::Stop(uint32_t timeout)
 AJAStatus
 AJAThreadImpl::Kill(uint32_t exitCode)
 {
+    AJA_UNUSED(exitCode);
+
 	AJAAutoLock lock(&mLock);
 	AJAStatus returnStatus = AJA_STATUS_SUCCESS;
 
@@ -572,4 +574,14 @@ AJAStatus AJAThreadImpl::SetThreadName(const char *name) {
 		return AJA_STATUS_FAIL;
 	}
 	return AJA_STATUS_SUCCESS;
+}
+
+uint64_t AJAThreadImpl::GetThreadId()
+{
+    errno = 0;
+    pid_t tid = syscall(SYS_gettid);
+    if (errno == 0)
+        return uint64_t(tid);
+    else
+        return 0;
 }

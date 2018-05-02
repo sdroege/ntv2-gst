@@ -97,12 +97,16 @@ const char * NTV2DeviceIDString (const NTV2DeviceID id)
         case DEVICE_ID_CORVID44:					return "DEVICE_ID_CORVID44";					break;
         case DEVICE_ID_CORVIDHEVC:					return "DEVICE_ID_CORVIDHEVC";					break;
         case DEVICE_ID_CORVIDHBR:					return "DEVICE_ID_CORVIDHBR";					break;
-        case DEVICE_ID_KONAIP_4CH_1SFP:				return "DEVICE_ID_KONAIP_4CH_1SFP";				break;
+        case DEVICE_ID_KONAIP_2022:                 return "DEVICE_ID_KONAIP_2022";                 break;
         case DEVICE_ID_KONAIP_4CH_2SFP:				return "DEVICE_ID_KONAIP_4CH_2SFP";				break;
 		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K";		break;
         case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "DEVICE_ID_KONAIP_2TX_1SFP_J2K";			break;
         case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "DEVICE_ID_KONAIP_2RX_1SFP_J2K";			break;
 		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "DEVICE_ID_KONAIP_1RX_1TX_2110";			break;
+		case DEVICE_ID_KONAIP_2110:                 return "DEVICE_ID_KONAIP_2110";                 break;
+		case DEVICE_ID_IO4KPLUS:					return "DEVICE_ID_IO4KPLUS";					break;
+        case DEVICE_ID_IOIP_2022:					return "DEVICE_ID_IOIP_2022";					break;
+        case DEVICE_ID_IOIP_2110:					return "DEVICE_ID_IOIP_2110";					break;
         case DEVICE_ID_NOTFOUND:					return "DEVICE_ID_NOTFOUND";					break;
 	}
 	return "";
@@ -180,12 +184,16 @@ const char * NTV2DeviceString (const NTV2DeviceID id)
 		case DEVICE_ID_CORVID44:					return "Corvid44";					break;
 		case DEVICE_ID_CORVIDHEVC:					return "CorvidHEVC";				break;
 		case DEVICE_ID_CORVIDHBR:					return "CorvidHBR";					break;
-		case DEVICE_ID_KONAIP_4CH_1SFP:				return "KonaIP_4ch_1sfp";			break;
+		case DEVICE_ID_KONAIP_2022:                 return "KonaIP_2022";               break;
 		case DEVICE_ID_KONAIP_4CH_2SFP:				return "KonaIP_4ch_2sfp";			break;
 		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "KonaIP_1Rx_1Tx_1sfp_j2k";	break;
         case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "KonaIP_2Tx_1sfp_j2k";		break;
         case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "KonaIP_2Rx_1sfp_j2k";		break;
 		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "KonaIP_1RX_1TX_2110";		break;
+		case DEVICE_ID_KONAIP_2110:                 return "KonaIP_2110";               break;
+		case DEVICE_ID_IO4KPLUS:					return "DNxIV";						break;
+        case DEVICE_ID_IOIP_2022:					return "DNxIP_2022";				break;
+        case DEVICE_ID_IOIP_2110:					return "DNxIP_2110";				break;
         case DEVICE_ID_NOTFOUND:					return "Unknown";					break;
 	}
 
@@ -227,42 +235,42 @@ const char *NTV2FrameBufferFormatString (NTV2FrameBufferFormat fmt)
 	
 	switch (fmt)
 	{
-		case NTV2_FBF_10BIT_YCBCR:				result = "NTV2_FBF_10BIT_YCBCR";		break;
-		case NTV2_FBF_8BIT_YCBCR:				result = "NTV2_FBF_8BIT_YCBCR";			break;
-		case NTV2_FBF_ARGB:						result = "NTV2_FBF_ARGB";				break;
-		case NTV2_FBF_RGBA:						result = "NTV2_FBF_RGBA";				break;
-		case NTV2_FBF_10BIT_RGB:				result = "NTV2_FBF_10BIT_RGB";			break;
-		case NTV2_FBF_8BIT_YCBCR_YUY2:			result = "NTV2_FBF_8BIT_YCBCR_YUY2";	break;
-		case NTV2_FBF_ABGR:						result = "NTV2_FBF_ABGR";				break;
-		case NTV2_FBF_10BIT_DPX:				result = "NTV2_FBF_10BIT_DPX";			break;
-		case NTV2_FBF_10BIT_YCBCR_DPX:			result = "NTV2_FBF_10BIT_YCBCR_DPX";	break;
-		case NTV2_FBF_8BIT_DVCPRO:				result = "NTV2_FBF_8BIT_DVCPRO";		break;
-		case NTV2_FBF_8BIT_QREZ:				result = "NTV2_FBF_8BIT_QREZ";			break;
-		case NTV2_FBF_8BIT_HDV:					result = "NTV2_FBF_8BIT_HDV";			break;
-		case NTV2_FBF_24BIT_RGB:				result = "NTV2_FBF_24BIT_RGB";			break;
-		case NTV2_FBF_24BIT_BGR:				result = "NTV2_FBF_24BIT_BGR";			break;
-		case NTV2_FBF_10BIT_YCBCRA:				result = "NTV2_FBF_10BIT_YCBCRA";		break;
-		case NTV2_FBF_10BIT_DPX_LITTLEENDIAN:	result = "NTV2_FBF_10BIT_DPX_LITTLEENDIAN";	break;
-		case NTV2_FBF_48BIT_RGB:				result = "NTV2_FBF_48BIT_RGB";			break;
-		case NTV2_FBF_PRORES:					result = "NTV2_FBF_PRORES";				break;
-		case NTV2_FBF_PRORES_DVCPRO:			result = "NTV2_FBF_PRORES_DVCPRO";		break;
-		case NTV2_FBF_PRORES_HDV:				result = "NTV2_FBF_PRORES_HDV";			break;
-		case NTV2_FBF_10BIT_RGB_PACKED:			result = "NTV2_FBF_10BIT_RGB_PACKED";	break;
-		case NTV2_FBF_10BIT_ARGB:				result = "NTV2_FBF_10BIT_ARGB";			break;
-		case NTV2_FBF_16BIT_ARGB:				result = "NTV2_FBF_16BIT_ARGB";			break;
-		case NTV2_FBF_10BIT_RAW_RGB:			result = "NTV2_FBF_10BIT_RAW_RGB";		break;
-		case NTV2_FBF_10BIT_RAW_YCBCR:			result = "NTV2_FBF_10BIT_RAW_YCBCR";	break;
-		case NTV2_FBF_10BIT_YCBCR_420PL:		result = "NTV2_FBF_10BIT_YCBCR_420PL";	break;
-		case NTV2_FBF_10BIT_YCBCR_422PL:		result = "NTV2_FBF_10BIT_YCBCR_422PL";	break;
-		case NTV2_FBF_8BIT_YCBCR_420PL:			result = "NTV2_FBF_8BIT_YCBCR_420PL";	break;
-		case NTV2_FBF_8BIT_YCBCR_422PL:			result = "NTV2_FBF_8BIT_YCBCR_422PL";	break;
+		case NTV2_FBF_10BIT_YCBCR:				result = "NTV2_FBF_10BIT_YCBCR";			break;
+		case NTV2_FBF_8BIT_YCBCR:				result = "NTV2_FBF_8BIT_YCBCR";				break;
+		case NTV2_FBF_ARGB:						result = "NTV2_FBF_ARGB";					break;
+		case NTV2_FBF_RGBA:						result = "NTV2_FBF_RGBA";					break;
+		case NTV2_FBF_10BIT_RGB:				result = "NTV2_FBF_10BIT_RGB";				break;
+		case NTV2_FBF_8BIT_YCBCR_YUY2:			result = "NTV2_FBF_8BIT_YCBCR_YUY2";		break;
+		case NTV2_FBF_ABGR:						result = "NTV2_FBF_ABGR";					break;
+		case NTV2_FBF_10BIT_DPX:				result = "NTV2_FBF_10BIT_DPX";				break;
+		case NTV2_FBF_10BIT_YCBCR_DPX:			result = "NTV2_FBF_10BIT_YCBCR_DPX";		break;
+		case NTV2_FBF_8BIT_DVCPRO:				result = "NTV2_FBF_8BIT_DVCPRO";			break;
+		case NTV2_FBF_8BIT_YCBCR_420PL3:		result = "NTV2_FBF_8BIT_YCBCR_420PL3";		break;	//	was NTV2_FBF_8BIT_QREZ
+		case NTV2_FBF_8BIT_HDV:					result = "NTV2_FBF_8BIT_HDV";				break;
+		case NTV2_FBF_24BIT_RGB:				result = "NTV2_FBF_24BIT_RGB";				break;
+		case NTV2_FBF_24BIT_BGR:				result = "NTV2_FBF_24BIT_BGR";				break;
+		case NTV2_FBF_10BIT_YCBCRA:				result = "NTV2_FBF_10BIT_YCBCRA";			break;
+		case NTV2_FBF_10BIT_DPX_LE:				result = "NTV2_FBF_10BIT_DPX_LE";			break;
+		case NTV2_FBF_48BIT_RGB:				result = "NTV2_FBF_48BIT_RGB";				break;
+		case NTV2_FBF_PRORES:					result = "NTV2_FBF_PRORES";					break;
+		case NTV2_FBF_PRORES_DVCPRO:			result = "NTV2_FBF_PRORES_DVCPRO";			break;
+		case NTV2_FBF_PRORES_HDV:				result = "NTV2_FBF_PRORES_HDV";				break;
+		case NTV2_FBF_10BIT_RGB_PACKED:			result = "NTV2_FBF_10BIT_RGB_PACKED";		break;
+		case NTV2_FBF_10BIT_ARGB:				result = "NTV2_FBF_10BIT_ARGB";				break;
+		case NTV2_FBF_16BIT_ARGB:				result = "NTV2_FBF_16BIT_ARGB";				break;
+		case NTV2_FBF_8BIT_YCBCR_422PL3:		result = "NTV2_FBF_8BIT_YCBCR_422PL3";		break;	//	was NTV2_FBF_UNUSED_23
+		case NTV2_FBF_10BIT_RAW_RGB:			result = "NTV2_FBF_10BIT_RAW_RGB";			break;
+		case NTV2_FBF_10BIT_RAW_YCBCR:			result = "NTV2_FBF_10BIT_RAW_YCBCR";		break;
+		case NTV2_FBF_10BIT_YCBCR_420PL3_LE:	result = "NTV2_FBF_10BIT_YCBCR_420PL3_LE";	break;	//	was NTV2_FBF_UNUSED_26
+		case NTV2_FBF_10BIT_YCBCR_422PL3_LE:	result = "NTV2_FBF_10BIT_YCBCR_422PL3_LE";	break;	//	was NTV2_FBF_UNUSED_27
+		case NTV2_FBF_10BIT_YCBCR_420PL2:		result = "NTV2_FBF_10BIT_YCBCR_420PL2";		break;
+		case NTV2_FBF_10BIT_YCBCR_422PL2:		result = "NTV2_FBF_10BIT_YCBCR_422PL2";		break;
+		case NTV2_FBF_8BIT_YCBCR_420PL2:		result = "NTV2_FBF_8BIT_YCBCR_420PL2";		break;
+		case NTV2_FBF_8BIT_YCBCR_422PL2:		result = "NTV2_FBF_8BIT_YCBCR_422PL2";		break;
 #if !defined (_DEBUG)
 		default:
 #endif
-		case NTV2_FBF_UNUSED_23:
-		case NTV2_FBF_UNUSED_26:
-		case NTV2_FBF_UNUSED_27:
-		case NTV2_FBF_INVALID:					result = "NTV2_FBF_INVALID";			break;
+		case NTV2_FBF_INVALID:					result = "NTV2_FBF_INVALID";				break;
 	}
 	
 	return (result);
@@ -610,8 +618,8 @@ const char * ntv2RegStrings[] =
 	"kRegFS1ProcAmpC1CR_C2CB",						//  85
 	"kRegFS1ProcAmpC2CROffsetY",					//  86
 	"kRegAud2Delay",								//  87
-	"kRegAuxInterruptDelay",						//  88
-	"kRegReserved89",								//  89
+	"kRegBitfileDate",								//  88
+	"kRegBitfileTime",								//  89
 
 	"kRegFS1I2CControl",							//  90
 	"kRegFS1I2C1Address",							//  91
@@ -789,7 +797,7 @@ const char * ntv2RegStrings[] =
 	"kRegLTC2OutBits32_63",							// 253
 	"kRegLTC2InBits0_31",							// 254
 	"kRegLTC2InBits32_63",							// 255
-	"kRegSDIDirectionControl",						// 256
+	"kRegSDITransmitControl",						// 256
 	"kRegCh3Control",								// 257
 	"kRegCh3OutputFrame",							// 258
 	"kRegCh3InputFrame",							// 259

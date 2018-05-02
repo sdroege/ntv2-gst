@@ -17,7 +17,7 @@
 #elif defined(AJAWindows)
 	#include "ntv2device.h"
 	#define GetNTV2StandardFromVideoFormat	CNTV2Device::GetNTV2StandardFromVideoFormat
-	#define GetNTV2FrameRateFromVideoFormat	CNTV2Device::GetNTV2FrameRateFromVideoFormat
+	#define GetNTV2FrameRateFromVideoFormat	CNTV2Device::GetNTV2ActualFrameRateFromVideoFormat
 #elif defined(AJAMac)
 	#include "MacDriver.h"
 	#define GetNTV2StandardFromVideoFormat	MacDriver::GetNTV2StandardFromVideoFormat
@@ -42,6 +42,9 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	bool	isRGB					= false;
 	bool	isTSI					= false;
 	bool	isStereo				= false;
+	bool	is6G					= false;
+	bool	is12G					= false;
+	VPIDChannel vpidChannel			= VPIDChannel_1;
 
 	uint8_t	byte1 = 0;
 	uint8_t	byte2 = 0;
@@ -60,12 +63,18 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	isRGB					= pInVPIDSpec->isRGBOnWire;
 	isTSI					= pInVPIDSpec->isTwoSampleInterleave;
 	isStereo				= pInVPIDSpec->isStereo;
+	is6G					= pInVPIDSpec->isOutput6G;
+	is12G					= pInVPIDSpec->isOutput12G;
+	vpidChannel				= pInVPIDSpec->vpidChannel;
 
 	if (! NTV2_IS_WIRE_FORMAT (outputFormat))
 	{
 		*pOutVPID = 0;
 		return true;
 	}
+
+	if (is6G || is12G)
+		vpidChannel = VPIDChannel_1;
 
 	frameRate				= GetNTV2FrameRateFromVideoFormat			(outputFormat);
 	isProgressivePicture	= NTV2_VIDEO_FORMAT_HAS_PROGRESSIVE_PICTURE (outputFormat);
@@ -77,7 +86,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	if (NTV2_IS_PSF_VIDEO_FORMAT (outputFormat))
 		isProgressiveTransport = false;										//	PSF is never a progressive transport
 
-	if ( ! isRGB && isDualLink )
+	if ( ! isRGB && isDualLink &&  ! isTSI)
 		isProgressiveTransport = false;										//	Dual link YCbCr is not a progressive transport
 
 	if (isTSI && NTV2_IS_4K_HFR_VIDEO_FORMAT (outputFormat) && isLevelB)
@@ -143,7 +152,9 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 					byte1 = isStereo ? (uint8_t) VPIDStandard_1080_Stereo_3Gb : (uint8_t) VPIDStandard_1080_3Gb;	//	0x8F : 0x8C
 			}
 			else
+			{
 				byte1 = isStereo ? (uint8_t) VPIDStandard_1080_Stereo_3Ga : (uint8_t) VPIDStandard_1080_3Ga;	//	0x92 : 0x89
+			}
 		}
 		else
 		{
@@ -192,14 +203,31 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x2048x1080p_3000:
 		if (isTSI)
 		{
-            byte1 = is3G ? (uint8_t) VPIDStandard_2160_DualLink : (uint8_t) VPIDStandard_1080;	//	0x96 : 0x85
+			if(is12G)
+				byte1 = VPIDStandard_2160_Single_12Gb; //0xCE
+			else if(is6G)
+				byte1 = VPIDStandard_2160_Single_6Gb; //0xC0
+			else if (is3G)
+			{
+				if (isLevelB)
+					byte1 = isDualLink? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_DualLink;  //  0x98 : 0x96
+				else
+					byte1 = (uint8_t) VPIDStandard_2160_QuadLink_3Ga;  //  0x97
+			}
+			else
+				byte1 = (uint8_t) VPIDStandard_1080;  //  0x85 (bogus if not 3G)
 		}
 		else
 		{
 			if (is3G)
-				byte1 = (uint8_t) VPIDStandard_1080_DualLink_3Gb;	//	0x8A
+			{
+				if (isLevelB)
+					byte1 = isDualLink? (uint8_t) VPIDStandard_1080_DualLink_3Gb : (uint8_t) VPIDStandard_1080_3Gb;  //  8A : 8C
+				else
+					byte1 = (uint8_t) VPIDStandard_1080_3Ga;   // 89
+			}
 			else
-				byte1 = (uint8_t) VPIDStandard_1080;		//	0x85
+				byte1 = isDualLink? (uint8_t) VPIDStandard_1080_DualLink : (uint8_t) VPIDStandard_1080;  //  0x87 : 0x85
 		}
 		break;
 
@@ -213,7 +241,12 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x2048x1080p_6000:
 		if (isTSI)
 		{
-			byte1 = isLevelB ? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_QuadLink_3Ga;	//	0x98 : 0x97
+			if(is12G)
+				byte1 = VPIDStandard_2160_Single_12Gb;
+			else if(is6G)
+				byte1 = VPIDStandard_2160_Single_6Gb;
+			else
+				byte1 = isLevelB ? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_QuadLink_3Ga;	//	0x98 : 0x97
 		}
 		else
 		{
@@ -225,8 +258,6 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		*pOutVPID = 0;
 		return true;
 	}
-
-	byte1 |= VPIDVersion_1 << 7;	//	0x80
 
 	//
 	//	Byte 2
@@ -380,14 +411,14 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	if (pInVPIDSpec->isTwoSampleInterleave)
 	{
 		if (isLevelB && NTV2_IS_4K_HFR_VIDEO_FORMAT (outputFormat))
-			byte4 |= pInVPIDSpec->vpidChannel << 5;
+			byte4 |= vpidChannel << 5;
 		else
-			byte4 |= pInVPIDSpec->vpidChannel << 6;
+			byte4 |= vpidChannel << 6;
 	}
 	else
 	{
 		if (pInVPIDSpec->useChannel)
-			byte4 |= pInVPIDSpec->vpidChannel << 6;	
+			byte4 |= vpidChannel << 6;	
 	}
 
 	//	Audio

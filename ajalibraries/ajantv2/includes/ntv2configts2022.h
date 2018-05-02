@@ -70,9 +70,8 @@ public:
     bool    ReadbackJ2KDecoder(j2kDecoderConfig &config);
     bool    GetJ2KDecoderStatus(j2kDecoderStatus &status);
 
-    // If method returns false call this to get details
-    std::string getLastError();
-
+    // If method returns false call this to get the error code
+    NTV2IpError getLastErrorCode();
 
  private:
 
@@ -90,9 +89,12 @@ public:
 
     // Routines to talk to the J2K part
     bool                J2kCanAcceptCmd(const NTV2Channel channel);
+    bool                J2KGetNextT0Status(const NTV2Channel channel, uint32_t *pStatus);
+    bool                GetT0CmdStatus( const NTV2Channel channel, const uint32_t cmdId, uint32_t *pStatus );
     void                J2kSetParam(const NTV2Channel channel, uint32_t config, uint32_t param, uint32_t value);
     void                J2kSetMode(const NTV2Channel channel, uint32_t tier, uint32_t mode);
     uint32_t            J2kGetFrameCounter(const NTV2Channel channel, uint32_t tier);
+    void                J2kSetConfig(const NTV2Channel channel, uint32_t config);
 
     uint32_t            GetFeatures();
 
@@ -104,6 +106,10 @@ public:
 
     bool                WriteJ2KConfigReg(const NTV2Channel channel, const uint32_t reg, const uint32_t value);
     bool                ReadJ2KConfigReg(const NTV2Channel channel, const uint32_t reg,  uint32_t * value);
+
+    void                SetEncoderInputEnable(const NTV2Channel channel, bool bEnable, bool bMDEnable );
+    void                SetEncoderReset(const NTV2Channel channel, bool bReset );
+    int32_t             CalculateTsGen(const NTV2Channel channel);
 
     bool                _is2022_6;
     bool                _is2022_2;
