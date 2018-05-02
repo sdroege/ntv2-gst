@@ -25,6 +25,7 @@
 #include "gstajavideosrc.h"
 #include "gstajavideosrc.h"
 #include <gst/video/video-anc.h>
+#include <gst/video/video-vbi.h>
 
 
 GST_DEBUG_CATEGORY_STATIC (gst_aja_video_src_debug);
