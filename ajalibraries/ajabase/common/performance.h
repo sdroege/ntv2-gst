@@ -1,6 +1,6 @@
 /**
 	@file		performance.h
-	@copyright	Copyright (C) 2011-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2011-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declaration of the AJAPerformance class.
 **/
 
@@ -14,7 +14,7 @@
 #include <string>
 #include <map>
 
-typedef std::map<std::string, uint64_t> AJAPerformaceExtraMap;
+typedef std::map<std::string, uint64_t> AJAPerformanceExtraMap;
 
 /////////////////////////////
 // Declarations
@@ -22,11 +22,41 @@ typedef std::map<std::string, uint64_t> AJAPerformaceExtraMap;
 class AJAPerformance
 {
 	public:
+        /**
+         *	Constructor
+         *
+         *  @param[in]  name The name for the performance object.
+         *  @param[in]  precision The Precision units to use.
+         *  @param[in]  skipEntries The number of entries to skip over before tracking performance,
+         *                          the idea here is to skip over any "warm-up" period.
+         */
         AJAPerformance(const std::string& name,
-                       AJATimerPrecision precision = AJATimerPrecisionMilliseconds);
-        AJAPerformance(const std::string& name, const AJAPerformaceExtraMap& values,
-                       AJATimerPrecision precision = AJATimerPrecisionMilliseconds);
-        AJAPerformance(AJATimerPrecision precision = AJATimerPrecisionMilliseconds);
+                       AJATimerPrecision precision = AJATimerPrecisionMilliseconds,
+                       uint64_t skipEntries = 0);
+
+        /**
+         *	Constructor
+         *
+         *  @param[in]  name The name for the performance object.
+         *  @param[in]  values Extra values that can be stored along with performance info.
+         *  @param[in]  precision The Precision units to use.
+         *  @param[in]  skipEntries The number of entries to skip over before tracking performance,
+         *                          the idea here is to skip over any "warm-up" period.
+         */
+        AJAPerformance(const std::string& name, const AJAPerformanceExtraMap& values,
+                       AJATimerPrecision precision = AJATimerPrecisionMilliseconds,
+                       uint64_t skipEntries = 0);
+
+        /**
+         *	Constructor
+         *
+         *  @param[in]  precision The Precision units to use.
+         *  @param[in]  skipEntries The number of entries to skip over before tracking performance,
+         *                          the idea here is to skip over any "warm-up" period.
+         */
+        AJAPerformance(AJATimerPrecision precision = AJATimerPrecisionMilliseconds,
+                       uint64_t skipEntries = 0);
+
 		~AJAPerformance(void);
 
         /**
@@ -34,7 +64,7 @@ class AJAPerformance
          *
          *  @param[in]  values The extra values to assign to this object
          */
-        void SetExtras(const AJAPerformaceExtraMap& values);
+        void SetExtras(const AJAPerformanceExtraMap& values);
 
         /**
          *	Start the timer of the performance object
@@ -50,8 +80,10 @@ class AJAPerformance
         /**
          *	Print out a performance report to AJADebug
          *  @param[in]  name Name to use in printout, if empty will use the name passed in constructor
+         *	@param[in]	pFileName	The source filename reporting the performace.
+         *	@param[in]	lineNumber	The line number in the source file reporting the performance.
          */
-        void Report(const std::string& name = "");
+        void Report(const std::string& name = "", const char *pFileName = NULL, int32_t lineNumber = -1);
 
         /**
          *  Returns the name for the performance object that was set in the constructor
@@ -101,7 +133,7 @@ class AJAPerformance
         /**
          *  Returns a map of any extra values stored in the performance object
          */
-        const AJAPerformaceExtraMap Extras(void);
+        const AJAPerformanceExtraMap Extras(void);
 
     private:
         AJATimer                    mTimer;
@@ -112,20 +144,28 @@ class AJAPerformance
         uint64_t                    mMaxTime;
         double                      mMean;
         double                      mM2;
+        uint64_t                    mNumEntriesToSkipAtStart;
 
-        AJAPerformaceExtraMap       mExtras;
+        AJAPerformanceExtraMap      mExtras;
 };
 
 // Helper functions to track/report many performance timers and store in a map
 typedef std::map<std::string, AJAPerformance> AJAPerformanceTracking;
 
-extern bool AJAPerformaceTracking_start(AJAPerformanceTracking& stats,
-                                        std::string key, const AJAPerformaceExtraMap& extras,
-                                        AJATimerPrecision precision = AJATimerPrecisionMilliseconds);
+extern bool AJAPerformanceTracking_start(AJAPerformanceTracking& stats,
+                                        std::string key,
+                                        AJATimerPrecision precision = AJATimerPrecisionMilliseconds,
+                                        uint64_t skipEntries = 0);
 
-extern bool AJAPerformaceTracking_stop(AJAPerformanceTracking& stats, std::string key);
+extern bool AJAPerformanceTracking_start(AJAPerformanceTracking& stats,
+                                        std::string key, const AJAPerformanceExtraMap& extras,
+                                        AJATimerPrecision precision = AJATimerPrecisionMilliseconds,
+                                        uint64_t skipEntries = 0);
 
-extern bool AJAPerformaceTracking_report(AJAPerformanceTracking& stats, std::string title = "");
+extern bool AJAPerformanceTracking_stop(AJAPerformanceTracking& stats, std::string key);
+
+extern bool AJAPerformanceTracking_report(AJAPerformanceTracking& stats, std::string title = "",
+                                         const char *pFileName = NULL, int32_t lineNumber = -1);
 
 
 #endif // AJA_PERFORMANCE_H

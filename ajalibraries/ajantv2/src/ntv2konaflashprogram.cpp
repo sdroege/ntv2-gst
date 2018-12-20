@@ -1,7 +1,7 @@
 /**
 	@file		ntv2konaflashprogram.cpp
 	@brief		Implementation of CNTV2KonaFlashProgram class.
-	@copyright	(C) 2010-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2010-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2konaflashprogram.h"
@@ -20,6 +20,15 @@ static unsigned char signature[8] = {0xFF,0xFF,0xFF,0xFF,0xAA,0x99,0x55,0x66};
 static unsigned char head13[]   = { 0x00, 0x09, 0x0f, 0xf0, 0x0f, 0xf0, 0x0f, 0xf0, 0x0f, 0xf0, 0x00, 0x00, 0x01 };
 
 using namespace std;
+
+string MacAddr::AsString(void) const
+{
+	ostringstream	oss;
+	oss << xHEX0N(uint16_t(mac[0]),2) << ":" << xHEX0N(uint16_t(mac[1]),2) << ":" << xHEX0N(uint16_t(mac[2]),2)
+		<< ":" << xHEX0N(uint16_t(mac[3]),2) << ":" << xHEX0N(uint16_t(mac[4]),2) << ":" << xHEX0N(uint16_t(mac[5]),2);
+	return oss.str();
+}
+
 
 CNTV2KonaFlashProgram::CNTV2KonaFlashProgram ()
 	:	CNTV2Card (),
@@ -44,12 +53,13 @@ CNTV2KonaFlashProgram::CNTV2KonaFlashProgram ()
         _flashID            (MAIN_FLASHBLOCK),
 		_deviceID			(0),
 		_bQuiet				(false),
-        _mcsStep(0),
-        _spiFlash(NULL)
+        _mcsStep            (0),
+        _failSafePadding    (0),
+        _spiFlash           (NULL)
 {
 }
 
-CNTV2KonaFlashProgram::CNTV2KonaFlashProgram (const UWord boardNumber, const bool displayErrorMessage, const UWord ulBoardType)
+CNTV2KonaFlashProgram::CNTV2KonaFlashProgram (const UWord boardNumber)
 	:	CNTV2Card (boardNumber),
         _bitFileBuffer      (NULL),
         _customFileBuffer   (NULL),
@@ -73,10 +83,9 @@ CNTV2KonaFlashProgram::CNTV2KonaFlashProgram (const UWord boardNumber, const boo
         _deviceID           (0),
         _bQuiet             (false),
         _mcsStep            (0),
-        _spiFlash(NULL)
+        _failSafePadding    (0),
+        _spiFlash           (NULL)
 {
-	(void) displayErrorMessage;	//	unused
-	(void) ulBoardType;			//	unused
 	SetDeviceProperties();
 }
 
@@ -99,24 +108,28 @@ void CNTV2KonaFlashProgram::SetQuietMode()
     }
 }
 
-bool CNTV2KonaFlashProgram::SetBoard(UWord boardNumber, NTV2DeviceType boardType, uint32_t index)
+void CNTV2KonaFlashProgram::SetMBReset()
 {
-	if (!Open (boardNumber, false, boardType))
-		return false;
+    if (IsKonaIPDevice())
+    {
+        //Hold MB in reset
+        if(GetDeviceID() == DEVICE_ID_IOIP_2022 || GetDeviceID() == DEVICE_ID_IOIP_2110)
+        {
+            WriteRegister(SAREK_REGS + kRegSarekControl, 0x02);
+        }
+        else if(GetDeviceID() == DEVICE_ID_KONAIP_2022 || GetDeviceID() == DEVICE_ID_KONAIP_2110)
+        {
+            WriteRegister(SAREK_REGS + kRegSarekControl, 0x01);
+        }
+        //Take SPI bus control
+        WriteRegister(SAREK_REGS + kRegSarekSpiSelect, 0x01);
+    }
+}
 
-	// if board is a sarek with microblaze - ensure access to flash
-	CNTV2Card	device;
-	CNTV2DeviceScanner::GetDeviceAtIndex(boardNumber, device);
-	if (device.IsKonaIPDevice())
-	{
-		uint32_t regVal = 0;
-		device.ReadRegister(SAREK_REGS + kRegSarekFwCfg, &regVal);
-		if (regVal & SAREK_MB_PRESENT)
-		{
-			// take access
-			device.WriteRegister(SAREK_REGS + kRegSarekSpiSelect, 0x01);
-		}
-	}
+bool CNTV2KonaFlashProgram::SetBoard(UWord boardNumber, uint32_t index)
+{
+	if (!Open (boardNumber))
+		return false;
 
 	if (!SetDeviceProperties())
 		return false;
@@ -130,28 +143,122 @@ bool CNTV2KonaFlashProgram::SetBoard(UWord boardNumber, NTV2DeviceType boardType
 
 bool CNTV2KonaFlashProgram::SetDeviceProperties()
 {
-	bool status;
-	_spiDeviceID = ReadDeviceID();
-	if (::NTV2DeviceHasSPIv2(_boardID))
+	bool knownChip = false;
+	bool status = false;
+	_deviceID = ReadDeviceID();
+
+//    case 0x00202018://STMircro
+//    case 0x00012018://CYPRESS S25FL128
+//    case 0x00C22018://Macronix
+//        T-Tap
+//        IoExpress
+//        IoXT
+//        Kona Lhe+
+//        Kona 3G
+//        Kona 3G Quad
+//        Corvid 1
+//        Corvid 22
+//        Corvid 24
+//        Corvid 3G
+
+//    case 0x00010220://CYPRESS f25fl512
+//        Kona IP 2022
+//        Kona IP 2110
+//        IoIP 2022
+//        IoIP 2110
+//        Io4K+
+
+//    case 0x009d6019://ISSI
+//        No Product 6/27/18
+
+//    case 0x00C84018://GIGADEVICE GD25Q127CFIG
+//    case 0x00EF4018://WINBOND W25Q128
+//        T-Tap
+//        IoExpress
+//        IoXT
+//        Kona Lhe+
+//        Kona 3G
+//        Kona 3G Quad
+//        Corvid 1
+//        Corvid 22
+//        Corvid 24
+//        Corvid 3G
+
+//    case 0x00010219://CYPRESS S25FL256
+//        Kona 1
+//        Kona HDMI
+//        Kona 4
+//        Kona 4 UFC
+//        Corvid 44
+//        Corvid 88
+//        Corvid HBR
+//        Corvid HEVC
+
+	switch(_deviceID)
 	{
+    case 0x00202018://STMircro
+    case 0x00C22018://Macronix
+		_flashSize = 16 * 1024 * 1024;
+		_bankSize = 16 * 1024 * 1024;
+        _sectorSize = 256 * 1024;
+        _failSafePadding = 1;
+		knownChip = true;
+		break;
+    case 0x00010220://CYPRESS f25fl512
+		_flashSize = 64 * 1024 * 1024;
+		_bankSize = 16 * 1024 * 1024;
+		_sectorSize = 256 * 1024;
+        _failSafePadding = 1;
+		knownChip = true;
+		break;
+    case 0x009d6019://ISSI
+        _flashSize = 64 * 1024 * 1024;
+        _bankSize = 16 * 1024 * 1024;
+        _sectorSize = 64 * 1024;
+        _failSafePadding = 4;
+        knownChip = true;
+        break;
+    case 0x00C84018://GIGADEVICE GD25Q127CFIG
+    case 0x00EF4018://WINBOND W25Q128
+    case 0x00012018://CYPRESS S25FL128
 		_flashSize = 16 * 1024 * 1024;
 		_bankSize = 16 * 1024 * 1024;
 		_sectorSize = 64 * 1024;
+        _failSafePadding = 4;
+		knownChip = true;
+		break;
+    case 0x00010219://CYPRESS S25FL256
+		_flashSize = 32 * 1024 * 1024;
+		_bankSize = 16 * 1024 * 1024;
+		_sectorSize = 64 * 1024;
+        _failSafePadding = 4;
+		knownChip = true;
+        break;
+	default:
+		_flashSize = 0;
+		_bankSize = 0;
+		_sectorSize = 0;
+		knownChip = false;
+		break;
+	}
+
+	if(!knownChip)
+		return false;
+
+	if (::NTV2DeviceHasSPIv2(GetDeviceID()))
+	{
 		_numSectorsMain = _flashSize / _sectorSize / 2;
-		_numSectorsFailSafe = (_flashSize / _sectorSize / 2) - 1;
+        _numSectorsFailSafe = (_flashSize / _sectorSize / 2) - _failSafePadding;
 		_mainOffset = 0;
 		_failSafeOffset = 8 * 1024 * 1024;
 		_macOffset = _bankSize - (2 * _sectorSize);
 		status = true;
 	}
-	else if (::NTV2DeviceHasSPIv3(_boardID))
+	else if (::NTV2DeviceHasSPIv3(GetDeviceID()))
 	{
-		if (_spiDeviceID == 0x010220)
+		if (_deviceID == 0x010220)
 		{
-			//This is actually SPI v4 but needed this for NAB 2016
-			_flashSize = 64 * 1024 * 1024;
-			_bankSize = 16 * 1024 * 1024;
-			_sectorSize = 256 * 1024;
+			//This is actually SPI v4 but needed this for spoofing Kona4
 			_numSectorsMain = _flashSize / _sectorSize / 4;
 			_numSectorsFailSafe = (_flashSize / _sectorSize / 4) - 3;
 			_numSectorsSOC1 = _flashSize / _sectorSize / 4;
@@ -169,11 +276,8 @@ bool CNTV2KonaFlashProgram::SetDeviceProperties()
 		{
 			//SPIV3 This gets a little weird both main and failsafe have an offset of 0
 			//and the real offset is controlled by a bank selector switch in firmware
-			_flashSize = 32 * 1024 * 1024;
-			_bankSize = 16 * 1024 * 1024;
-			_sectorSize = 64 * 1024;
 			_numSectorsMain = _flashSize / _sectorSize / 2;
-			_numSectorsFailSafe = (_flashSize / _sectorSize / 2) - 1;
+            _numSectorsFailSafe = (_flashSize / _sectorSize / 2) - _failSafePadding;
 			_mainOffset = 0;
 			_failSafeOffset = 0;// but is really 16*1024*1024;
 			_macOffset = _bankSize - (2 * _sectorSize);
@@ -182,12 +286,9 @@ bool CNTV2KonaFlashProgram::SetDeviceProperties()
 			status = true;
 		}
 	}
-	else if (::NTV2DeviceHasSPIv4(_boardID))
+	else if (::NTV2DeviceHasSPIv4(GetDeviceID()))
 	{
 		//SPIV4 is a bigger SPIv3 2x
-		_flashSize = 64 * 1024 * 1024;
-		_bankSize = 16 * 1024 * 1024;
-		_sectorSize = 256 * 1024;
 		_numSectorsMain = _flashSize / _sectorSize / 4;
 		_numSectorsFailSafe = (_flashSize / _sectorSize / 4) - 4;
 		_numSectorsSOC1 = _flashSize / _sectorSize / 4;
@@ -201,32 +302,30 @@ bool CNTV2KonaFlashProgram::SetDeviceProperties()
 		_licenseOffset = _bankSize - (4* _sectorSize);
 		status = true;
 	}
-	else if(NTV2DeviceHasSPIv5(_boardID))
+	else if(NTV2DeviceHasSPIv5(GetDeviceID()))
 	{
-		//This is actually SPI v4 but needed this for NAB 2016
-		_flashSize = 64 * 1024 * 1024;
-		_bankSize = 16 * 1024 * 1024;
-		_sectorSize = 256 * 1024;
 		_numSectorsMain = _flashSize / _sectorSize / 2;
-		_numSectorsFailSafe = (_flashSize / _sectorSize / 2) - 1;
+        _numSectorsFailSafe = (_flashSize / _sectorSize / 2) - _failSafePadding;
 		_mainOffset = 0;
 		_failSafeOffset = 0;// but is really 32*1024*1024;
 		status = true;
 	}
 	else
 	{
-		//This includes legacy boards such as LHi, Corvid 1...
-		//SPI is devided up into 4 logical blocks of 4M each
-		//Without history explained main is at offset 0 and failsafe is at offset 12
-		_flashSize = 16 * 1024 * 1024;
-		_bankSize = 16 * 1024 * 1024;
-		_sectorSize = 64 * 1024;
-		_numSectorsMain = _flashSize / _sectorSize / 4;
-		_numSectorsFailSafe = (_flashSize / _sectorSize / 4) - 1;
-		_mainOffset = 0;
-		_failSafeOffset = 12 * 1024 * 1024;
-		_macOffset = _bankSize - (2 * _sectorSize);
-		status = true;
+        if(NTV2DeviceHasSPIFlash(GetDeviceID()))
+        {
+            //This includes legacy boards such as LHi, Corvid 1...
+            //SPI is devided up into 4 logical blocks of 4M each
+            //Without history explained main is at offset 0 and failsafe is at offset 12
+            _numSectorsMain = _flashSize / _sectorSize / 4;
+            _numSectorsFailSafe = (_flashSize / _sectorSize / 4) - 1;
+            _mainOffset = 0;
+            _failSafeOffset = 12 * 1024 * 1024;
+            _macOffset = _bankSize - (2 * _sectorSize);
+            status = true;
+        }
+        else
+            status = false;
 	}
 
     if (_spiFlash)
@@ -235,7 +334,7 @@ bool CNTV2KonaFlashProgram::SetDeviceProperties()
         _spiFlash = NULL;
     }
 
-    if (CNTV2AxiSpiFlash::DeviceSupported(GetDeviceID()))
+	if (CNTV2AxiSpiFlash::DeviceSupported(GetDeviceID()))
     {
         _spiFlash = new CNTV2AxiSpiFlash(GetIndexNumber(), !_bQuiet);
     }
@@ -265,7 +364,7 @@ void CNTV2KonaFlashProgram::SetBitFile(const char *bitFileName, FlashBlockID blo
 	FILE* pFile = 0;
 	struct stat fsinfo;
 	stat(bitFileName, &fsinfo);
-	_bitFileSize = fsinfo.st_size;
+	_bitFileSize = uint32_t(fsinfo.st_size);
 	pFile = fopen(bitFileName, "rb");
 	if(pFile)
 	{
@@ -368,29 +467,21 @@ bool CNTV2KonaFlashProgram::ParseHeader(char* headerAddress)
 
 		_numBytes = htonl(*((uint32_t *)p));		// the next 4 bytes are the length of the raw program data
 
-		if ( _partName[0] == '5' || _partName[0] == '6' || _partName[0] == '7' || _partName[0] == 'x')
+		//Search for the start signature
+		bool bFound = (strncmp(p, (const char*)signature, 8) == 0);
+		int i = 0;
+		while (bFound == false && i < 1000)
 		{
-			// still waiting for xilinx to explain this fully
-			if(_partName[0] == '5' || (_partName[0] == '6' && _partName[1] == 'v'))
-				p += 48;							// now pointing at the beginning of the identifier
-			else if(_partName[0] == '7' && _partName[1] == 'k')
-				p += 48;
-			else if(_partName[0] == 'x')
-				p += 80;
-			else
-				p += 16;
+			bFound = strncmp(p, (const char*)signature, 8) == 0;
+			if(!bFound)
+			{
+				p++;
+				i++;
+			}
 		}
-		else
-		{
-			p += 4;							// now pointing at the beginning of the identifier
-		}
-
-		// make sure the sync word is what we expect
-		if ( strncmp(p, (const char*)signature, 8) != 0 )
-			break;
 
 		// if we made it this far it must be an OK Header - and it is parsed
-		headerOK = true;
+		headerOK = bFound;
 
 	} while(0);
 
@@ -409,7 +500,7 @@ bool CNTV2KonaFlashProgram::ReadHeader(FlashBlockID blockID)
 		WriteRegister(kRegXenaxFlashAddress, baseAddress);
 		WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
 		WaitForFlashNOTBusy();
-		ReadRegister(kRegXenaxFlashDOUT, &bitFilePtr[count]);
+		ReadRegister(kRegXenaxFlashDOUT, bitFilePtr[count]);
 	}
 	bool status = ParseHeader((char*)bitFilePtr);
 	delete [] bitFilePtr;
@@ -441,9 +532,9 @@ bool CNTV2KonaFlashProgram::ReadInfoString()
     }
     else
     {
-        if (_spiDeviceID != 0x010220)
+        if (_deviceID != 0x010220 || !IsKonaIPDevice())
             return false;
-        uint32_t baseAddress = _mcsInfoOffset;//GetBaseAddressForProgramming(MCS_INFO_BLOCK);
+		uint32_t baseAddress = _mcsInfoOffset;
         SetFlashBlockIDBank(MCS_INFO_BLOCK);
 
         uint32_t* mcsInfoPtr = new uint32_t[MAXMCSINFOSIZE / 4];
@@ -453,7 +544,7 @@ bool CNTV2KonaFlashProgram::ReadInfoString()
             WriteRegister(kRegXenaxFlashAddress, baseAddress);
             WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
             WaitForFlashNOTBusy();
-            ReadRegister(kRegXenaxFlashDOUT, &mcsInfoPtr[count]);
+            ReadRegister(kRegXenaxFlashDOUT, mcsInfoPtr[count]);
             if (mcsInfoPtr[count] == 0)
                 break;
         }
@@ -466,9 +557,8 @@ bool CNTV2KonaFlashProgram::ReadInfoString()
     }
 }
 
-void CNTV2KonaFlashProgram::Program(bool verify)
+void CNTV2KonaFlashProgram::Program(bool fullVerify)
 {
-	(void) verify;
 	if ( _bitFileBuffer == NULL )
 		throw "Bit File not Open";
 
@@ -530,14 +620,11 @@ void CNTV2KonaFlashProgram::Program(bool verify)
 		WriteRegister(kRegXenaxFlashControlStatus, WRITESTATUS_COMMAND);
 		WaitForFlashNOTBusy();
 
-		if (verify)
+		SetBankSelect(BANK_0);
+		if ( !VerifyFlash(_flashID, fullVerify) )
 		{
 			SetBankSelect(BANK_0);
-			if ( !VerifyFlash(_flashID) )
-			{
-				SetBankSelect(BANK_0);
-				throw "Program Didn't Verify";
-			}
+			throw "Program Didn't Verify";
 		}
 		WriteRegister(kRegXenaxFlashControlStatus, WRITEENABLE_COMMAND);
 		WaitForFlashNOTBusy();
@@ -584,7 +671,7 @@ uint32_t CNTV2KonaFlashProgram::ReadDeviceID()
 	{
 		WriteRegister(kRegXenaxFlashControlStatus, READID_COMMAND);
 		WaitForFlashNOTBusy();
-		ReadRegister(61, &deviceID);
+		ReadRegister(61, deviceID);
 	}
 	return (deviceID & 0xFFFFFF);
 }
@@ -672,7 +759,7 @@ bool CNTV2KonaFlashProgram::EraseChip(UWord chip)
 	return status;
 }
 
-bool CNTV2KonaFlashProgram::VerifyFlash(FlashBlockID flashID)
+bool CNTV2KonaFlashProgram::VerifyFlash(FlashBlockID flashID, bool fullVerify)
 {
 	uint32_t errorCount = 0;
 	uint32_t baseAddress = GetBaseAddressForProgramming(flashID);
@@ -688,10 +775,12 @@ bool CNTV2KonaFlashProgram::VerifyFlash(FlashBlockID flashID)
 		SetBankSelect(BANK_0);
 		break;
 	case FAILSAFE_FLASHBLOCK:
-		SetBankSelect(BANK_2);
+        SetBankSelect(NTV2DeviceHasSPIv5(_boardID) ? BANK_2 : BANK_1);
 		break;
 	}
-	for (uint32_t count = 0; count < dwordSizeCount; count += 64, baseAddress += 256, bitFilePtr += 64)//count++, baseAddress += 4 )
+	WriteRegister(kVRegFlashState, kProgramStateVerifyFlash);
+	WriteRegister(kVRegFlashSize, dwordSizeCount);
+	for (uint32_t count = 0; count < dwordSizeCount; /*count += 64, baseAddress += 256, bitFilePtr += 64*/)//count++, baseAddress += 4 )
 	{
 		if (NTV2DeviceHasSPIv5(_boardID) && baseAddress == _bankSize)
 		{
@@ -711,21 +800,25 @@ bool CNTV2KonaFlashProgram::VerifyFlash(FlashBlockID flashID)
 		WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
 		WaitForFlashNOTBusy();
 		uint32_t flashValue;
-		ReadRegister(kRegXenaxFlashDOUT, &flashValue);
+		ReadRegister(kRegXenaxFlashDOUT, flashValue);
 		uint32_t bitFileValue = *bitFilePtr;//*bitFilePtr++;
 		if ( flashValue != bitFileValue)
 		{
 			printf("Error %d E(%08X),R(%08X)\n", count, bitFileValue, flashValue);
 			errorCount++;
-			if ( errorCount > 1 )
-				break;
+            if ( errorCount > 1 )
+                break;
 		}
 		percentComplete = (count*100)/dwordSizeCount;
+		WriteRegister(kVRegFlashStatus, count);
 		if(!_bQuiet)
 		{
 			printf("Program verify: %i%%\r", percentComplete);
 			fflush(stdout);
 		}
+		count += fullVerify ? 1 : 64;
+		baseAddress += fullVerify ? 4 : 256;
+		bitFilePtr +=  fullVerify ? 1 : 64;
 	}
 
 	SetBankSelect(BANK_0);
@@ -750,15 +843,15 @@ bool CNTV2KonaFlashProgram::WaitForFlashNOTBusy()
     bool busy  = true;
 	int i = 0;
 	uint32_t regValue;
-	while(i<1)
+    while(i<1)
 	{
-		ReadRegister(kRegBoardID, &regValue);
+		ReadRegister(kRegBoardID, regValue);
 		i++;
 	}
 	regValue = 0;
     do
     {
-		ReadRegister(kRegXenaxFlashControlStatus, &regValue);
+		ReadRegister(kRegXenaxFlashControlStatus, regValue);
         if( !(regValue & BIT(8)) )
         {
             busy = false;
@@ -784,7 +877,7 @@ bool CNTV2KonaFlashProgram::CheckFlashErasedWithBlockID(FlashBlockID flashID)
 		WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
 		WaitForFlashNOTBusy();
 		uint32_t flashValue;
-		ReadRegister(kRegXenaxFlashDOUT, &flashValue);
+		ReadRegister(kRegXenaxFlashDOUT, flashValue);
 		if ( flashValue != 0xFFFFFFFF )
 		{
 			count = dwordSizeCount;
@@ -811,7 +904,7 @@ void CNTV2KonaFlashProgram::SRecordOutput (const char *pSRecord)
 	printf ("%s\n", pSRecord);
 }
 
-bool CNTV2KonaFlashProgram::CreateSRecord()
+bool CNTV2KonaFlashProgram::CreateSRecord(bool bChangeEndian)
 {
 	uint32_t baseAddress = 0;
 	char sRecord[100];
@@ -824,7 +917,7 @@ bool CNTV2KonaFlashProgram::CreateSRecord()
         if (ROMHasBankSelect() && count % _bankSize == 0)
 		{
 			baseAddress = 0;
-			partitionOffset += count;
+            partitionOffset = count;
 			switch (partitionOffset)
 			{
 			default:
@@ -857,7 +950,7 @@ bool CNTV2KonaFlashProgram::CreateSRecord()
 		sprintf(&sRecord[2], "%02x", cc);
 		checksum += cc;
 
-		uint32_t addr = baseAddress+partitionOffset;
+        uint32_t addr = baseAddress+partitionOffset;
 		UWord aa = ((addr >> 24) &0xff);
 		sprintf(&sRecord[4], "%02x", aa);
 		checksum += aa;
@@ -882,8 +975,9 @@ bool CNTV2KonaFlashProgram::CreateSRecord()
 			WriteRegister(kRegXenaxFlashControlStatus,READFAST_COMMAND);
 			WaitForFlashNOTBusy();
 			uint32_t flashValue;
-			ReadRegister(kRegXenaxFlashDOUT,&flashValue);
-			//flashValue = NTV2EndianSwap32(flashValue);
+			ReadRegister(kRegXenaxFlashDOUT, flashValue);
+			if(bChangeEndian)
+				flashValue = NTV2EndianSwap32(flashValue);
 
 			UWord dd = (flashValue & 0xff);
 			sprintf(&sRecord[index], "%02x", dd);
@@ -971,7 +1065,7 @@ bool CNTV2KonaFlashProgram::CreateBankRecord(BankSelect bankID)
 			WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
 			WaitForFlashNOTBusy();
 			uint32_t flashValue;
-			ReadRegister(kRegXenaxFlashDOUT, &flashValue);
+			ReadRegister(kRegXenaxFlashDOUT, flashValue);
 			//flashValue = NTV2EndianSwap32(flashValue);
 
 			UWord dd = (flashValue & 0xff);
@@ -1049,7 +1143,7 @@ bool CNTV2KonaFlashProgram::CreateEDIDIntelRecord()
 			SleepMs(100);
 
 			uint32_t flashValue;
-			ReadRegister(kRegFS1I2C1Data, &flashValue);
+			ReadRegister(kRegFS1I2C1Data, flashValue);
 
 			UByte dd = ((flashValue >> 8) & 0xff);
 			sprintf(&iRecord[index], "%02x", dd);
@@ -1218,25 +1312,25 @@ bool CNTV2KonaFlashProgram::ReadMACAddresses(MacAddr & mac1, MacAddr & mac2)
         WriteRegister(kRegXenaxFlashAddress, baseAddress);
         WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
         WaitForFlashNOTBusy();
-        ReadRegister(kRegXenaxFlashDOUT, &lo);
+        ReadRegister(kRegXenaxFlashDOUT, lo);
         baseAddress += 4;
 
         WriteRegister(kRegXenaxFlashAddress, baseAddress);
         WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
         WaitForFlashNOTBusy();
-        ReadRegister(kRegXenaxFlashDOUT, &hi);
+        ReadRegister(kRegXenaxFlashDOUT, hi);
         baseAddress += 4;
 
         WriteRegister(kRegXenaxFlashAddress, baseAddress);
         WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
         WaitForFlashNOTBusy();
-        ReadRegister(kRegXenaxFlashDOUT, &lo2);
+        ReadRegister(kRegXenaxFlashDOUT, lo2);
         baseAddress += 4;
 
         WriteRegister(kRegXenaxFlashAddress, baseAddress);
         WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
         WaitForFlashNOTBusy();
-        ReadRegister(kRegXenaxFlashDOUT, &hi2);
+        ReadRegister(kRegXenaxFlashDOUT, hi2);
 
         SetBankSelect(BANK_0);
 
@@ -1397,7 +1491,7 @@ bool CNTV2KonaFlashProgram::ReadLicenseInfo(std::string& serialString)
             WriteRegister(kRegXenaxFlashAddress,baseAddress);
             WriteRegister(kRegXenaxFlashControlStatus,READFAST_COMMAND);
             WaitForFlashNOTBusy();
-            ReadRegister(kRegXenaxFlashDOUT,&license[i]);
+            ReadRegister(kRegXenaxFlashDOUT, license[i]);
             if (license[i] == 0xffffffff)
             {
                 good = true; // uninitialized memory
@@ -1443,7 +1537,7 @@ uint32_t CNTV2KonaFlashProgram::ReadBankSelect()
 	{
 		WriteRegister(kRegXenaxFlashControlStatus, READBANKSELECT_COMMAND);
 		WaitForFlashNOTBusy();
-		ReadRegister(kRegXenaxFlashDOUT, &bankNumber);
+		ReadRegister(kRegXenaxFlashDOUT, bankNumber);
 	}
 	return bankNumber&0xf;
 }
@@ -2025,8 +2119,8 @@ void CNTV2KonaFlashProgram::ProgramCustom ( const char *sCustomFileName, const u
                 throw "Unable to open file";
             }
 
-            writeData.resize(sz);
-            customSize = fread(&writeData[0], 1, sz, fp);
+            writeData.resize(size_t(sz));
+            customSize = fread(&writeData[0], 1, size_t(sz), fp);
             if (customSize == 0) {
                 fclose(fp);
                 throw "Couldn't read any data from custom file";
@@ -2272,7 +2366,7 @@ bool CNTV2KonaFlashProgram::VerifySOCPartition(FlashBlockID flashID, uint32_t fl
 		WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
 		WaitForFlashNOTBusy();
 		uint32_t flashValue;
-		ReadRegister(kRegXenaxFlashDOUT, &flashValue);
+		ReadRegister(kRegXenaxFlashDOUT, flashValue);
 		uint32_t partitionValue = (uint32_t)_partitionBuffer[bufferIndex] << 24 |
 			(uint32_t)_partitionBuffer[bufferIndex + 1] << 16 |
 			(uint32_t)_partitionBuffer[bufferIndex + 2] << 8 |
@@ -2333,7 +2427,7 @@ void CNTV2KonaFlashProgram::DisplayData(uint32_t address, uint32_t count)
 		WriteRegister(kRegXenaxFlashControlStatus, READFAST_COMMAND);
 		WaitForFlashNOTBusy();
 		uint32_t flashValue;
-		ReadRegister(kRegXenaxFlashDOUT, &flashValue);
+		ReadRegister(kRegXenaxFlashDOUT, flashValue);
 		flashValue = NTV2EndianSwap32(flashValue);
 		pLine += sprintf(pLine, "%08x  ", (uint32_t)flashValue);
 		if (++lineCount == WORDS_PER_LINE)

@@ -1,6 +1,6 @@
 /**
 	@file		debugshare.h
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the constants used for sharing debug messages. These structures are used
 				to gather debug messages and share them with the applications that report and log.
 	@note		This file is shared with drivers written in c.
@@ -13,8 +13,8 @@
 /**
  *	The list of debug message severity codes.
  *	@ingroup AJAGroupDebug
- *	@{
  */
+///@{
 typedef enum _AJADebugSeverity
 {
 	AJA_DebugSeverity_Emergency		= 0,	/**< System is unusable */
@@ -28,13 +28,14 @@ typedef enum _AJADebugSeverity
 	AJA_DebugSeverity_Size			= 8		/**< Size of severity enum, must be last */
 
 } AJADebugSeverity;
+///@}
 
 
 /**
  *	The list of debug message groups.
  *	@ingroup AJAGroupDebug
- *	@{
  */
+///@{
 typedef enum _AJADebugUnit
 {
     AJA_DebugUnit_Unknown					= 0,
@@ -71,6 +72,12 @@ typedef enum _AJADebugUnit
     AJA_DebugUnit_SMPTEAnc					= 31,
     AJA_DebugUnit_AJAAncData				= 32,
     AJA_DebugUnit_AJAAncList				= 33,
+    AJA_DebugUnit_BFT						= 34,
+    AJA_DebugUnit_PnP						= 35,
+    AJA_DebugUnit_Persistence               = 36,
+    AJA_DebugUnit_Avid                      = 37,
+    AJA_DebugUnit_DriverInterface           = 38,
+    AJA_DebugUnit_AutoCirculate             = 39,
 
     // to add a new unit:
     //
@@ -89,14 +96,8 @@ typedef enum _AJADebugUnit
     // if no more unused units
     //   * set AJA_DebugUnit_FirstUnused to the same value as AJA_DebugUnit_Size
     //
-    AJA_DebugUnit_FirstUnused               = 34,
-    AJA_DebugUnit_Unused_34                 = AJA_DebugUnit_FirstUnused,
-    AJA_DebugUnit_Unused_35                 = 35,
-    AJA_DebugUnit_Unused_36                 = 36,
-    AJA_DebugUnit_Unused_37                 = 37,
-    AJA_DebugUnit_Unused_38                 = 38,
-    AJA_DebugUnit_Unused_39                 = 39,
-    AJA_DebugUnit_Unused_40                 = 40,
+    AJA_DebugUnit_FirstUnused               = 40,
+    AJA_DebugUnit_Unused_40                 = AJA_DebugUnit_FirstUnused,
     AJA_DebugUnit_Unused_41                 = 41,
     AJA_DebugUnit_Unused_42                 = 42,
     AJA_DebugUnit_Unused_43                 = 43,
@@ -142,9 +143,10 @@ typedef enum _AJADebugUnit
     AJA_DebugUnit_Unused_83                 = 83,
     AJA_DebugUnit_Unused_84                 = 84,
 
-    AJA_DebugUnit_Size						= 85,
+    AJA_DebugUnit_Size						= 85
 
 } AJADebugUnit;
+///@}
 
 
 /**

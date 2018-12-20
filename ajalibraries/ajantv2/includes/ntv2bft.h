@@ -1,7 +1,7 @@
 /**
 	@file		ntv2bft.h
 	@brief		Handy macros for Basic Functionality Tests.
-	@copyright	Copyright (c) 2014-2017 AJA Video Systems, Inc. All rights reserved.
+	@copyright	Copyright (c) 2014-2018 AJA Video Systems, Inc. All rights reserved.
 **/
 
 #ifndef _NTV2BFT_H_
@@ -114,6 +114,44 @@
 											}																														\
 											else if (SHOW_PASSED)																									\
 												STDOUT << "## NOTE:  '" << #_x_ << "' in '" << __FUNCTION__ << "' returned 'False'" << ENDL;						\
+										} while (false)
+
+
+	#define	SHOULD_BE_NULL(_x_)			do																															\
+										{																															\
+											if ((_x_) != NULL)																										\
+											{																														\
+												STDERR	<< "## ERROR:  '" << __FUNCTION__ << "' failed at line " << __LINE__ << " of " << __FILE__ << ":" << ENDL	\
+														<< "           '" << (_x_) << "' is non-NULL" << ENDL														\
+														<< "           Expected '" << #_x_ << "' to be NULL" << ENDL;												\
+												if (STOP_AFTER_FAILURE)																								\
+												{																													\
+													if (DEBUG_BREAK_AFTER_FAILURE)																					\
+														DEBUG_BREAK ();																								\
+													return false;																									\
+												}																													\
+											}																														\
+											else if (SHOW_PASSED)																									\
+												STDOUT << "## NOTE:  '" << #_x_ << "' is NULL in '" << __FUNCTION__ << "'" << ENDL;									\
+										} while (false)
+
+
+	#define	SHOULD_BE_NON_NULL(_x_)		do																															\
+										{																															\
+											if ((_x_) == NULL)																										\
+											{																														\
+												STDERR	<< "## ERROR:  '" << __FUNCTION__ << "' failed at line " << __LINE__ << " of " << __FILE__ << ":" << ENDL	\
+														<< "           '" << (_x_) << "' is NULL" << ENDL															\
+														<< "           Expected '" << #_x_ << "' to be non-NULL" << ENDL;											\
+												if (STOP_AFTER_FAILURE)																								\
+												{																													\
+													if (DEBUG_BREAK_AFTER_FAILURE)																					\
+														DEBUG_BREAK ();																								\
+													return false;																									\
+												}																													\
+											}																														\
+											else if (SHOW_PASSED)																									\
+												STDOUT << "## NOTE:  '" << #_x_ << "' is non-NULL in '" << __FUNCTION__ << "'" << ENDL;								\
 										} while (false)
 
 

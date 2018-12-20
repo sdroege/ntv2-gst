@@ -1,7 +1,7 @@
 /**
     @file		ntv2registerexpert.h
     @brief		Declares the CNTV2RegisterExpert class.
-    @copyright	(C) 2016-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+    @copyright	(C) 2016-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2REGEXPERT_H
@@ -27,6 +27,8 @@
 #define	EnabDisab(__x__)		((__x__) ? "Enabled"	: "Disabled")
 #define	DisabEnab(__x__)		((__x__) ? "Disabled"	: "Enabled")
 #define	ActInact(__x__)			((__x__) ? "Active"		: "Inactive")
+#define	SuppNotsupp(__x__)		((__x__) ? "Supported"	: "Unsupported")
+#define	PresNotPres(__x__)		((__x__) ? "Present"	: "Not Present")
 
 
 //	Register classifier keys
@@ -63,7 +65,9 @@
 
 
 /**
-    @brief	I provide information about registers and their values.
+    @brief	I provide "one-stop shopping" for information about registers and their values.
+	@bug	This class currently excludes bank-selected registers, so support logs for \ref konaip and
+			\ref ioip will be incomplete. This will be addressed in a future SDK.
 **/
 class AJAExport CNTV2RegisterExpert
 {

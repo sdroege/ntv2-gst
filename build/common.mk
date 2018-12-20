@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2004 - 2017 AJA Video Systems, Inc.
+# Copyright (C) 2004 - 2018 AJA Video Systems, Inc.
 # Proprietary and Confidential information.
 # All righs reserved
 #
@@ -7,7 +7,7 @@
 CXX ?= g++
 CPP = $(CXX)
 
-CPPFLAGS += -DAJALinux -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
+CPPFLAGS += -DAJALinux -DAJA_LINUX -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 			-pedantic -Wall -Wno-long-long  -Wwrite-strings -c -pipe -fPIC $(DBG)
 
 LD = $(CXX)
@@ -19,18 +19,11 @@ LIBDIRS		:= $(LIBDIRS) -L$(A_UBER_LIB)
 
 
 ifeq ($(AJA_DEBUG),1)
-LIB_AJABASE_FILENAME = ajabased
-else
-LIB_AJABASE_FILENAME = ajabase
-endif
-
-ifeq ($(AJA_DEBUG),1)
 LIB_AJANTV2_FILENAME = ajantv2d
 else
 LIB_AJANTV2_FILENAME = ajantv2
 endif
 
-LIB_AJABASE = $(A_UBER_LIB)/lib$(LIB_AJABASE_FILENAME).a
 LIB_AJANTV2 = $(A_UBER_LIB)/lib$(LIB_AJANTV2_FILENAME).a
 
 ifdef AJA_LIB_PATH
@@ -40,7 +33,7 @@ BUILD_AND_LINK_AGAINST_AJALIBS = 1
 endif
 
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
-LIBS    := $(LIBS) -l$(LIB_AJANTV2_FILENAME) -l$(LIB_AJABASE_FILENAME) -lpthread -lrt
+LIBS    := $(LIBS) -l$(LIB_AJANTV2_FILENAME) -lpthread -lrt
 else
 LIBS	:= $(LIBS) -lpthread -lrt
 endif
@@ -95,7 +88,7 @@ endif
 	$(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
 
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
-all: $(LIB_AJANTV2) $(LIB_AJABASE) $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4)
+all: $(LIB_AJANTV2) $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4)
 else
 all: $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4) $(AJA_LIB_PATH)
 endif
@@ -122,10 +115,6 @@ ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
 .PHONY : $(LIB_AJANTV2)
 $(LIB_AJANTV2): $(SDK_SRCS)
 	$(MAKE) -C $(A_LIB_NTV2_PATH)/build
-
-.PHONY : $(LIB_AJABASE)
-$(LIB_AJABASE): $(SDK_SRCS)
-	$(MAKE) -C $(A_LIB_BASE_PATH)
 endif
 
 $(AJA_APP): $(OBJS) 
@@ -173,9 +162,6 @@ ifdef AJA_LIB_PATH
 	rm -f $(AJA_LIB_PATH)
 endif
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
-	rm -f $(LIB_AJABASE)
-	rm -f $(A_LIB_BASE_PATH)/build/$(OBJDIR)/*.o
-	rm -f $(A_LIB_BASE_PATH)/build/$(OBJDIR)/*.d
 	rm -f $(LIB_AJANTV2)
 	rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.o
 	rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.d

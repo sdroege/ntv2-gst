@@ -34,172 +34,76 @@ using namespace std;
 /////////////////////////////////////////////////////////////////////////////////////
 // Board Open / Close methods
 /////////////////////////////////////////////////////////////////////////////////////
-
-// Method: Open
-// Input:  UWord boardNumber(starts at 0)
-//         bool displayErrorMessage
-//         NTV2DeviceType eBoardType e.g. KSD, KHD, XENA2
-// Output: bool - true if opened ok.
 bool
-CNTV2LinuxDriverInterface::Open(
-	  UWord			boardNumber,
-	  bool			displayError,
-	  NTV2DeviceType	eBoardType,
-	  const char 	*hostname	// Non-null: card on remote host
-	  )
+CNTV2LinuxDriverInterface::Open(UWord inDeviceIndexNumber, const string & hostName)
 {
-	// Check if already opened
-	if (IsOpen())
+	static const string	kAJANTV2("ajantv2");
+
+	if (IsOpen()  &&  inDeviceIndexNumber == _boardNumber)
 	{
-		// Don't do anything if the requested board is the same as last opened, and
-		// the requested or last opened board aren't remote boards
-		if ( ( _boardNumber == boardNumber ) &&
-				((hostname == NULL) || (hostname[0] == '\0')) &&
-				 (_remoteHandle == INVALID_NUB_HANDLE ) )
-			return true;
-
-		Close();   // Close current board and open desired board
-	}
-
-#if 0
-    _boardType = eBoardType;
-	if (_boardType == DEVICETYPE_UNKNOWN){
-		_boardType = GetCompileFlag ();
-	}
+#if defined (NTV2_NUB_CLIENT_SUPPORT)
+		if (hostName.empty()  &&  _remoteHandle == INVALID_NUB_HANDLE)
+			return true;	//	Same local device requested, already open
+		if (_hostname == hostName  &&  _remoteHandle != INVALID_NUB_HANDLE)
+			return true;	//	Same remote device requested, already open
 #else
-    // All the old boards are now depricated. Open only with the ajantv2 driver.
-	_boardType = DEVICETYPE_NTV2;
+		return true;		//	Same local device requested, already open
 #endif
-
-	_boardNumber = boardNumber;
-	_displayErrorMessage = displayError;
-
-	// Got rid of stringstream stuff as it caused heaps of warnings under
-	// Redhat 7.2
-
-#define BOARDSTRMAX	32
-	char boardStr[BOARDSTRMAX];
-
-	const char *s = NULL;
-	switch  ( _boardType )
-	{
-	#if !defined (NTV2_DEPRECATE)
-	case BOARDTYPE_KHD:
-		s = "khd";
-		break;
-	case BOARDTYPE_KSD:
-		s = "ksd";
-		break;
-	case BOARDTYPE_AJAXENA2:
-        s = "ajantv2";
-		break;
-	case BOARDTYPE_FS1:
-		s = "fs1";
-		break;
-	case BOARDTYPE_BORG:
-		s = "borg";			// TODO: External product name
-		break;
-	case BOARDTYPE_HDNTV:	// HDNTV is no longer supported.
-		if ( _displayErrorMessage )
-		{
-			DisplayNTV2Error("Tried to call open with BOARDTYPE_HDNTV");
-		}
-		return false;
-
-	// TODO: We may want to support KONA2 and KONAX here someday.
-	case BOARDTYPE_KONA2:
-		if ( _displayErrorMessage )
-		{
-			DisplayNTV2Error("Tried to call open with BOARDTYPE_KONA2");
-		}
-		return false;
-	case BOARDTYPE_KONAX:
-		if ( _displayErrorMessage )
-		{
-			DisplayNTV2Error("Tried to call open with BOARDTYPE_KONAX");
-		}
-		return false;
-	#endif	//	!defined (NTV2_DEPRECATE)
-	case DEVICETYPE_NTV2:
-        s = "ajantv2";
-		break;
-	case DEVICETYPE_UNKNOWN:
-		if ( _displayErrorMessage )
-		{
-			DisplayNTV2Error("Tried to call open with BOARDTYPE_UNKNOWN");
-		}
-		return false;
 	}
 
-	if (hostname && hostname[0] != '\0')	// Non-null: card on remote host
-	{
-		#if !defined (NTV2_DEPRECATE)
-		if(_boardType == BOARDTYPE_FS1 || _boardType == BOARDTYPE_BORG)
-		{
-			snprintf(boardStr, BOARDSTRMAX - 1, "%s:%s", hostname, s);
-		}
-		else
-		#endif	//	!defined (NTV2_DEPRECATE)
-		{
-			snprintf(boardStr, BOARDSTRMAX - 1, "%s:%s%d", hostname, s, _boardNumber);
-		}
+	if (IsOpen())
+		Close();	//	Close if different device requested
 
-		if ( !OpenRemote(boardNumber, displayError, eBoardType, hostname))
+	string	boardStr;
+
+#if defined (NTV2_NUB_CLIENT_SUPPORT)
+	if (!hostName.empty())	// Non-empty: card on remote host
+	{
+		ostringstream	oss;
+		oss << hostName << ":" << kAJANTV2 << inDeviceIndexNumber;
+		boardStr = oss.str();
+		if (!OpenRemote(inDeviceIndexNumber, false, 256, hostName.c_str()))
 		{
 			DisplayNTV2Error("Failed to open board on remote host.");
 		}
 	}
 	else
-	{
-		#if !defined (NTV2_DEPRECATE)
-		if(_boardType == BOARDTYPE_FS1)
-		{
-			snprintf(boardStr, BOARDSTRMAX - 1, "/dev/fs1");
-		}
-		else if(_boardType == BOARDTYPE_BORG)
-		{
-#ifdef BORG
-			snprintf(boardStr, BOARDSTRMAX - 1, "/dev/borg");
 #else
-			// Hack to prevent boardscan from thinking every host is a borg
-			// until we have a driver.
-			snprintf(boardStr, BOARDSTRMAX - 1, "/dev/%s", s);
+	(void) hostName;
 #endif
-		}
-		else
-		#endif	//	!defined (NTV2_DEPRECATE)
-		{
-			snprintf(boardStr, BOARDSTRMAX - 1, "/dev/%s%d", s, _boardNumber);
-		}
-
-		_hDevice = open(boardStr,O_RDWR);
+	{
+		ostringstream	oss;
+		oss << "/dev/" << kAJANTV2 << inDeviceIndexNumber;
+		boardStr = oss.str();
+		_hDevice = open(boardStr.c_str(),O_RDWR);
 	}
 
-	if ( _hDevice == INVALID_HANDLE_VALUE && _remoteHandle == INVALID_NUB_HANDLE)
+	if (_hDevice == INVALID_HANDLE_VALUE && _remoteHandle == INVALID_NUB_HANDLE)
 	{
-#define ERRSTRMAX 80
-		char buf[ERRSTRMAX];
-
-		snprintf(buf, ERRSTRMAX - 1, "Couldn't open %s\n", boardStr);
-		DisplayNTV2Error(buf);
+		ostringstream	oss;
+		oss << "Couldn't open " << boardStr << "\n";
+		DisplayNTV2Error(oss.str().c_str());
 		return false;
 	}
 
+	_boardNumber = inDeviceIndexNumber;
 	_boardOpened = true;
 
 	// Fail if running with an old driver
 	ULWord driverVersionMajor;
 	GetDriverVersion(&driverVersionMajor);
-	driverVersionMajor = (driverVersionMajor >> 4) & 0xF;
+	driverVersionMajor = NTV2DriverVersionDecode_Major(driverVersionMajor);
+#if AJA_NTV2_SDK_VERSION_MAJOR != 0
     if (driverVersionMajor < (ULWord)AJA_NTV2_SDK_VERSION_MAJOR)
 	{
-		printf("Failing open as driver version %d is older than SDK version %d\n",
+		printf("## ERROR:  Cannot open:  Driver version %d older than SDK version %d\n",
 				driverVersionMajor, AJA_NTV2_SDK_VERSION_MAJOR);
 		Close();
 		return false;
 	}
+#endif
 
-	ReadRegister(kRegBoardID, reinterpret_cast<ULWord*>(&_boardID));
+	CNTV2DriverInterface::ReadRegister(kRegBoardID, _boardID);
 	//Kludge Warning.....
 	//InitMemberVariablesOnOpen needs frame geometry to determine frame buffer
 	// size and number....
@@ -208,47 +112,41 @@ CNTV2LinuxDriverInterface::Open(
 	NTV2FrameBufferFormat format = NTV2_FBF_10BIT_YCBCR;
 
 	ULWord programFlashValue;
-	if(ReadRegister(kRegFlashProgramReg, &programFlashValue))
+	if(ReadRegister(kRegFlashProgramReg, programFlashValue))
 	{
 		if ((programFlashValue & BIT(9)) == BIT(9))
 		{
-			ReadRegister (kRegGlobalControl,
-						  (ULWord*)&fg,
-						  kRegMaskGeometry,
-						  kRegShiftGeometry);
+			CNTV2DriverInterface::ReadRegister (kRegGlobalControl, fg, kRegMaskGeometry, kRegShiftGeometry);
 
 			// More of the same Kludge... (from ntv2Register.cpp)
 			ULWord returnVal1,returnVal2;
-			ReadRegister (kRegCh1Control,&returnVal1,kRegMaskFrameFormat,kRegShiftFrameFormat);
-			ReadRegister (kRegCh1Control,&returnVal2,kRegMaskFrameFormatHiBit,kRegShiftFrameFormatHiBit);
-			format = (NTV2FrameBufferFormat)((returnVal1&0x0f) | ((returnVal2&0x1)<<4));
+			ReadRegister (kRegCh1Control,returnVal1,kRegMaskFrameFormat,kRegShiftFrameFormat);
+			ReadRegister (kRegCh1Control,returnVal2,kRegMaskFrameFormatHiBit,kRegShiftFrameFormatHiBit);
+			format = NTV2FrameBufferFormat((returnVal1&0x0f) | ((returnVal2&0x1)<<4));
 
 		}
 		else						// what's the right thing do do here?
 		{							// Guess  :-)
-			switch(_boardID)
-			{
-			#if !defined (NTV2_DEPRECATE)
-			case BOARD_ID_XENA_SD:
-			case BOARD_ID_XENA_SD_MM:
-			case BOARD_ID_XENA_SD22:
-			case BOARD_ID_KSD22:
-			case BOARD_ID_KONA_SD:
-			case BOARD_ID_KONALS:
-				fg = NTV2_FG_720x486; // SD boards default
-				break;
-			#endif	//	!defined (NTV2_DEPRECATE)
-			default:
-				fg = NTV2_FG_1920x1080;	// we usually load the bitfiles for HD, so assume 1080
-				break;
-			}
+			fg = NTV2_FG_1920x1080;	// we usually load the bitfiles for HD, so assume 1080
 		}
 	}
 
 	InitMemberVariablesOnOpen(fg, format);
-
 	return true;
 }
+
+#if !defined(NTV2_DEPRECATE_14_3)
+	bool CNTV2LinuxDriverInterface::Open (	UWord			boardNumber,
+											bool			displayError,
+											NTV2DeviceType	eBoardType,
+											const char 	*	hostname)
+	{
+		(void) eBoardType;
+		_displayErrorMessage = displayError;
+		const string host(hostname ? hostname : "");
+		return Open(boardNumber, host);
+	}
+#endif	//	!defined(NTV2_DEPRECATE_14_3)
 
 // Method:	SetOverlappedMode
 // Input:	bool mode
@@ -308,10 +206,10 @@ CNTV2LinuxDriverInterface::Close()
 
 bool
 CNTV2LinuxDriverInterface::ReadRegister(
-	ULWord registerNumber,
-	ULWord *registerValue,
-	ULWord registerMask,
-	ULWord registerShift)
+	const ULWord registerNumber,
+	ULWord &     registerValue,
+	const ULWord registerMask,
+	const ULWord registerShift)
 {
 
 	if (_remoteHandle != INVALID_NUB_HANDLE)
@@ -326,32 +224,6 @@ CNTV2LinuxDriverInterface::ReadRegister(
 			return false;
 		}
 	}
-#ifdef BORG
-#ifndef KUMO //TODO: Resolve correct call to use for KUMO
-	else if ((_boardType == BOARDTYPE_BORG) && (registerNumber == 54)) // serial number low - see NTV2Status::GetSerialNumberString()
-	{
-		string serialNumber = SerialNumber_Borg::GetFormattedSerialNumber();
-		//string serialNumber = SerialNumber_Borg::FormatSerialNumber( SerialNumber_Borg::GetSerialNumber() );
-		char sn[8] = {0,0,0,0,0,0,0,0};
-		strncpy(sn,serialNumber.c_str(),8);
-		*registerValue = sn[0] | (sn[1]<<8) | (sn[2]<<16) | (sn[3]<<24);
-		*registerValue &= registerMask;
-		*registerValue >>= registerShift;
-	}
-
-	else if ((_boardType == BOARDTYPE_BORG) && (registerNumber == 55)) // serial number high - see NTV2Status::GetSerialNumberString()
-	{
-		string serialNumber = SerialNumber_Borg::GetFormattedSerialNumber();
-		//string serialNumber = SerialNumber_Borg::FormatSerialNumber( SerialNumber_Borg::GetSerialNumber() );
-		char sn[8] = {0,0,0,0,0,0,0,0};
-		strncpy(sn,serialNumber.c_str(),8);
-		*registerValue = sn[4] | (sn[5]<<8) | (sn[6]<<16) | (sn[7]<<24);
-		*registerValue &= registerMask;
-		*registerValue >>= registerShift;
-	}
-#endif
-#endif
-
 	else
 	{
 		assert( (_hDevice != INVALID_HANDLE_VALUE) && (_hDevice != 0));
@@ -370,7 +242,7 @@ CNTV2LinuxDriverInterface::ReadRegister(
 			return false;
 		}
 
-		*registerValue = ra.RegisterValue;
+		registerValue = ra.RegisterValue;
 	}
 
 	return true;
@@ -396,34 +268,6 @@ CNTV2LinuxDriverInterface::WriteRegister (
 			return false;
 		}
 	}
-	#if !defined (NTV2_DEPRECATE)
-	else if (_boardType == BOARDTYPE_FS1 && registerNumber != kRegFlashProgramReg)
-	{
-		if ( registerNumber < VIRTUALREG_START )
-		{
-			// Range check.  Disallow nonexistent registers to prevent segfault.
-			if (registerNumber > NTV2BoardGetNumberRegisters(BOARD_ID_FS1))
-			{
-				fprintf(stderr, "WriteRegister failed due to out of bounds regnum: %d\n", registerNumber);
-				return false;
-			}
-
-			if (registerMask != 0xFFFFFFFF)
-			{
-				ULWord oldValue = *(_pRegisterBaseAddress + registerNumber);
-				oldValue &= ~registerMask;
-				registerValue <<= registerShift;
-				registerValue |= oldValue;
-			}
-			*(_pRegisterBaseAddress + registerNumber) = registerValue;
-		}
-		else
-		{
-			// Virtual registers not supported yet.
-			return false;
-		}
-	}
-	#endif	//	!defined (NTV2_DEPRECATE)
 	else
 	{
 		assert( (_hDevice != INVALID_HANDLE_VALUE) && (_hDevice != 0) );
@@ -651,12 +495,8 @@ CNTV2LinuxDriverInterface::MapFrameBuffers (void)
 
 		// Set the CH1 and CH2 frame base addresses for cards that require them.
 		ULWord boardIDRegister;
-		ReadRegister(kRegBoardID, &boardIDRegister);	//unfortunately GetBoardID is in ntv2card...ooops.
-		#if !defined (NTV2_DEPRECATE)
-		if ( boardIDRegister == BOARD_ID_HDNTV )       // No longer supported
-			return false;
-		#endif	//	!defined (NTV2_DEPRECATE)
-		if ( ! NTV2BoardIsDirectAddressable( (NTV2DeviceID)boardIDRegister ) )
+		ReadRegister(kRegBoardID, boardIDRegister);	//unfortunately GetBoardID is in ntv2card...ooops.
+		if ( ! ::NTV2DeviceIsDirectAddressable(NTV2DeviceID(boardIDRegister)))
 			_pCh1FrameBaseAddress = _pFrameBaseAddress;
 	}
 
@@ -1484,14 +1324,16 @@ CNTV2LinuxDriverInterface::AutoCirculate (AUTOCIRCULATE_DATA &autoCircData)
 
 	bool CNTV2LinuxDriverInterface::NTV2Message (NTV2_HEADER * pInMessage)
 	{
-		assert( (_hDevice != INVALID_HANDLE_VALUE) && (_hDevice != 0) );
-
 		if( !pInMessage )
-			return false;
+			return false;	//	NULL message pointer
 
-		if( ioctl( _hDevice,
-				   IOCTL_AJANTV2_MESSAGE,
-				   pInMessage) )
+		if (_remoteHandle != INVALID_NUB_HANDLE)
+		{
+			return false;	//	Implement NTV2Message on nub
+		}
+		NTV2_ASSERT( (_hDevice != INVALID_HANDLE_VALUE) && (_hDevice != 0) );
+
+		if( ioctl( _hDevice,  IOCTL_AJANTV2_MESSAGE,  pInMessage) )
 		{
 			DisplayNTV2Error("IOCTL_AJANTV2_MESSAGE failed\n");
 			return false;
@@ -1526,50 +1368,48 @@ bool CNTV2LinuxDriverInterface::GetRelativeVideoPlaybackDelay(ULWord* frameDelay
 bool CNTV2LinuxDriverInterface::SetAudioRecordPinDelay(ULWord millisecondDelay)
 {
     (void)millisecondDelay;
-
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetAudioRecordPinDelay(ULWord* millisecondDelay)
 {
     (void)millisecondDelay;
-
 	return false;
 }
 
 bool CNTV2LinuxDriverInterface::GetDriverVersion(ULWord* driverVersion)
 {
-	return ReadRegister (kVRegLinuxDriverVersion, driverVersion);
+	return driverVersion ? ReadRegister (kVRegLinuxDriverVersion, *driverVersion) : false;
 }
 
 bool CNTV2LinuxDriverInterface::GetBA0MemorySize(ULWord* memSize)
 {
-	return ReadRegister (kVRegBA0MemorySize, memSize);
+	return memSize ? ReadRegister (kVRegBA0MemorySize, *memSize) : false;
 }
 
 bool CNTV2LinuxDriverInterface::GetBA1MemorySize(ULWord* memSize)
 {
-	return ReadRegister (kVRegBA1MemorySize, memSize);
+	return memSize ? ReadRegister (kVRegBA1MemorySize, *memSize) : false;
 }
 
 bool CNTV2LinuxDriverInterface::GetBA2MemorySize(ULWord* memSize)
 {
-	return ReadRegister (kVRegBA2MemorySize, memSize);
+	return memSize ? ReadRegister (kVRegBA2MemorySize, *memSize) : false;
 }
 
 bool CNTV2LinuxDriverInterface::GetBA4MemorySize(ULWord* memSize)
 {
-	return ReadRegister (kVRegBA4MemorySize, memSize);
+	return memSize ? ReadRegister (kVRegBA4MemorySize, *memSize) : false;
 }
 
 bool CNTV2LinuxDriverInterface::GetDMADriverBufferPhysicalAddress(ULWord* physAddr)
 {
-	return ReadRegister (kVRegDMADriverBufferPhysicalAddress, physAddr);
+	return physAddr ? ReadRegister (kVRegDMADriverBufferPhysicalAddress, *physAddr) : false;
 }
 
 bool CNTV2LinuxDriverInterface::GetDMANumDriverBuffers(ULWord* pNumDmaDriverBuffers)
 {
-	return ReadRegister (kVRegNumDmaDriverBuffers, pNumDmaDriverBuffers);
+	return pNumDmaDriverBuffers ? ReadRegister (kVRegNumDmaDriverBuffers, *pNumDmaDriverBuffers) : false;
 }
 
 
@@ -1616,7 +1456,7 @@ bool CNTV2LinuxDriverInterface::SetAudioOutputMode(NTV2_GlobalAudioPlaybackMode 
 
 bool CNTV2LinuxDriverInterface::GetAudioOutputMode(NTV2_GlobalAudioPlaybackMode* mode)
 {
-	return ReadRegister(kVRegGlobalAudioPlaybackMode,(ULWord*)mode);
+	return mode ? CNTV2DriverInterface::ReadRegister(kVRegGlobalAudioPlaybackMode, *mode) : false;
 }
 
 
@@ -2042,90 +1882,6 @@ CNTV2LinuxDriverInterface::DmaReadWithOffsets(
 }
 
 //
-// Management of downloaded Xilinx bitfile
-//
-//
-bool
-CNTV2LinuxDriverInterface::DriverGetBitFileInformation(
-		BITFILE_INFO_STRUCT &bitFileInfo,
-		NTV2BitFileType bitFileType)
-{
-	if (_remoteHandle != INVALID_NUB_HANDLE)
-	{
-		if (!CNTV2DriverInterface::DriverGetBitFileInformation(
-				bitFileInfo,
-				bitFileType))
-		{
-			DisplayNTV2Error("NTV2DriverGetBitFileInformationRemote failed");
-			return false;
-		}
-	}
-	else
-	{
-		if(NTV2DeviceHasSPIFlash(_boardID))
-		{
-			if (!CNTV2DriverInterface::DriverGetBitFileInformation(
-					bitFileInfo,
-					bitFileType))
-			{
-				DisplayNTV2Error("DriverGetBitFileInformation failed");
-				return false;
-			}
-			return true;
-		}
-		else
-		{
-			int request;
-
-			assert( (_hDevice != INVALID_HANDLE_VALUE) && (_hDevice != 0) );
-			assert( bitFileType == NTV2_VideoProcBitFile); // Other types not implemented yet
-
-			request = (int)IOCTL_NTV2_GET_BITFILE_INFO;
-
-			if (ioctl( _hDevice, request, &bitFileInfo))
-			{
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-bool
-CNTV2LinuxDriverInterface::DriverSetBitFileInformation(
-		BITFILE_INFO_STRUCT &bitFileInfo)
-{
-	int request;
-	const char *errMsg = NULL;
-
-#define ERRMSG(s) #s " failed"
-
-	assert( (_hDevice != INVALID_HANDLE_VALUE) && (_hDevice != 0) );
-
-	request = (int)IOCTL_NTV2_SET_BITFILE_INFO;
-	errMsg = ERRMSG(IOCTL_NTV2_SET_BITFILE_INFO);
-
-	if (ioctl( _hDevice, request, &bitFileInfo))
-	{
-		DisplayNTV2Error(errMsg);
-		return false;
-	}
-
-	return true;
-#undef ERRMSG
-}
-
-bool
-CNTV2LinuxDriverInterface::SwitchBitfile(NTV2DeviceID boardID, NTV2BitfileType bitfile)
-{
-    (void)boardID;
-    (void)bitfile;
-
-	// Bitfiles are no longer dynamically loaded
-	return true;
-}
-
-//
 // Code for control panel support
 //
 
@@ -2137,18 +1893,14 @@ bool CNTV2LinuxDriverInterface::ReadRP188Registers( NTV2Channel /*channel-not-us
 	RP188SourceSelect source = kRP188SourceEmbeddedLTC;
 	ULWord dbbReg, msReg, lsReg;
 
-	ReadRegister(kRegBoardID, (ULWord *)&boardID);
-	ReadRegister(kVRegRP188SourceSelect, (ULWord *)&source);
-	#if !defined (NTV2_DEPRECATE)
-		bool bLTCPort = (source == kRP188SourceLTCPort && boardID != BOARD_ID_MOAB);
-	#else	//	defined (NTV2_DEPRECATE)
-		bool bLTCPort = (source == kRP188SourceLTCPort);
-	#endif	//	defined (NTV2_DEPRECATE)
+	CNTV2DriverInterface::ReadRegister(kRegBoardID, boardID);
+	CNTV2DriverInterface::ReadRegister(kVRegRP188SourceSelect, source);
+	bool bLTCPort = (source == kRP188SourceLTCPort);
 	// values come from LTC port registers
 	if (bLTCPort)
 	{
 		ULWord ltcPresent;
-		ReadRegister (kRegStatus, &ltcPresent, kRegMaskLTCInPresent, kRegShiftLTCInPresent);
+		ReadRegister (kRegStatus, ltcPresent, kRegMaskLTCInPresent, kRegShiftLTCInPresent);
 
 		// there is no equivalent DBB for LTC port - we synthesize it here
 		rp188.DBB = (ltcPresent) ? 0xFE000000 | NEW_SELECT_RP188_RCVD : 0xFE000000;
@@ -2165,31 +1917,15 @@ bool CNTV2LinuxDriverInterface::ReadRP188Registers( NTV2Channel /*channel-not-us
 		NTV2Channel channel = NTV2_CHANNEL1;
 		NTV2InputVideoSelect inputSelect = NTV2_Input1Select;
 
-		switch (boardID)
+		if(NTV2DeviceGetNumVideoInputs(boardID) > 1)
 		{
-		#if !defined (NTV2_DEPRECATE)
-		case BOARD_ID_KONA2:
-		case BOARD_ID_XENA2:
-		case BOARD_ID_MOAB:
-		#endif	//	!defined (NTV2_DEPRECATE)
-		case DEVICE_ID_LHI:
-		case DEVICE_ID_IOXT:
-		case DEVICE_ID_CORVID22:
-		case DEVICE_ID_KONA3G:
-		case DEVICE_ID_KONA3GQUAD:
-			//			case BOARD_ID_CORVID24:			//	** MrBill **	What about CORVID24?!
-			ReadRegister (kVRegInputSelect, (ULWord *)&inputSelect);
-			channel = (inputSelect == NTV2_Input1Select) ? NTV2_CHANNEL1 : NTV2_CHANNEL2;
-			break;
-		#if !defined (NTV2_DEPRECATE)
-		case BOARD_ID_KONALS:
-		case BOARD_ID_XENALH:
-		#endif	//	!defined (NTV2_DEPRECATE)
-		case DEVICE_ID_IOEXPRESS:
-		case DEVICE_ID_CORVID1:
-		default:
+
+			CNTV2DriverInterface::ReadRegister (kVRegInputSelect, inputSelect);
+			channel = (inputSelect == NTV2_Input2Select) ? NTV2_CHANNEL2 : NTV2_CHANNEL1;
+		}
+		else
+		{
 			channel = NTV2_CHANNEL1;
-			break;
 		}
 
 		// rp188 registers
@@ -2200,9 +1936,9 @@ bool CNTV2LinuxDriverInterface::ReadRP188Registers( NTV2Channel /*channel-not-us
 
 	// initialize values
 	if (!bLTCPort)
-		ReadRegister (dbbReg, &rp188.DBB );
-	ReadRegister (msReg,  &rp188.Low );
-	ReadRegister (lsReg,  &rp188.High);
+		ReadRegister (dbbReg, rp188.DBB );
+	ReadRegister (msReg,  rp188.Low );
+	ReadRegister (lsReg,  rp188.High);
 
 	// register stability filter
 	do
@@ -2212,9 +1948,9 @@ bool CNTV2LinuxDriverInterface::ReadRP188Registers( NTV2Channel /*channel-not-us
 
 		// read again into local struct
 		if (!bLTCPort)
-			ReadRegister (dbbReg, &rp188.DBB );
-		ReadRegister (msReg,  &rp188.Low );
-		ReadRegister (lsReg,  &rp188.High);
+			ReadRegister (dbbReg, rp188.DBB );
+		ReadRegister (msReg,  rp188.Low );
+		ReadRegister (lsReg,  rp188.High);
 
 		// if the new read equals the previous read, consider it done
 		if ( (rp188.DBB  == pRP188Data->DBB) &&
@@ -2239,7 +1975,7 @@ bool CNTV2LinuxDriverInterface::SetOutputTimecodeOffset( ULWord frames )
 
 bool CNTV2LinuxDriverInterface::GetOutputTimecodeOffset( ULWord* pFrames )
 {
-	return ReadRegister(kVRegOutputTimecodeOffset, pFrames);
+	return pFrames ? ReadRegister(kVRegOutputTimecodeOffset, *pFrames) : false;
 }
 
 bool CNTV2LinuxDriverInterface::SetOutputTimecodeType( ULWord type )
@@ -2249,7 +1985,7 @@ bool CNTV2LinuxDriverInterface::SetOutputTimecodeType( ULWord type )
 
 bool CNTV2LinuxDriverInterface::GetOutputTimecodeType( ULWord* pType )
 {
-	return ReadRegister(kVRegOutputTimecodeType, pType);
+	return pType ? ReadRegister(kVRegOutputTimecodeType, *pType) : false;
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -2418,9 +2154,9 @@ bool CNTV2LinuxDriverInterface::AcquireStreamForApplicationWithReference( ULWord
 	ULWord currentCode = 0;
 	ULWord currentPID  = 0;
 
-	if(!ReadRegister(kVRegApplicationCode, &currentCode))
+	if(!ReadRegister(kVRegApplicationCode, currentCode))
 		return false;
-	if(!ReadRegister(kVRegApplicationPID, &currentPID))
+	if(!ReadRegister(kVRegApplicationPID, currentPID))
 		return false;
 
 	// Check if owner is deceased
@@ -2434,9 +2170,9 @@ bool CNTV2LinuxDriverInterface::AcquireStreamForApplicationWithReference( ULWord
 		ReleaseStreamForApplication( currentCode, currentPID );
 	}
 
-	if(!ReadRegister(kVRegApplicationCode, &currentCode))
+	if(!ReadRegister(kVRegApplicationCode, currentCode))
 		return false;
-	if(!ReadRegister(kVRegApplicationPID, &currentPID))
+	if(!ReadRegister(kVRegApplicationPID, currentPID))
 		return false;
 
 	for( int count = 0; count < 20; count++ )
@@ -2477,11 +2213,11 @@ bool CNTV2LinuxDriverInterface::ReleaseStreamForApplicationWithReference( ULWord
 	ULWord currentPID = 0;
 	ULWord currentCount = 0;
 
-	if(!ReadRegister(kVRegApplicationCode, &currentCode))
+	if(!ReadRegister(kVRegApplicationCode, currentCode))
 		return false;
-	if(!ReadRegister(kVRegApplicationPID, &currentPID))
+	if(!ReadRegister(kVRegApplicationPID, currentPID))
 		return false;
-	if(!ReadRegister(kVRegAcquireLinuxReferenceCount, &currentCount))
+	if(!ReadRegister(kVRegAcquireLinuxReferenceCount, currentCount))
 		return false;
 
 	if( currentCode == appCode && currentPID == (ULWord) pid )
@@ -2517,9 +2253,9 @@ bool CNTV2LinuxDriverInterface::AcquireStreamForApplication( ULWord appCode, int
 	// Get data about current owner
 	ULWord currentCode = 0;
 	ULWord currentPID  = 0;
-	if(!ReadRegister(kVRegApplicationCode, &currentCode))
+	if(!ReadRegister(kVRegApplicationCode, currentCode))
 		return false;
-	if(!ReadRegister(kVRegApplicationPID, &currentPID))
+	if(!ReadRegister(kVRegApplicationPID, currentPID))
 		return false;
 
 	// Check if owner is deceased
@@ -2567,10 +2303,9 @@ bool CNTV2LinuxDriverInterface::SetStreamingApplication( ULWord appCode, int32_t
 
 bool CNTV2LinuxDriverInterface::GetStreamingApplication( ULWord *appCode, int32_t  *pid )
 {
-	if(!ReadRegister(kVRegApplicationCode, appCode))
+	if (!(appCode  &&  ReadRegister(kVRegApplicationCode, *appCode)))
 		return false;
-	else
-		 return ReadRegister(kVRegApplicationPID, (ULWord*)pid);
+	return pid  &&  CNTV2DriverInterface::ReadRegister(kVRegApplicationPID, *pid);
 }
 
 bool CNTV2LinuxDriverInterface::SetDefaultDeviceForPID( int32_t pid )
@@ -2612,10 +2347,10 @@ bool CNTV2LinuxDriverInterface::GetLastOutputVerticalTimestamp (NTV2Channel chan
 	if(!pTimeStamp)
 		return false;
 
-	if(!ReadRegister(gChannelToTSLastOutputVertHi[channel], &highWord))
+	if(!ReadRegister(gChannelToTSLastOutputVertHi[channel], highWord))
 		return false;
 
-	if(!ReadRegister(gChannelToTSLastOutputVertLo[channel], &lowWord))
+	if(!ReadRegister(gChannelToTSLastOutputVertLo[channel], lowWord))
 		return false;
 
 	*pTimeStamp = (uint64_t)highWord | lowWord;
@@ -2631,10 +2366,10 @@ bool CNTV2LinuxDriverInterface::GetLastInputVerticalTimestamp (NTV2Channel chann
 	if(!pTimeStamp)
 		return false;
 
-	if(!ReadRegister(gChannelToTSLastInputVertHi[channel], &highWord))
+	if(!ReadRegister(gChannelToTSLastInputVertHi[channel], highWord))
 		return false;
 
-	if(!ReadRegister(gChannelToTSLastInputVertLo[channel], &lowWord))
+	if(!ReadRegister(gChannelToTSLastInputVertLo[channel], lowWord))
 		return false;
 
 	*pTimeStamp = (uint64_t)highWord | lowWord;

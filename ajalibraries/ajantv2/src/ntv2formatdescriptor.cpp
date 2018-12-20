@@ -1,9 +1,10 @@
 /**
 	@file		ntv2formatdescriptor.cpp
 	@brief		Implementation of the NTV2FormatDescriptor class.
-	@copyright	(C) 2016-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2016-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 #include "ntv2formatdescriptor.h"
+#include "ntv2utils.h"
 #if defined(AJALinux)
 	#include <string.h>  // For memset
 	#include <stdint.h>
@@ -497,6 +498,7 @@ NTV2FormatDescriptor::NTV2FormatDescriptor (const NTV2Standard			inStandard,
 	mStandard		= inStandard;
 	mPixelFormat	= inFrameBufferFormat;
 	mVancMode		= inVancMode;
+	mFrameGeometry	= ::GetVANCFrameGeometry(::GetGeometryFromStandard(mStandard), mVancMode);
 
 	//	Account for VANC...
 	if (NTV2_IS_VANCMODE_ON(inVancMode))
@@ -521,6 +523,7 @@ NTV2FormatDescriptor::NTV2FormatDescriptor (const NTV2Standard			inStandard,
 		}
 		firstActiveLine = numLines - numActiveLines;
 	}
+
 	if (numLines  &&  NTV2_IS_FBF_PLANAR(inFrameBufferFormat))
 		FinalizePlanar();
 
@@ -595,7 +598,7 @@ NTV2FormatDescriptor::NTV2FormatDescriptor (const NTV2VideoFormat		inVideoFormat
 	mStandard		= inStandard;
 	mPixelFormat	= inFrameBufferFormat;
 	mVancMode		= inVancMode;
-	m2Kby1080		= NTV2_IS_2K1080_STANDARD(mStandard);
+	mFrameGeometry	= ::GetVANCFrameGeometry(::GetNTV2FrameGeometryFromVideoFormat(mVideoFormat), mVancMode);
 
 	//	Account for VANC...
 	if (NTV2_IS_VANCMODE_ON(inVancMode))
@@ -633,6 +636,7 @@ NTV2FormatDescriptor::NTV2FormatDescriptor (const NTV2VideoFormat		inVideoFormat
 												const bool					in2Kby1080,
 												const bool					inWideVANC)
 	{
+		(void) in2Kby1080;
 		MakeInvalid ();
 		if (!NTV2_IS_VALID_STANDARD (inVideoStandard))
 			return;	//	bad standard
@@ -713,7 +717,6 @@ NTV2FormatDescriptor::NTV2FormatDescriptor (const NTV2VideoFormat		inVideoFormat
 		firstActiveLine = numLines - numActiveLines;
 		mStandard		= inVideoStandard;
 		mPixelFormat	= inFrameBufferFormat;
-		m2Kby1080		= in2Kby1080;
 		mVancMode		= NTV2VANCModeFromBools (inVANCenabled, inWideVANC);
 
 		if (NTV2_IS_FBF_PLANAR (inFrameBufferFormat))
@@ -771,7 +774,6 @@ NTV2FormatDescriptor::NTV2FormatDescriptor (const ULWord inNumLines, const ULWor
 		mVideoFormat	(NTV2_FORMAT_UNKNOWN),
 		mPixelFormat	(NTV2_FBF_INVALID),
 		mVancMode		(NTV2_VANCMODE_INVALID),
-		m2Kby1080		(false),
 		mNumPlanes		(1),
 		mFrameGeometry	(NTV2_FG_INVALID)
 {
@@ -790,10 +792,18 @@ void NTV2FormatDescriptor::MakeInvalid (void)
 	mVideoFormat	= NTV2_FORMAT_UNKNOWN;
 	mPixelFormat	= NTV2_FBF_INVALID;
 	mVancMode		= NTV2_VANCMODE_INVALID;
-	m2Kby1080		= false;
 	mLinePitch[0] = mLinePitch[1] = mLinePitch[2] = mLinePitch[3] = 0;
 	mNumPlanes		= 0;
 	mFrameGeometry	= NTV2_FG_INVALID;
+}
+
+bool NTV2FormatDescriptor::Is2KFormat (void) const
+{
+	if (NTV2_IS_VALID_VIDEO_FORMAT(mVideoFormat))
+		return NTV2_IS_2K_1080_VIDEO_FORMAT(mVideoFormat);
+	else if (NTV2_IS_VALID_STANDARD(mStandard))
+		return NTV2_IS_2K1080_STANDARD(mStandard);
+	return false;
 }
 
 
@@ -978,7 +988,7 @@ ostream & NTV2FormatDescriptor::Print (ostream & inOutStream, const bool inDetai
 		if (NTV2_IS_VALID_VIDEO_FORMAT(mVideoFormat))
 			inOutStream << " '" << ::NTV2VideoFormatToString(mVideoFormat) << "'";
 		else
-			inOutStream << ", " << ::NTV2StandardToString(mStandard) << (m2Kby1080 ? " 2K" : "");
+			inOutStream << ", " << ::NTV2StandardToString(mStandard) << (Is2KFormat() ? " 2K" : "");
 		if (NTV2_IS_VANCMODE_ON(mVancMode))
 			inOutStream << (NTV2_IS_VANCMODE_TALLER(mVancMode) ? " TallerVANC" : " TallVANC");
 		if (NTV2_IS_VALID_FRAME_BUFFER_FORMAT(mPixelFormat))
@@ -1095,11 +1105,23 @@ ostream & NTV2FormatDescriptor::PrintSMPTELineNumber (ostream & inOutStream, con
 }
 
 
-//	Q:	WHY IS NTV2SmpteLineNumber's CONSTRUCTOR HERE?
+//	Q:	WHY IS NTV2SmpteLineNumber's CONSTRUCTOR & GetLastLine IMPLEMENTATION HERE?
 //	A:	TO USE THE SAME LineNumbersF1/LineNumbersF2 TABLES (above)
 
 NTV2SmpteLineNumber::NTV2SmpteLineNumber (const NTV2Standard inStandard)
 {
 	NTV2_ASSERT (inStandard < sizeof(LineNumbersF1) / sizeof(ULWord));
 	*this = NTV2SmpteLineNumber (LineNumbersF1[inStandard],  LineNumbersF2[inStandard],  inStandard != NTV2_STANDARD_525,  inStandard);
+}
+
+
+ULWord NTV2SmpteLineNumber::GetLastLine (const NTV2FieldID inRasterFieldID) const
+{
+	if (!NTV2_IS_VALID_FIELD(inRasterFieldID))
+		return 0;
+
+	if (inRasterFieldID == NTV2_FIELD0)
+		return firstFieldTop ? LineNumbersF1Last[mStandard] : LineNumbersF2Last[mStandard];
+	else
+		return firstFieldTop ? LineNumbersF2Last[mStandard] : LineNumbersF1Last[mStandard];
 }

@@ -1,7 +1,7 @@
 /**
 	@file		ntv2debug.cpp
 	@brief		Declares the NTV2 debug output functions, including 'odprintf'.
-	@copyright	Copyright 2004-2017 AJA Video Systems, Inc. All rights reserved.
+	@copyright	Copyright 2004-2018 AJA Video Systems, Inc. All rights reserved.
 	@note		This module should remain straight ANSI 'C' -- no C++ or STL.
 **/
 
@@ -9,7 +9,9 @@
 #include "ajatypes.h"
 #include "ntv2enums.h"
 
+#if !defined(NTV2_DEPRECATE_14_3)
 AJAExport const char *	NTV2DeviceTypeString		(const NTV2DeviceType type);
+#endif	//	!defined(NTV2_DEPRECATE_14_3)
 AJAExport const char *	NTV2DeviceIDString			(const NTV2DeviceID id);
 AJAExport const char *	NTV2DeviceString			(const NTV2DeviceID id);
 AJAExport const char *	NTV2StandardString			(NTV2Standard std);
@@ -18,6 +20,7 @@ AJAExport const char *	NTV2FrameGeometryString		(NTV2FrameGeometry geom);
 AJAExport const char *	NTV2FrameRateString			(NTV2FrameRate rate);
 AJAExport const char *	NTV2VideoFormatString		(NTV2VideoFormat fmt);
 AJAExport const char *	NTV2RegisterNameString		(const ULWord inRegNum);
+AJAExport const char *	NTV2InterruptEnumString		(const unsigned inInterruptEnum);
 #if !defined (NTV2_DEPRECATE)
 	AJAExport const char *	NTV2BoardTypeString		(NTV2BoardType type);
 	AJAExport const char *	NTV2BoardIDString		(NTV2BoardID id);

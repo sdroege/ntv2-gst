@@ -1,6 +1,6 @@
 /**
 	@file		ntv2publicinterface.h
-	@copyright	Copyright (C) 2012-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2012-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares enums and structs used by all platform drivers and the SDK.
 **/
 
@@ -9,7 +9,7 @@
 
 #include "ajatypes.h"
 #include "ntv2enums.h"
-#if !defined (NTV2_BUILDING_DRIVER)
+#if !defined(NTV2_BUILDING_DRIVER)
 	#include <iostream>
 	#include <set>
 	#include <map>
@@ -17,6 +17,10 @@
 	#include <iomanip>
 	#include <bitset>
 	#include "ajaexport.h"
+	#if defined(MSWindows)
+		#pragma warning(disable:4800)	//	int/bool conversion
+		#pragma warning(disable:4127)	//	Stop MSVC from bitching about "do{...}while(false)" macros
+	#endif
 #endif	//	user-space clients only
 
 #if defined (MSWindows)
@@ -92,7 +96,7 @@ typedef enum
 	kRegXenaxFlashDIN,				// 60	
 	kRegXenaxFlashDOUT,				// 61	
 	kRegReserved62,					// 62	
-	kRegReserved63,					// 63	
+	kRegCPLDVersion,				// 63	
 	kRegRP188InOut2DBB,				// 64
 	kRegRP188InOut2Bits0_31,		// 65
 	kRegRP188InOut2Bits32_63,		// 66
@@ -899,7 +903,21 @@ typedef enum
 	kRegHDMIOutputAudioConfig = 0x1d4B
 }NTV2HDMIOutAudioRegisters;
 
-
+typedef enum _NTV2HDMIRegisters
+{
+	kRegHDMIOutputConfig1       = 0x1d14,
+	kRegHDMIInputStatus1        = 0x1d15,
+	kRegHDMIControl1            = 0x1d16,
+	kRegHDMIOutputConfig2       = 0x2514,
+	kRegHDMIInputStatus2        = 0x2515,
+	kRegHDMIControl2            = 0x2516,
+	kRegHDMIOutputConfig3       = 0x2c12,
+	kRegHDMIInputStatus3        = 0x2c13,
+	kRegHDMIControl3            = 0x2c14,
+	kRegHDMIOutputConfig4       = 0x3012,
+	kRegHDMIInputStatus4        = 0x3013,
+	kRegHDMIControl4            = 0x3014
+} NTV2HDMIRegisters;
 
 #if !defined (NTV2_DEPRECATE)
 	#define	KRegDMA1HostAddr			kRegDMA1HostAddr			///< @deprecated		Use kRegDMA1HostAddr instead.
@@ -1258,6 +1276,7 @@ typedef enum
 	kRegMaskLED					= BIT(16) + BIT(17) + BIT(18) + BIT(19),
 	kRegMaskRegClocking			= BIT(21) + BIT(20),
 	kRegMaskDualLinkInEnable	= BIT(23),
+	kRegMaskQuadTsiEnable		= BIT(24),
 	kRegMaskBankSelect			= BIT(25) + BIT(26),
 	kRegMaskDualLinkOutEnable	= BIT(27),
 	kRegMaskRP188ModeCh1		= BIT(28),
@@ -1619,12 +1638,13 @@ typedef enum
 	kRefMaskHDMIAudioPairSelect = BIT(2)+BIT(3),
 	kRegMaskHDMISampleRateConverterEnable = BIT(4),
 	kRegMaskHDMIInputRange		= BIT(28),
+	kRegMaskHDMIInfoRange		= BIT(31),
 	
 	//kRegHDMIInputControl / kRegHDMIOutControl
 	kRegMaskHDMIColorSpace		= BIT(4)+BIT(5),
 	kRegMaskHDMIProtocol		= BIT(30),
 	kRegMaskHDMIPolarity		= BIT(16)+BIT(17)+BIT(18)+BIT(19),
-
+	
 	//kK2RegAnalogOutControl - (controls Analog Inputs also, for some boards)
 	kK2RegMaskVideoDACMode		= BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4),
 	kFS1RegMaskVideoDAC2Mode    = BIT(8)+BIT(9)+BIT(10)+BIT(11)+BIT(12),
@@ -2398,6 +2418,7 @@ typedef enum
 	kRegShiftLED						= 16,
 	kRegShiftRegClocking				= 20,
 	kRegShiftDualLinkInput				= 23,
+	kRegShiftQuadTsiEnable				= 24,
 	kRegShiftBankSelect					= 25,
 	kRegShiftDualLinKOutput				= 27,
 	kRegShiftRP188ModeCh1				= 28,
@@ -2747,6 +2768,7 @@ typedef enum
 	kRegShiftHDMISampleRateConverterEnable = 4,
 	kRegShiftHDMIInputRange				= 28,
 	kRegShiftHDMIInputPolarity			= 16,
+	kRegShiftHDMIInfoRange				= 31,
 	
 	//kRegHDMIInputControl / kRegHDMIOutControl
 	kRegShiftHDMIColorSpace				= 4,
@@ -3488,7 +3510,7 @@ typedef enum
 // This is necessary since the NWL registers lives in another PCI BAR and these offsets conflict with normal VP registers.  With this 
 // offset the driver knows which mapped BAR to use.  Windows maps individual registers at start so this isn't necessary for Windows.
 #ifdef AJAMac
-	#define NWL_REG_START 12000
+	#define NWL_REG_START 18000
 #else
 	#define NWL_REG_START 0
 #endif
@@ -3701,6 +3723,7 @@ typedef enum
 	kRegXlnxChannelPerfCycleCountHigh			= 0x32,
 	kRegXlnxChannelPerfDataCountLow				= 0x33,
 	kRegXlnxChannelPerfDataCountHigh			= 0x34,
+	kRegXlnxChannelUserMaxReadRequestSize		= 0x44,
 
 	kRegXlnxIrqIdentifier						= 0x00,
 	kRegXlnxIrqUserInterruptEnable				= 0x01,
@@ -3757,7 +3780,10 @@ typedef enum
 	kRegMaskXlnxPerfCycleCountHigh				= 0x000003ff,
 
 	kRegMaskXlnxPerfDataCountMax				= 0x00010000,
-	kRegMaskXlnxPerfDataCountHigh				= 0x000003ff
+	kRegMaskXlnxPerfDataCountHigh				= 0x000003ff,
+
+	kRegMaskXlnxUserMaxReadRequestEff			= 0x00000070,
+	kRegMaskXlnxUserMaxReadRequestPgm			= 0x00000007
 
 } XlnxRegisterMask;
 
@@ -3796,7 +3822,10 @@ typedef enum
 	kRegShiftXlnxPerfCycleCountHigh				= 0,
 
 	kRegShiftXlnxPerfDataCountMax				= 16,
-	kRegShiftXlnxPerfDataCountHigh				= 0
+	kRegShiftXlnxPerfDataCountHigh				= 0,
+
+	kRegShiftXlnxUserMaxReadRequestEff			= 4,
+	kRegShiftXlnxUserMaxReadRequestPgm			= 0
 
 } XlnxRegisterShift;
 
@@ -4108,11 +4137,11 @@ typedef enum
 
 	/**
 		@brief		Streams a human-readable dump of the given NTV2RasterLineOffsets sequence into the specified output stream.
-		@param		inOutStream		Specifies the output stream to receive the dump.
-		@param[in]	inObj			Specifies the NTV2_RP188 to append to the list.
+		@param[in]	inObj			Specifies the NTV2RasterLineOffsets to be streamed to the output stream.
+		@param		inOutStream		Specifies the output stream to receive the dump. Defaults to std::cout.
 		@return		A non-constant reference to the given output stream.
 	**/
-	AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2RasterLineOffsets & inObj);
+	AJAExport std::ostream & NTV2PrintRasterLineOffsets (const NTV2RasterLineOffsets & inObj, std::ostream & inOutStream = std::cout);
 #endif	//	!defined (NTV2_BUILDING_DRIVER)
 
 
@@ -4428,13 +4457,13 @@ typedef enum _AutoCircCommand_
 **/
 typedef enum
 {
-	NTV2_AUTOCIRCULATE_DISABLED	= 0,
-	NTV2_AUTOCIRCULATE_INIT,
-	NTV2_AUTOCIRCULATE_STARTING,
-	NTV2_AUTOCIRCULATE_PAUSED,
-	NTV2_AUTOCIRCULATE_STOPPING,
-	NTV2_AUTOCIRCULATE_RUNNING,
-	NTV2_AUTOCIRCULATE_STARTING_AT_TIME,
+	NTV2_AUTOCIRCULATE_DISABLED	= 0,		///< @brief	The AutoCirculate channel is stopped.
+	NTV2_AUTOCIRCULATE_INIT,				///< @brief	The AutoCirculate channel is initializing, waiting for CNTV2Card::AutoCirculateStart to be called.
+	NTV2_AUTOCIRCULATE_STARTING,			///< @brief	The AutoCirculate channel is starting, waiting for the first VBI and/or call to CNTV2Card::AutoCirculateTransfer.
+	NTV2_AUTOCIRCULATE_PAUSED,				///< @brief	The AutoCirculate channel is paused.
+	NTV2_AUTOCIRCULATE_STOPPING,			///< @brief	The AutoCirculate channel is stopping.
+	NTV2_AUTOCIRCULATE_RUNNING,				///< @brief	The AutoCirculate channel is running.
+	NTV2_AUTOCIRCULATE_STARTING_AT_TIME,	///< @brief	The AutoCirculate channel is starting, waiting for the start time specified in the call to CNTV2Card::AutoCirculateStart to arrive.
 	NTV2_AUTOCIRCULATE_INVALID
 } NTV2AutoCirculateState;
 
@@ -4662,10 +4691,10 @@ typedef struct
 	ULWord				currentAudioStartAddress;
 
 	//! At Call Field0 or Field1 _currently_ being OUTPUT (at the time of the IOCTL_NTV2_GET_FRAMESTAMP)
-	ULWord				currentFieldCount;         //! At Call Line# _currently_ being OUTPUT (at the time of the IOCTL_NTV2_GET_FRAMESTAMP)
-	ULWord				currentLineCount;          //! Contains validCount (Play - reps remaining, Record - drops on frame)
-	ULWord				currentReps;               //! User cookie at last vblank
-	ULWord				currenthUser;            
+	ULWord				currentFieldCount;         
+	ULWord				currentLineCount;			//! At Call Line# _currently_ being OUTPUT (at the time of the IOCTL_NTV2_GET_FRAMESTAMP)
+	ULWord				currentReps;				//! Contains validCount (Play - reps remaining, Record - drops on frame)
+	ULWord				currenthUser;				//! User cookie at last vblank
 } FRAME_STAMP_STRUCT;
 
 
@@ -5164,10 +5193,10 @@ typedef enum
 	kRP188SourceEmbeddedLTC		= 0x0,		// NOTE these values are same as RP188 DBB channel select
 	kRP188SourceEmbeddedVITC1	= 0x1,
 	kRP188SourceEmbeddedVITC2	= 0x2,
-	kRP188SourceLTCPort			= 0xFE		// used in ioHD
+	kRP188SourceLTCPort			= 0xFE
 } RP188SourceSelect;
 
-// note: this order is determined by NTV2TestPatternSegments in testpatterndata.h
+// note: this order mimics (somewhat) that of NTV2TestPatternSelect in "ntv2testpatterngen.h"
 typedef enum
 {
 	kTestPatternColorBar100,		// 100% Bars
@@ -5175,13 +5204,13 @@ typedef enum
 	kTestPatternRamp,				// Ramp
 	kTestPatternMultiburst,			// Mulitburst
 	kTestPatternLinesweep,			// Line Sweep
-	kTestPatternPathological,		// Pathogical
+	kTestPatternPathological,		// Pathological
 	kTestPatternFlatField,			// Flat Field (50%)
 	kTestPatternMultiPattern,		// a swath of everything
 	kTestPatternBlack,				// Black
 	kTestPatternBorder,				// Border
 	kTestPatternCustom				// Custom ("Load File...")
-	
+
 } TestPatternSelect;
 
 enum TestPatternFormat
@@ -5307,35 +5336,41 @@ typedef enum
 	shiftField1AnalogStartLine = 0,
 	maskField2AnalogStartLine = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26),
 	shiftField2AnalogStartLine = 16
-
-
 } ANCExtMaskShift;
 
 typedef enum
 {
 	regAncExt_FIRST,
-	regAncExtControl	=	regAncExt_FIRST,
-	regAncExtField1StartAddress,
-	regAncExtField1EndAddress,
-	regAncExtField2StartAddress,
-	regAncExtField2EndAddress,
-	regAncExtFieldCutoffLine,
-	regAncExtTotalStatus,
-	regAncExtField1Status,
-	regAncExtField2Status,
-	regAncExtFieldVBLStartLine,
-	regAncExtTotalFrameLines,
-	regAncExtFID,
-	regAncExtIgnorePacketReg_1_2_3_4,
-	regAncExtIgnorePacketReg_5_6_7_8,
-	regAncExtIgnorePacketReg_9_10_11_12,
-	regAncExtIgnorePacketReg_13_14_15_16,
-	regAncExtIgnorePacketReg_17_18_19_20,
-	regAncExtAnalogStartLine,
-	regAncExtField1AnalogYFilter,
-	regAncExtField2AnalogYFilter,
-	regAncExtField1AnalogCFilter,
-	regAncExtField2AnalogCFilter,
+	regAncExtControl	=	regAncExt_FIRST,	//	Reg 0 - Control register
+	regAncExtField1StartAddress,				//	Reg 1 - f1_start_address[31:0]
+	regAncExtField1EndAddress,					//	Reg 2 - f1_end_address[31:0]
+	regAncExtField2StartAddress,				//	Reg 3 - f2_start_addr[31:0]
+	regAncExtField2EndAddress,					//	Reg 4 - f2_end_address[31:0]
+	regAncExtFieldCutoffLine,					//	Reg 5 - f2_cutoff_line[10:0], f1_cutoff_line[10:0]
+	regAncExtTotalStatus,						//	Reg 6 - mem_sz_overrun, total_bytes[15:0]
+	regAncExtField1Status,						//	Reg 7 - mem_sz_overrun_f1, total_bytes_f1[15:0]
+	regAncExtField2Status,						//	Reg 8 - mem_sz_overrun_f2, total_bytes_f2[15:0]
+	regAncExtFieldVBLStartLine,					//	Reg 9 - f2_vbl_start[10:0], f1_vbl_start[10:0]
+	regAncExtTotalFrameLines,					//	Reg 10 - total_lines[10:0]
+	regAncExtFID,								//	Reg 11 - fid_low[10:0], fid_hi[10:0]
+	regAncExtIgnorePacketReg_1_2_3_4,			//	Reg 12 - Packet Ignore bytes
+	regAncExtIgnorePktsReg_First	= regAncExtIgnorePacketReg_1_2_3_4,
+	regAncExtIgnorePacketReg_5_6_7_8,			//	Reg 13 - Packet Ignore bytes
+	regAncExtIgnorePacketReg_9_10_11_12,		//	Reg 14 - Packet Ignore bytes
+	regAncExtIgnorePacketReg_13_14_15_16,		//	Reg 15 - Packet Ignore bytes
+	regAncExtIgnorePacketReg_17_18_19_20,		//	Reg 16 - Packet Ignore bytes
+	regAncExtIgnorePktsReg_Last		= regAncExtIgnorePacketReg_17_18_19_20,
+	regAncExtAnalogStartLine,					//	Reg 17 - analog_start_line[10:0]
+	regAncExtField1AnalogYFilter,				//	Reg 18 - analog_line_y_f1[31:0] - one bit per F1 line past analog_start_line, 1=captureAnalogY, 0=normal
+	regAncExtField2AnalogYFilter,				//	Reg 19 - analog_line_y_f2[31:0] - one bit per F2 line past analog_start_line, 1=captureAnalogY, 0=normal
+	regAncExtField1AnalogCFilter,				//	Reg 20 - analog_line_c_f1[31:0] - one bit per F1 line past analog_start_line, 1=captureAnalogC, 0=normal
+	regAncExtField2AnalogCFilter,				//	Reg 21 - analog_line_c_f2[31:0] - one bit per F2 line past analog_start_line, 1=captureAnalogC, 0=normal
+	regAncExtTwoFrameCadenceDetect,				//	Reg 22 - not used in NTV2
+	regAncExtRP188Type,							//	Reg 23 - not used in NTV2
+	regAncExtTimecodeStatus0_31,				//	Reg 24 - not used in NTV2
+	regAncExtTimecodeStatus32_63,				//	Reg 25 - not used in NTV2
+	regAncExtTimecodeStatusDBB,					//	Reg 26 - not used in NTV2
+	regAncExtAnalogActiveLineLength,			//	Reg 27 - analog active line length
 	regAncExt_LAST
 } ANCExtRegisters;
 
@@ -5356,7 +5391,6 @@ typedef enum
 	regAncInsBlankCStartLine,
 	regAncInsBlankField1CLines,
 	regAncInsBlankField2CLines,
-	regAncInsBlandField2CLines	= regAncInsBlankField2CLines,	//	Whoops
 	regAncIns_LAST
 } ANCInsRegisters;
 
@@ -5400,6 +5434,29 @@ typedef enum
 	shiftInsFieldIDLow = 16
 
 } ANCInsMaskShift;
+
+
+//	Driver Version ULWord encode/decode macros
+//	Introduced in SDK 15.0
+//	Common ULWord format on all platforms:
+//
+//		 3         2         1          
+//		10987654321098765432109876543210
+//		TTXMMMMMMMmmmmmmPPPPPPbbbbbbbbbb
+//
+//	MMMMMMM:	[28:22]	major version number
+//	mmmmmm:		[21:16]	minor version number
+//	PPPPPP:		[15:10]	point release number
+//	bbbbbbbbbb:	[9:0]	build number
+//	TT:			[31:30]	build type (0=release, 1=beta, 2=alpha, 3=dev)
+#define	NTV2DriverVersionEncode(__maj__, __min__, __pt__, __bld__)			(((ULWord)(__maj__) & 0x0000007F) << 22)		\
+																		|	(((ULWord)(__min__) & 0x0000003F) << 16)		\
+																		|	(((ULWord)(__pt__ ) & 0x0000003F) << 10)		\
+																		|	(((ULWord)(__bld__) & 0x000003FF) <<  0)
+#define	NTV2DriverVersionDecode_Major(__vers__)		(((ULWord)(__vers__) >> 22) & 0x0000007F)
+#define	NTV2DriverVersionDecode_Minor(__vers__)		(((ULWord)(__vers__) >> 16) & 0x0000003F)
+#define	NTV2DriverVersionDecode_Point(__vers__)		(((ULWord)(__vers__) >> 10) & 0x0000003F)
+#define	NTV2DriverVersionDecode_Build(__vers__)		(((ULWord)(__vers__) >>  0) & 0x000003FF)
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////	BEGIN NEW AUTOCIRCULATE API
@@ -5466,6 +5523,7 @@ typedef enum
 		#define	AUTOCIRCULATE_TYPE_GETREGS		NTV2_FOURCC ('r', 'e', 'g', 'R')	///< @brief	Identifies NTV2GetRegisters struct
 		#define	AUTOCIRCULATE_TYPE_SETREGS		NTV2_FOURCC ('r', 'e', 'g', 'W')	///< @brief	Identifies NTV2SetRegisters struct
 		#define	AUTOCIRCULATE_TYPE_SDISTATS		NTV2_FOURCC ('s', 'd', 'i', 'S')	///< @brief	Identifies NTV2SDIStatus struct
+        #define	NTV2_TYPE_AJADEBUGLOGGING		NTV2_FOURCC ('d', 'b', 'l', 'g')	///< @brief	Identifies NTV2DebugLogging struct
 
 		#define	NTV2_IS_VALID_STRUCT_TYPE(_x_)	(	(_x_) == AUTOCIRCULATE_TYPE_STATUS		||	\
 													(_x_) == AUTOCIRCULATE_TYPE_XFER		||	\
@@ -5476,11 +5534,13 @@ typedef enum
 													(_x_) == AUTOCIRCULATE_TYPE_SETREGS		||	\
 													(_x_) == AUTOCIRCULATE_TYPE_SDISTATS	||	\
                                                     (_x_) == NTV2_TYPE_BANKGETSET			||	\
-                                                    (_x_) == NTV2_TYPE_VIRTUAL_DATA_RW      )
+                                                    (_x_) == NTV2_TYPE_VIRTUAL_DATA_RW		||	\
+                                                    (_x_) == NTV2_TYPE_AJADEBUGLOGGING	)
 
 
 		//	NTV2_POINTER FLAGS
 		#define	NTV2_POINTER_ALLOCATED				BIT(0)		///< @brief	Allocated using Allocate function?
+		#define	NTV2_POINTER_PAGE_ALIGNED			BIT(1)		///< @brief	Allocated page-aligned?
 
 
 		//	AUTOCIRCULATE OPTION FLAGS
@@ -5492,6 +5552,11 @@ typedef enum
 		#define	AUTOCIRCULATE_WITH_VIDPROC			BIT(5)		///< @brief	Use this to AutoCirculate with video processing
 		#define	AUTOCIRCULATE_WITH_ANC				BIT(6)		///< @brief	Use this to AutoCirculate with ancillary data
 		#define	AUTOCIRCULATE_WITH_AUDIO_CONTROL	BIT(7)		///< @brief	Use this to AutoCirculate with no audio but with audio control
+		#define	AUTOCIRCULATE_WITH_FIELDS			BIT(8)		///< @brief	Use this to AutoCirculate with fields as frames for interlaced formats
+
+		#define AUTOCIRCULATE_FRAME_FULL			BIT(20)		///< @brief Frame contains a full image
+		#define AUTOCIRCULATE_FRAME_FIELD0			BIT(21)		///< @brief Frame contains field 0 of an interlaced image (first field in time)
+		#define AUTOCIRCULATE_FRAME_FIELD1			BIT(22)		///< @brief Frame contains field 1 of an interlaced image (second field in time)
 
 		#define AUTOCIRCULATE_P2P_PREPARE			BIT(28)		///< @brief prepare p2p target for synchronous transfer (no message)
 		#define AUTOCIRCULATE_P2P_COMPLETE			BIT(29)		///< @brief complete synchronous p2p transfer
@@ -5520,23 +5585,23 @@ typedef enum
 			//	Convenience macros for compactly formatting ostream output...
 			#define	Hex(__x__)				std::hex << (__x__) << std::dec
 			#define	xHex(__x__)				"0x" << Hex(__x__)
-			#define	HexN(__x__,__n__)		std::hex << std::setw(__n__) << (__x__) << std::dec
+			#define	HexN(__x__,__n__)		std::hex << std::setw(int(__n__)) << (__x__) << std::dec
 			#define	xHexN(__x__,__n__)		"0x" << HexN((__x__),(__n__))
-			#define	Hex0N(__x__,__n__)		std::hex << std::setw(__n__) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
+			#define	Hex0N(__x__,__n__)		std::hex << std::setw(int(__n__)) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
 			#define	xHex0N(__x__,__n__)		"0x" << Hex0N((__x__),(__n__))
 			#define	HEX(__x__)				std::hex << std::uppercase << (__x__) << std::dec << std::nouppercase
 			#define	xHEX(__x__)				"0x" << HEX(__x__)
-			#define	HEXN(__x__,__n__)		std::hex << std::uppercase << std::setw(__n__) << (__x__) << std::dec << std::nouppercase
+			#define	HEXN(__x__,__n__)		std::hex << std::uppercase << std::setw(int(__n__)) << (__x__) << std::dec << std::nouppercase
 			#define	xHEXN(__x__,__n__)		"0x" << HEXN((__x__),(__n__))
-			#define	HEX0N(__x__,__n__)		std::hex << std::uppercase << std::setw(__n__) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ') << std::nouppercase
+			#define	HEX0N(__x__,__n__)		std::hex << std::uppercase << std::setw(int(__n__)) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ') << std::nouppercase
 			#define	xHEX0N(__x__,__n__)		"0x" << HEX0N((__x__),(__n__))
-			#define	DEC(__x__)				std::dec << (__x__)
-			#define	DECN(__x__,__n__)		std::dec << std::setw(__n__) << (__x__)
-			#define	DEC0N(__x__,__n__)		std::dec << std::setw(__n__) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
+			#define	DEC(__x__)				std::dec << std::right << (__x__)
+			#define	DECN(__x__,__n__)		std::dec << std::setw(int(__n__)) << std::right << (__x__)
+			#define	DEC0N(__x__,__n__)		std::dec << std::setw(int(__n__)) << std::setfill('0') << std::right << (__x__) << std::dec << std::setfill(' ')
 			#define	OCT(__x__)				std::oct << (__x__) << std::dec
-			#define	OCT0N(__x__,__n__)		std::oct << std::setw(__n__) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
+			#define	OCT0N(__x__,__n__)		std::oct << std::setw(int(__n__)) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
 			#define	oOCT(__x__)				"o" << std::oct << (__x__) << std::dec
-			#define	oOCT0N(__x__,__n__)		"o" << std::oct << std::setw(__n__) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
+			#define	oOCT0N(__x__,__n__)		"o" << std::oct << std::setw(int(__n__)) << std::setfill('0') << (__x__) << std::dec << std::setfill(' ')
 			#define	BIN064(__x__)			std::bitset<8>((uint64_t(__x__)&0xFF00000000000000)>>56) << "."		\
 												<< std::bitset<8>((uint64_t(__x__)&0x00FF000000000000)>>48) << "."		\
 												<< std::bitset<8>((uint64_t(__x__)&0x0000FF0000000000)>>40) << "."		\
@@ -5552,11 +5617,15 @@ typedef enum
 			#define	BIN016(__x__)			std::bitset<8>((uint16_t(__x__)&0xFF00)>>8) << "."					\
 												<< std::bitset<8>( uint16_t(__x__)&0x00FF)
 			#define	BIN08(__x__)			std::bitset<8>(uint8_t(__x__))
+			#define	BIN04(__x__)			std::bitset<4>(uint8_t(__x__))
+			#define	BIN0N(__x__,__n__)		std::bitset<__n__>(uint8_t(__x__))
 			#define	bBIN064(__x__)			"b"	<< BIN064(__x__)
 			#define	bBIN032(__x__)			"b"	<< BIN032(__x__)
 			#define	bBIN016(__x__)			"b"	<< BIN016(__x__)
 			#define	bBIN08(__x__)			"b"	<< BIN08(__x__)
-			#define	fDEC(__x__,__w__,__p__)	std::fixed << std::setw(__w__) << std::setprecision(__p__) << (__x__) << std::dec
+			#define	bBIN04(__x__)			"b"	<< BIN04(__x__)
+			#define	bBIN0N(__x__,__n__)		"b"	<< BIN0N(__x__,__n__)
+			#define	fDEC(__x__,__w__,__p__)	std::dec << std::fixed << std::setw(__w__) << std::setprecision(__p__) << (__x__)
 		#else
 			#define	NTV2_STRUCT_BEGIN(__struct_name__)		typedef struct __struct_name__ {
 			#define	NTV2_STRUCT_END(__struct_name__)		} __struct_name__;
@@ -5605,7 +5674,7 @@ typedef enum
 								. . .
 							}	//  The memory is freed automatically when foo goes out of scope
 						@endcode
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2_POINTER)
 			NTV2_BEGIN_PRIVATE
@@ -5624,6 +5693,10 @@ typedef enum
 
 			#if !defined (NTV2_BUILDING_DRIVER)
 				/**
+					@name	Construction & Destruction
+				**/
+				///@{
+				/**
 					@brief		Constructs me from a client-supplied address and size.
 					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
 					@param[in]	inByteCount		Specifies the byte count.
@@ -5635,7 +5708,7 @@ typedef enum
 					@param[in]	inByteCount		Specifies the size of the allocated buffer, in bytes. If non-zero, causes Allocate to be called, and
 												if successful, zeroes the buffer. If zero, I don't allocate anything, and my host pointer will be NULL.
 				**/
-				explicit		NTV2_POINTER (const size_t inByteCount = 0);
+								NTV2_POINTER (const size_t inByteCount = 0);
 
 				/**
 					@brief		Constructs me from another NTV2_POINTER instance.
@@ -5653,64 +5726,12 @@ typedef enum
 					@brief		My destructor. If I'm responsible for the memory, I free it here.
 				**/
 								~NTV2_POINTER ();
+				///@}
 
 				/**
-					@brief		Sets (or resets) me from a client-supplied address and size.
-					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
-					@param[in]	inByteCount		Specifies the byte count.
-					@return		True if successful;  otherwise false.
-					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
+					@name	Inquiry
 				**/
-				bool			Set (const void * pInUserPointer, const size_t inByteCount);
-
-				/**
-					@brief		Sets (or resets) me from a client-supplied address and size.
-					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
-					@param[in]	inByteCount		Specifies the byte count.
-					@param[in]	inValue			Specifies the value to fill the buffer with.
-					@return		True if successful;  otherwise false.
-					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
-				**/
-				bool			SetAndFill (const void * pInUserPointer, const size_t inByteCount, const UByte inValue);
-
-				/**
-					@brief		Allocates (or re-allocates) my user-space storage using the given byte count.
-								I assume full responsibility for any memory that I allocate.
-					@param[in]	inByteCount		Specifies the number of bytes to allocate.
-												Specifying zero is the same as calling Set(NULL, 0).
-					@return		True if successful;  otherwise false.
-					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
-				**/
-				bool			Allocate (const size_t inByteCount);
-
-				/**
-					@brief		Fills me with the given UByte value.
-					@param[in]	inValue		The UByte value to fill me with.
-					@note		Ignored if I'm not currently allocated.
-				**/
-				void			Fill (const UByte inValue);
-
-				/**
-					@brief		Fills me with the given UWord value.
-					@param[in]	inValue		The UWord value to fill me with.
-					@note		Ignored if I'm not currently allocated.
-				**/
-				void			Fill (const UWord inValue);
-
-				/**
-					@brief		Fills me with the given ULWord value.
-					@param[in]	inValue		The ULWord value to fill me with.
-					@note		Ignored if I'm not currently allocated.
-				**/
-				void			Fill (const ULWord inValue);
-
-				/**
-					@brief		Fills me with the given ULWord64 value.
-					@param[in]	inValue		The ULWord64 value to fill me with.
-					@note		Ignored if I'm not currently allocated.
-				**/
-				void			Fill (const ULWord64 inValue);
-
+				///@{
 				/**
 					@return		My user-space host virtual address, as seen by the host process.
 				**/
@@ -5751,6 +5772,11 @@ typedef enum
 				inline bool		IsNULL (void) const						{return GetHostPointer() == NULL || GetByteCount() == 0;}
 
 				/**
+					@return		True if my host pointer is non-NULL and my byte count is non-zero;  otherwise false.
+				**/
+				inline operator bool() const	{return !IsNULL();}
+
+				/**
 					@param[in]	inByteOffset	Specifies the offset from the start (or end) of my memory buffer.
 												Must be less than my size (see GetByteCount).
 					@param[in]	inFromEnd		Specify 'true' to reference the end of my buffer.
@@ -5758,6 +5784,105 @@ typedef enum
 					@return		The host address of the given byte. Returns NULL upon failure.
 				**/
 				void *			GetHostAddress (const ULWord inByteOffset, const bool inFromEnd = false) const;
+
+				/**
+					@return		True if the given memory buffer's contents are identical to my own.
+					@param[in]	inBuffer		Specifies the memory buffer whose contents are to be compared with mine.
+					@param[in]	inByteOffset	Specifies the byte offset to start comparing. Defaults to the first byte.
+					@param[in]	inByteCount		Specifies the maximum number of bytes to compare. Defaults to 0xFFFFFFFF (entire buffer).
+				**/
+				bool			IsContentEqual (const NTV2_POINTER & inBuffer, const ULWord inByteOffset = 0, const ULWord inByteCount = 0xFFFFFFFF) const;
+
+				/**
+					@brief		Assuming my contents and the contents of the given buffer comprise ring buffers that periodically get overwritten
+								in contiguous variable-length chunks, answers with the contiguous byte range that differs between the two.
+					@param[in]	inBuffer			Specifies the memory buffer whose contents are to be compared with mine. Contents are
+													assumed to comprise a ring buffer, where data periodically gets overwritten in chunks.
+					@param[out]	outByteOffsetFirst	Receives the offset, in bytes, from the start of the buffer, of the first byte of the contiguous
+													range that's different.
+													Zero indicates the first byte in the buffer.
+													If equal to NTV2_POINTER::GetByteCount(), then both buffers are identical.
+													If greater than 'outByteOffsetLast', then a wrap condition exists (see Note).
+					@param[out]	outByteOffsetLast	Receives the offset, in bytes, from the start of the buffer, of the last byte of the contiguous
+													range that's different.
+													Zero indicates the first byte in the buffer.
+													If equal to NTV2_POINTER::GetByteCount(), then both buffers are identical.
+													If less than 'outByteOffsetFirst', a wrap condition exists (see Note).
+					@note		If a wrap condition exists -- i.e., the contiguous byte range that differs starts near the end and wraps around
+								to near the front -- then 'outByteOffsetFirst' will be greater than 'outByteOffsetLast'.
+					@return		True if successful;  otherwise false.
+				**/
+				bool			GetRingChangedByteRange (const NTV2_POINTER & inBuffer, ULWord & outByteOffsetFirst, ULWord & outByteOffsetLast) const;
+				///@}
+
+				/**
+					@name	Changing
+				**/
+				///@{
+				/**
+					@brief		Allocates (or re-allocates) my user-space storage using the given byte count.
+								I assume full responsibility for any memory that I allocate.
+					@param[in]	inByteCount		Specifies the number of bytes to allocate.
+												Specifying zero is the same as calling Set(NULL, 0).
+					@param[in]	inPageAligned	Optionally specifies page alignment. If true, allocates a
+												page-aligned block. If false (default), uses operator new.
+					@return		True if successful;  otherwise false.
+					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
+				**/
+				bool			Allocate (const size_t inByteCount, const bool inPageAligned = false);
+
+				/**
+					@brief		Deallocates my user-space storage (if I own it -- i.e. from a prior call to Allocate).
+					@return		True if successful;  otherwise false.
+				**/
+				bool			Deallocate (void);
+
+				/**
+					@brief		Fills me with the given UByte value.
+					@param[in]	inValue		The UByte value to fill me with.
+					@note		Ignored if I'm not currently allocated.
+				**/
+				void			Fill (const UByte inValue);
+
+				/**
+					@brief		Fills me with the given UWord value.
+					@param[in]	inValue		The UWord value to fill me with.
+					@note		Ignored if I'm not currently allocated.
+				**/
+				void			Fill (const UWord inValue);
+
+				/**
+					@brief		Fills me with the given ULWord value.
+					@param[in]	inValue		The ULWord value to fill me with.
+					@note		Ignored if I'm not currently allocated.
+				**/
+				void			Fill (const ULWord inValue);
+
+				/**
+					@brief		Fills me with the given ULWord64 value.
+					@param[in]	inValue		The ULWord64 value to fill me with.
+					@note		Ignored if I'm not currently allocated.
+				**/
+				void			Fill (const ULWord64 inValue);
+
+				/**
+					@brief		Sets (or resets) me from a client-supplied address and size.
+					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
+					@param[in]	inByteCount		Specifies the byte count.
+					@return		True if successful;  otherwise false.
+					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
+				**/
+				bool			Set (const void * pInUserPointer, const size_t inByteCount);
+
+				/**
+					@brief		Sets (or resets) me from a client-supplied address and size.
+					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
+					@param[in]	inByteCount		Specifies the byte count.
+					@param[in]	inValue			Specifies the value to fill the buffer with.
+					@return		True if successful;  otherwise false.
+					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
+				**/
+				bool			SetAndFill (const void * pInUserPointer, const size_t inByteCount, const UByte inValue);
 
 				/**
 					@brief		Replaces my contents from the given memory buffer.
@@ -5796,41 +5921,12 @@ typedef enum
 								that was allocated in an EXE).
 				**/
 				bool			SwapWith (NTV2_POINTER & inBuffer);
+				///@}
 
 				/**
-					@return		True if the given memory buffer's contents are identical to my own.
-					@param[in]	inBuffer		Specifies the memory buffer whose contents are to be compared with mine.
-					@param[in]	inByteOffset	Specifies the byte offset to start comparing. Defaults to the first byte.
-					@param[in]	inByteCount		Specifies the maximum number of bytes to compare. Defaults to 0xFFFFFFFF (entire buffer).
+					@name	Debugging/Printing
 				**/
-				bool			IsContentEqual (const NTV2_POINTER & inBuffer, const ULWord inByteOffset = 0, const ULWord inByteCount = 0xFFFFFFFF) const;
-
-				/**
-					@brief		Assuming my contents and the contents of the given buffer comprise ring buffers that periodically get overwritten
-								in contiguous variable-length chunks, answers with the contiguous byte range that differs between the two.
-					@param[in]	inBuffer			Specifies the memory buffer whose contents are to be compared with mine. Contents are
-													assumed to comprise a ring buffer, where data periodically gets overwritten in chunks.
-					@param[out]	outByteOffsetFirst	Receives the offset, in bytes, from the start of the buffer, of the first byte of the contiguous
-													range that's different.
-													Zero indicates the first byte in the buffer.
-													If equal to NTV2_POINTER::GetByteCount(), then both buffers are identical.
-													If greater than 'outByteOffsetLast', then a wrap condition exists (see Note).
-					@param[out]	outByteOffsetLast	Receives the offset, in bytes, from the start of the buffer, of the last byte of the contiguous
-													range that's different.
-													Zero indicates the first byte in the buffer.
-													If equal to NTV2_POINTER::GetByteCount(), then both buffers are identical.
-													If less than 'outByteOffsetFirst', a wrap condition exists (see Note).
-					@note		If a wrap condition exists -- i.e., the contiguous byte range that differs starts near the end and wraps around
-								to near the front -- then 'outByteOffsetFirst' will be greater than 'outByteOffsetLast'.
-					@return		True if successful;  otherwise false.
-				**/
-				bool			GetRingChangedByteRange (const NTV2_POINTER & inBuffer, ULWord & outByteOffsetFirst, ULWord & outByteOffsetLast) const;
-
-				/**
-					@return		True if my host pointer is non-NULL and my byte count is non-zero;  otherwise false.
-				**/
-				inline operator bool() const	{return !IsNULL();}
-
+				///@{
 				/**
 					@brief	Prints a human-readable representation of me into the given output stream.
 					@param	inOutStream		The output stream to receive my human-readable representation.
@@ -5844,6 +5940,236 @@ typedef enum
 				**/
 				std::string		AsString (UWord inDumpMaxBytes = 0) const;
 
+				/**
+					@brief	Dumps me in hex/octal/decimal, with/without Ascii, to the given output stream.
+					@param	inOutputStream		Output stream that will receive the dump. Defaults to std::cout.
+					@param	inStartByteOffset	The starting offset, in bytes, where the dump will start.
+					@param	inByteCount			The number of bytes to be dumped. If zero, all bytes will be dumped.
+					@param	inRadix				Specifies the radix of the dumped memory values.
+												16=hex, 10=decimal, 8=octal, 2=binary -- all others disallowed.
+					@param	inBytesPerGroup		Number of bytes to dump per contiguous group of numbers. Defaults to 4.
+					@param	inGroupsPerLine		Number of contiguous groups of numbers to dump per output line.
+												If zero, no grouping is done, and address & ASCII display is suppressed.
+												Defaults to 8.
+					@param	inAddressRadix		Specifies the radix of the address column.
+												0=omit, 2=binary, 8=octal, 10=decimal, 16=hex -- all others disallowed.
+												Defaults to 0.
+					@param	inShowAscii			If True, show ASCII characters; otherwise no ASCII characters.
+												Overridden to false if inGroupsPerLine is zero. Defaults to false.
+					@param	inAddrOffset		Specifies a value to be added to the addresses that appear in the dump.
+												Ignored if inGroupsPerLine is zero.
+					@return	A non-constant reference to the output stream that received the dump.
+				**/
+				std::ostream &	Dump (	std::ostream &	inOutputStream		= std::cout,
+										const size_t	inStartByteOffset	= 0,
+										const size_t	inByteCount			= 0,
+										const size_t	inRadix				= 16,
+										const size_t	inBytesPerGroup		= 4,
+										const size_t	inGroupsPerLine		= 8,
+										const size_t	inAddressRadix		= 0,
+										const bool		inShowAscii			= false,
+										const size_t	inAddrOffset		= 0) const;
+				///@}
+
+				/**
+					@name	Conversion To/From Vectors
+				**/
+				///@{
+				/**
+					@brief		Answers with my contents as a vector of unsigned 16-bit values.
+					@param[out]	outU64s			Receives my contents as a vector of unsigned 64-bit values.
+					@param[in]	inU64Offset		The starting offset, in 64-bit words, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 64-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 64-bit values may be less than this, depending on my size.
+												Defaults to 16.
+					@param[in]	inByteSwap		Specifies if the resulting values will be byte-swapped or not.
+												Specify 'true' to byte-swap;  specify 'false' to return the normal, unswapped values.
+												Defaults to 'false'.
+					@return						True if successful;  otherwise false.
+					@note		If my length is not evenly divisible by 8, my last bytes won't appear in the resulting vector. 
+				**/
+				bool							GetU64s (std::vector<uint64_t> & outU64s, const size_t inU64Offset = 0, const size_t inMaxSize = 16, const bool inByteSwap = false) const;
+
+				/**
+					@return		My contents as a vector of unsigned 64-bit values.
+					@param[in]	inU64Offset		The starting offset, in 64-bit words, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 64-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 64-bit values may be less than this, depending on my size.
+												Defaults to 16.
+					@param[in]	inByteSwap		Specifies if the resulting values will be byte-swapped or not.
+												Specify 'true' to byte-swap;  specify 'false' to return the normal, unswapped values.
+												Defaults to 'false'.
+					@note		If my length is not evenly divisible by 8, my last bytes won't appear in the resulting vector. 
+				**/
+				inline std::vector<uint64_t>	GetU64s (const size_t inU64Offset = 0, const size_t inMaxSize = 16, const bool inByteSwap = false) const	{std::vector<uint64_t> result; GetU64s(result, inU64Offset, inMaxSize, inByteSwap); return result;}
+
+				/**
+					@brief		Answers with my contents as a vector of unsigned 32-bit values.
+					@param[out]	outU32s			Receives my contents as a vector of unsigned 32-bit values.
+					@param[in]	inU32Offset		The starting offset, in 32-bit words, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 32-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 32-bit values may be less than this, depending on my size.
+												Defaults to 32.
+					@param[in]	inByteSwap		Specifies if the resulting values will be byte-swapped or not.
+												Specify 'true' to byte-swap;  specify 'false' to return the normal, unswapped values.
+												Defaults to 'false'.
+					@return						True if successful;  otherwise false.
+					@note		If my length is not evenly divisible by 4, my last bytes won't appear in the resulting vector. 
+				**/
+				bool							GetU32s (std::vector<uint32_t> & outU32s, const size_t inU32Offset = 0, const size_t inMaxSize = 32, const bool inByteSwap = false) const;
+
+				/**
+					@return		My contents as a vector of unsigned 32-bit values.
+					@param[in]	inU32Offset		The starting offset, in 32-bit words, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 32-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 32-bit values may be less than this, depending on my size.
+												Defaults to 32.
+					@param[in]	inByteSwap		Specifies if the resulting values will be byte-swapped or not.
+												Specify 'true' to byte-swap;  specify 'false' to return the normal, unswapped values.
+												Defaults to 'false'.
+					@note		If my length is not evenly divisible by 4, my last bytes won't appear in the resulting vector. 
+				**/
+				inline std::vector<uint32_t>	GetU32s (const size_t inU32Offset = 0, const size_t inMaxSize = 32, const bool inByteSwap = false) const	{std::vector<uint32_t> result; GetU32s(result, inU32Offset, inMaxSize, inByteSwap); return result;}
+
+				/**
+					@brief		Answers with my contents as a vector of unsigned 16-bit values.
+					@param[out]	outU16s			Receives my contents as a vector of unsigned 16-bit values.
+					@param[in]	inU16Offset		The starting offset, in 16-bit words, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 16-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 16-bit values may be less than this, depending on my size.
+												Defaults to 64.
+					@param[in]	inByteSwap		Specifies if the resulting values will be byte-swapped or not.
+												Specify 'true' to byte-swap;  specify 'false' to return the normal, unswapped values.
+												Defaults to 'false'.
+					@return						True if successful;  otherwise false.
+					@note		If my length is not evenly divisible by 2, my last byte won't appear in the resulting vector. 
+				**/
+				bool							GetU16s (std::vector<uint16_t> & outU16s, const size_t inU16Offset = 0, const size_t inMaxSize = 64, const bool inByteSwap = false) const;
+
+				/**
+					@return		My contents as a vector of unsigned 16-bit values.
+					@param[in]	inU16Offset		The starting offset, in 16-bit words, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 16-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 16-bit values may be less than this, depending on my size.
+												Defaults to 64.
+					@param[in]	inByteSwap		Specifies if the resulting values will be byte-swapped or not.
+												Specify 'true' to byte-swap;  specify 'false' to return the normal, unswapped values.
+												Defaults to 'false'.
+					@note		If my length is not evenly divisible by 2, my last byte won't appear in the resulting vector. 
+				**/
+				inline std::vector<uint16_t>	GetU16s (const size_t inU16Offset = 0, const size_t inMaxSize = 64, const bool inByteSwap = false) const	{std::vector<uint16_t> result; GetU16s(result, inU16Offset, inMaxSize, inByteSwap); return result;}
+
+				/**
+					@brief		Answers with my contents as a vector of unsigned 8-bit values.
+					@param[out]	outU8s			Receives my contents as a vector of unsigned 8-bit values.
+					@param[in]	inU8Offset		The starting offset, in bytes, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 8-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 8-bit values may be less than this, depending on my size.
+												Defaults to 128.
+					@return						True if successful;  otherwise false.
+				**/
+				bool							GetU8s (std::vector<uint8_t> & outU8s, const size_t inU8Offset = 0, const size_t inMaxSize = 128) const;
+
+				/**
+					@return		My contents as a vector of unsigned 8-bit values.
+					@param[in]	inU8Offset		The starting offset, in bytes, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 8-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 8-bit values may be less than this, depending on my size.
+												Defaults to 128.
+				**/
+				inline std::vector<uint8_t>		GetU8s (const size_t inU8Offset = 0, const size_t inMaxSize = 128) const	{std::vector<uint8_t> result; GetU8s(result, inU8Offset, inMaxSize); return result;}
+
+				/**
+					@brief		Answers with my contents as a character string.
+					@param[out]	outString		Receives the character string copied verbatim from my contents.
+					@param[in]	inU8Offset		The starting offset, in bytes, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 8-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 8-bit values may be less than this, depending on my size.
+												Defaults to 128.
+					@return						True if successful;  otherwise false.
+					@note		This function blindly copies my contents into the outgoing string, without checking for validity.
+				**/
+				bool							GetString (std::string & outString, const size_t inU8Offset = 0, const size_t inMaxSize = 128) const;
+
+				/**
+					@return		My contents as a character string.
+					@param[in]	inU8Offset		The starting offset, in bytes, where copying will commence.
+					@param[in]	inMaxSize		Specifies the maximum number of 8-bit values to be returned.
+												Use zero for unlimited.
+												The actual number of returned 8-bit values may be less than this, depending on my size.
+												Defaults to 128.
+					@note		This function blindly copies my contents into the outgoing string, without checking for validity.
+				**/
+				inline std::string				GetString (const size_t inU8Offset = 0, const size_t inMaxSize = 128) const	{std::string result; GetString(result, inU8Offset, inMaxSize); return result;}
+
+				/**
+					@brief		Copies a vector of unsigned 64-bit values into me.
+					@param[in]	inU64s			The vector of unsigned 64-bit values to be copied into me.
+					@param[in]	inU64Offset		Specifies my starting offset (of 64-bit values) at which the vector values will be written.
+												Defaults to zero.
+					@param[in]	inByteSwap		Specifies if the 64-bit values will be byte-swapped or not before being written into me.
+												Specify 'true' to byte-swap;  otherwise specify 'false'. Defaults to 'false'.
+					@return						True if successful;  otherwise false.
+				**/
+				bool							PutU64s (const std::vector<uint64_t> & inU64s, const size_t inU64Offset = 0, const bool inByteSwap = false);
+
+				/**
+					@brief		Copies a vector of unsigned 32-bit values into me.
+					@param[in]	inU32s			The vector of unsigned 32-bit values to be copied into me.
+					@param[in]	inU32Offset		Specifies my starting offset (of 32-bit values) at which the vector values will be written.
+												Defaults to zero.
+					@param[in]	inByteSwap		Specifies if the 32-bit values will be byte-swapped or not before being written into me.
+												Specify 'true' to byte-swap;  otherwise specify 'false'. Defaults to 'false'.
+					@return						True if successful;  otherwise false.
+				**/
+				bool							PutU32s (const std::vector<uint32_t> & inU32s, const size_t inU32Offset = 0, const bool inByteSwap = false);
+
+				/**
+					@brief		Copies a vector of unsigned 16-bit values into me.
+					@param[in]	inU16s			The vector of unsigned 16-bit values to be copied into me.
+					@param[in]	inU16Offset		Specifies my starting offset (of 16-bit values) at which the vector values will be written.
+												Defaults to zero.
+					@param[in]	inByteSwap		Specifies if the 16-bit values will be byte-swapped or not before being written into me.
+												Specify 'true' to byte-swap;  otherwise specify 'false'. Defaults to 'false'.
+					@return						True if successful;  otherwise false.
+				**/
+				bool							PutU16s (const std::vector<uint16_t> & inU16s, const size_t inU16Offset = 0, const bool inByteSwap = false);
+
+				/**
+					@brief		Copies a vector of unsigned 8-bit values into me.
+					@param[in]	inU8s			The vector of unsigned 8-bit values to be copied into me.
+					@param[in]	inU8Offset		Specifies my starting byte offset at which the vector values will be written.
+												Defaults to zero.
+					@return						True if successful;  otherwise false.
+				**/
+				bool							PutU8s (const std::vector<uint8_t> & inU8s, const size_t inU8Offset = 0);
+				///@}
+
+				/**
+					@name	Default Page Size
+				**/
+				///@{
+				/**
+					@return		Default page size, in bytes.
+				**/
+				static size_t					DefaultPageSize (void);
+
+				/**
+					@brief		Changes the default page size for use in future page-aligned allocations.
+					@param[in]	inNewSize		The new page size value, in bytes. Must be a power of 2.
+					@return		True if successful;  otherwise false.
+				**/
+				static bool						SetDefaultPageSize (const size_t inNewSize);
+				///@}
 			#endif	//	user-space clients only
 		NTV2_STRUCT_END (NTV2_POINTER)
 
@@ -5921,6 +6247,11 @@ typedef enum
 					@return		An equivalent RP188_STRUCT.
 				**/
 				inline operator		RP188_STRUCT () const							{RP188_STRUCT result;  result.DBB = fDBB;  result.Low = fLo;  result.High = fHi;  return result;}
+
+				/**
+					@return		True if I'm valid.
+				**/
+				inline operator		bool () const									{return IsValid();}
 			#endif	//	user-space clients only
 		NTV2_STRUCT_END (NTV2_RP188)
 
@@ -5949,7 +6280,7 @@ typedef enum
 		/**
 			@brief	For devices that support it (see the ::NTV2DeviceCanDoSDIErrorChecks function in "ntv2devicefeatures.h"),
 					this struct reports SDI input error status information.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2SDIInputStatus)
 			UWord			mCRCTallyA;				///< @brief	The number of lines having a CRC error was detected in the "B" stream of the SDI link
@@ -5989,7 +6320,7 @@ typedef enum
 
 		/**
 			@brief	All new NTV2 structs start with this common header.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2_HEADER)
 			NTV2_BEGIN_PRIVATE
@@ -6034,7 +6365,7 @@ typedef enum
 
 		/**
 			@brief	All new NTV2 structs end with this common trailer.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2_TRAILER)
 				ULWord		fTrailerVersion;	///< @brief	Spare longwords reserved for future use
@@ -6054,28 +6385,34 @@ typedef enum
 		/**
 			@brief	This struct is used to augment the default full-frame AutoCirculate DMA transfer to accommodate multiple discontiguous
 					"segments" of a video frame. The \ref ntv2fieldburn demo app shows how this can be used. Other examples:
-					-		An in-host-memory frame has extra "padding" bytes at the end of each row. In this case, set \c acNumActiveBytesPerRow
-							to the number of active bytes per row, \c acNumSegments to the number of rows, \c acSegmentHostPitch to the number of
-							bytes from the beginning of one row to the next. In this example, \c acSegmentDevicePitch would equal \c acNumActiveBytesPerRow
-							(i.e. the frame is packed in device memory).
-					-		To DMA a sub-section of a frame, set \c acNumActiveBytesPerRow to the number of bytes that comprise one row of the
-							subsection, then \c acNumSegments to the number of rows in the subsection, \c acSegmentHostPitch to the rowBytes of the
-							entire frame in host memory, and \c acSegmentDevicePitch to the rowBytes of the entire frame in device memory.
-			@note	IMPORTANT:  For segmented DMAs, the AUTOCIRCULATE_TRANSFER::acVideoBuffer.fByteCount field holds the segment byte count (i.e.,
-								the number of bytes to transfer per segment.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
-			@todo	Create a new field in the NTV2SegmentedDMAInfo structure to eliminate the necessity of setting AUTOCIRCULATE_TRANSFER::acVideoBuffer.fByteCount to
-					store the segmented transfer's bytes-per-segment value.
-			@note	Setting \c acNumSegments to 0 or 1 defaults to normal non-segmented DMA behavior (i.e. DMA one complete, packed frame).
+					-	An in-host-memory frame has extra "padding" bytes at the end of each row.
+						In this case, set NTV2SegmentedDMAInfo::acNumActiveBytesPerRow to the number of active bytes per row,
+						NTV2SegmentedDMAInfo::acNumSegments to the number of rows, NTV2SegmentedDMAInfo::acSegmentHostPitch
+						to the number of bytes from the beginning of one row to the next. In this example,
+						NTV2SegmentedDMAInfo::acSegmentDevicePitch would equal NTV2SegmentedDMAInfo::acNumActiveBytesPerRow
+						(i.e. the frame is packed in device memory).
+					-	To DMA a sub-section of a frame, set NTV2SegmentedDMAInfo::acNumActiveBytesPerRow to the number of bytes
+						that comprise one row of the subsection, then NTV2SegmentedDMAInfo::acNumSegments to the number of rows
+						in the subsection, NTV2SegmentedDMAInfo::acSegmentHostPitch to the bytes-per-row of the entire frame in host
+						memory, and NTV2SegmentedDMAInfo::acSegmentDevicePitch to the bytes-per-row of the entire frame in device memory.
+			@note	IMPORTANT:  For segmented DMAs, the ::AUTOCIRCULATE_TRANSFER::acVideoBuffer.fByteCount field holds the segment
+					byte count (i.e., the number of bytes to transfer per segment.
+
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
+			@todo	Create a new field in the ::NTV2SegmentedDMAInfo structure to eliminate the necessity of setting
+					::AUTOCIRCULATE_TRANSFER::acVideoBuffer.fByteCount to store the segmented transfer's bytes-per-segment value.
+
+			@note	Setting NTV2SegmentedDMAInfo::acNumSegments to 0 or 1 defaults to normal non-segmented DMA behavior
+					(i.e. DMA one complete, packed frame).
 		**/
 		NTV2_STRUCT_BEGIN (NTV2SegmentedDMAInfo)
-				ULWord		acNumSegments;				///< @brief	Number of segments of size 'acInVideoByteCount' to DMA (i.e. numLines).
-														///			Zero or 1 means normal (unsegmented) transfer.
+				ULWord		acNumSegments;				///< @brief	Number of segments of size ::AUTOCIRCULATE_TRANSFER::acVideoBuffer.fByteCount
+														///			to transfer. Zero or 1 means normal (unsegmented) transfer.
 				ULWord		acNumActiveBytesPerRow;		///< @brief	Number of active bytes in a row of video.
-				ULWord		acSegmentHostPitch;			///< @brief	Offset (in bytes) between the start of one host segment and the start of
-														///			the next host segment (i.e. host memory rowBytes).
-				ULWord		acSegmentDevicePitch;		///< @brief	Offset (in bytes) between the start of one device segment and the start of
-														///			the next device segment (i.e. device memory rowBytes).
+				ULWord		acSegmentHostPitch;			///< @brief	Offset, in bytes, between the start of one host segment and the start of
+														///			the next host segment (i.e. host memory bytes-per-row).
+				ULWord		acSegmentDevicePitch;		///< @brief	Offset, in bytes, between the start of one device segment and the start of
+														///			the next device segment (i.e. device memory bytes-per-row).
 
 			#if !defined (NTV2_BUILDING_DRIVER)
 				/**
@@ -6122,7 +6459,7 @@ typedef enum
 
 		/**
 			@brief	Color correction data used with AUTOCIRCULATE_WITH_COLORCORRECT option.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2ColorCorrectionData)
 			NTV2ColorCorrectionMode		ccMode;					///< @brief	My mode (off, RGB, YCbCr, or 3-way)
@@ -6176,7 +6513,7 @@ typedef enum
 
 		/**
 			@brief	This is returned from the CNTV2Card::AutoCirculateGetStatus function.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (AUTOCIRCULATE_STATUS)
 				NTV2_HEADER				acHeader;					///< @brief	The common structure header -- ALWAYS FIRST!
@@ -6186,9 +6523,9 @@ typedef enum
 					LWord					acEndFrame;					///< @brief	Last frame to circulate.		FIXFIXFIX	Why is this signed?		CHANGE TO ULWord??
 					LWord					acActiveFrame;				///< @brief	Current frame actually being captured/played when CNTV2Card::AutoCirculateGetStatus called.	FIXFIXFIX	CHANGE TO ULWord??
 					ULWord64				acRDTSCStartTime;			///< @brief	Timestamp of the first VBI received after CNTV2Card::AutoCirculateStart called, using host OS system clock.
-					ULWord64				acAudioClockStartTime;		///< @brief	Timestamp of the first VBI received after CNTV2Card::AutoCirculateStart called, using "64-bit clean" value of the device's 48kHz audio clock (\c kRegAud1Counter register).
+					ULWord64				acAudioClockStartTime;		///< @brief	Timestamp of the first VBI received after CNTV2Card::AutoCirculateStart called, using "64-bit clean" value of the device's 48kHz audio clock (::kRegAud1Counter register).
 					ULWord64				acRDTSCCurrentTime;			///< @brief	Timestamp when CNTV2Card::AutoCirculateGetStatus called, using the host OS system clock.
-					ULWord64				acAudioClockCurrentTime;	///< @brief	Timestamp when CNTV2Card::AutoCirculateGetStatus called, using "64-bit clean" value of the device's 48kHz audio clock (\c kRegAud1Counter register).
+					ULWord64				acAudioClockCurrentTime;	///< @brief	Timestamp when CNTV2Card::AutoCirculateGetStatus called, using "64-bit clean" value of the device's 48kHz audio clock (::kRegAud1Counter register).
 					ULWord					acFramesProcessed;			///< @brief	Total number of frames successfully processed since CNTV2Card::AutoCirculateStart called.
 					ULWord					acFramesDropped;			///< @brief	Total number of frames dropped since CNTV2Card::AutoCirculateStart called
 					ULWord					acBufferLevel;				///< @brief	Number of buffered frames in driver ready to capture or play
@@ -6345,7 +6682,7 @@ typedef enum
 		/**
 			@brief	This is used by the CNTV2Card::ReadRegisters function.
 			@note	There is no need to access any of this structure's fields directly. Simply call the CNTV2Card instance's ReadRegisters function.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2GetRegisters)		//	AUTOCIRCULATE_TYPE_GETREGS
 			NTV2_BEGIN_PRIVATE
@@ -6424,7 +6761,7 @@ typedef enum
 		/**
 			@brief	This is used by the CNTV2Card::WriteRegisters function.
 			@note	There is no need to access any of this structure's fields directly. Simply call the CNTV2Card instance's WriteRegisters function.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2SetRegisters)		//	AUTOCIRCULATE_TYPE_SETREGS
 			NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
@@ -6477,7 +6814,7 @@ typedef enum
 
 		/**
 			@brief	This is used to atomically perform bank-selected register reads or writes.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2BankSelGetSetRegs)
 			NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
@@ -6491,6 +6828,7 @@ typedef enum
 					@brief	Constructs an NTV2BankSelGetSetRegs struct for atomically reading or writing the given bank-selected register.
 					@param[in]	inBankSelect	The bank select register info.
 					@param[in]	inRegInfo		The register info of the register to be read or written.
+					@param[in]	inDoWrite		Specify 'true' to write the register value;  otherwise use 'false'. Defaults to 'false'.
 				**/
 				explicit	NTV2BankSelGetSetRegs (const NTV2RegInfo & inBankSelect, const NTV2RegInfo & inRegInfo, const bool inDoWrite = false);
 
@@ -6520,7 +6858,7 @@ typedef enum
 
         /**
             @brief	This is used to perform virtual data reads or writes.
-            @note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+            @note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
         **/
         NTV2_STRUCT_BEGIN (NTV2VirtualData)
             NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
@@ -6555,7 +6893,7 @@ typedef enum
 		/**
 			@brief	This is used by the CNTV2Card::ReadSDIStatistics function.
 			@note	There is no need to access any of this structure's fields directly. Simply call the CNTV2Card instance's ReadSDIStatistics function.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2SDIInStatistics)		//	AUTOCIRCULATE_TYPE_SDISTATS
 			NTV2_BEGIN_PRIVATE
@@ -6597,15 +6935,15 @@ typedef enum
 
 		/**
 			@brief	This is returned by the CNTV2Card::AutoCirculateGetFrameStamp function, and is also embedded in the AUTOCIRCULATE_TRANSFER struct
-					returned from CNTV2Card::AutoCirculateTransfer. If used as its own NTV2Message (the new API version of the old \c GetFrameStamp call),
-					pass the NTV2Channel in the least significant byte of \c acFrameTime, and the requested frame in \c acRequestedFrame.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+					returned from CNTV2Card::AutoCirculateTransfer. If used as its own NTV2Message (the new API version of the old CNTV2Card::GetFrameStamp call),
+					pass the NTV2Channel in the least significant byte of FRAME_STAMP::acFrameTime, and the requested frame in FRAME_STAMP::acRequestedFrame.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (FRAME_STAMP)
 				NTV2_HEADER			acHeader;						///< @brief	The common structure header -- ALWAYS FIRST!
 					LWord64				acFrameTime;					///< @brief	On exit, contains host OS clock at time of capture/play.
-																		///<		On entry, contains NTV2Channel of interest, but only for new API \c FRAME_STAMP message.
-					ULWord				acRequestedFrame;				///< @brief	The frame requested (0xFFFFFFFF == "not available"), including for new API (\c FRAME_STAMP message).
+																		///<		On entry, contains ::NTV2Channel of interest, but only for new API ::FRAME_STAMP message.
+					ULWord				acRequestedFrame;				///< @brief	The frame requested (0xFFFFFFFF == "not available"), including for new API (::FRAME_STAMP message).
 					ULWord64			acAudioClockTimeStamp;			///< @brief	Number of 10MHz ticks at moment of play or record, based on 48kHz clock (from register 28).
 					ULWord				acAudioExpectedAddress;			///< @brief	The address that was used to transfer
 					ULWord				acAudioInStartAddress;			///< @brief	For record - first position in buffer of audio (includes base offset) -- AudioInAddress at the time this Frame was stamped
@@ -6624,26 +6962,27 @@ typedef enum
 					///@{
 
 					/**
-						@brief	Intended for capture, this is a sequence of NTV2_RP188 values received from the device (in NTV2TCIndex order).
-								If empty, no timecodes will be transferred. This field is ignored if AUTOCIRCULATE_WITH_RP188 option is not set.
+						@brief	Intended for capture, this is a sequence of ::NTV2_RP188 values received from the device (in ::NTV2TCIndex order).
+								If empty, no timecodes will be transferred. This field is ignored if ::AUTOCIRCULATE_WITH_RP188 option is not set.
 						@note	This field is owned by the SDK, which is responsible for allocating and/or freeing it.
-								Call GetInputTimeCodes or GetInputTimeCode to retrieve the timecodes stored in this field.
+								Call FRAME_STAMP::GetInputTimeCodes or FRAME_STAMP::GetInputTimeCode to retrieve the timecodes stored in this field.
 					**/
 					NTV2_POINTER		acTimeCodes;
 					LWord64				acCurrentTime;					///< @brief	Current processor time, derived from the finest-grained counter available on the host OS.
-																		///<		Granularity can vary depending on the HAL. acAudioClockCurrentTime is the recommended time-stamp to use instead of this.
-					ULWord				acCurrentFrame;					///< @brief	Last vertical blank frame for this autocirculate channel (when AutoCirculateGetFrameStamp was called)
+																		///<		Granularity can vary depending on the HAL. FRAME_STAMP::acAudioClockCurrentTime is the recommended time-stamp to use instead of this.
+					ULWord				acCurrentFrame;					///< @brief	Last vertical blank frame for this autocirculate channel (when CNTV2Card::AutoCirculateGetFrameStamp was called)
 					LWord64				acCurrentFrameTime;				///< @brief	Vertical blank start of current frame
 					ULWord64			acAudioClockCurrentTime;		///< @brief	Current time expressed as a count of 10MHz ticks, based on 48kHz clock (from register 28).
 					ULWord				acCurrentAudioExpectedAddress;	//	FIXFIXFIX	Document		What is this?!
 					ULWord				acCurrentAudioStartAddress;		///< @brief	As set by play
-					ULWord				acCurrentFieldCount;			///< @brief	As found by ISR at Call Field0 or Field1 _currently_ being OUTPUT (when AutoCirculateGetFrameStamp called)
+					ULWord				acCurrentFieldCount;			///< @brief	As found by ISR at Call Field0 or Field1 _currently_ being OUTPUT (when CNTV2Card::AutoCirculateGetFrameStamp was called)
 					ULWord				acCurrentLineCount;				///< @brief	At Call Line# _currently_ being OUTPUT (at the time of the IOCTL_NTV2_GET_FRAMESTAMP)
 					ULWord				acCurrentReps;					///< @brief	Contains validCount (Playout:  on repeated frames, number of reps remaining; Record: drops on frame)
-					ULWord64			acCurrentUserCookie;			///< @brief	The frame's acInUserCookie value that was set at AutoCirculateTransfer time.
+					ULWord64			acCurrentUserCookie;			///< @brief	The frame's AUTOCIRCULATE_TRANSFER::acInUserCookie value that was set when CNTV2Card::AutoCirculateTransfer was called.
 																		///			This can tell clients which frame was on-air at the last VBI.
 					ULWord				acFrame;						///< @brief	Record/capture -- current frame number
-					NTV2_DEPRECATED	NTV2_RP188	acRP188;				///< @deprecated	Call GetInputTimeCode instead.
+					NTV2_SHOULD_BE_DEPRECATED	(NTV2_RP188	acRP188);	///< @brief	Deprecated -- call FRAME_STAMP::GetInputTimeCode instead.
+
 					///@}
 				NTV2_TRAILER		acTrailer;						///< @brief	The common structure trailer -- ALWAYS LAST!
 
@@ -6685,6 +7024,17 @@ typedef enum
 				bool		GetInputTimeCodes (NTV2TimeCodeList & outValues) const;
 
 				/**
+					@brief		Returns only those timecodes from the frame that are associated with a given SDI input.
+					@param[out]	outTimeCodes	Receives the timecode values.
+					@param[in]	inSDIInput		Specifies the SDI input of interest, expressed as an ::NTV2Channel.
+					@param[in]	inValidOnly		Optionally specifies if only valid timecodes should be returned. Defaults to true.
+												Specify false to return all timecode values associated with the channel of interest,
+												even if they're not valid.
+					@return		True if successful;  otherwise false.
+				**/
+				bool		GetInputTimeCodes (NTV2TimeCodes & outTimeCodes, const NTV2Channel inSDIInput, const bool inValidOnly = true) const;
+
+				/**
 					@brief		Answers with a specific timecode captured in my acTimeCodes member.
 					@param[out]	outTimeCode		Receives the requested timecode value.
 					@param[in]	inTCIndex		Specifies which NTV2TCIndex to use. Defaults to NTV2_TCINDEX_SDI1.
@@ -6723,7 +7073,7 @@ typedef enum
 		/**
 			@brief	This object is embedded in the AUTOCIRCULATE_TRANSFER struct that's returned from the CNTV2Card::AutoCirculateTransfer function,
 					and contains status information about the transfer and the state of AutoCirculate.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (AUTOCIRCULATE_TRANSFER_STATUS)
 				NTV2_HEADER				acHeader;				///< @brief	The common structure header -- ALWAYS FIRST!
@@ -6735,8 +7085,8 @@ typedef enum
 					FRAME_STAMP				acFrameStamp;			///< @brief	Frame stamp for the transferred frame.
 					ULWord					acAudioTransferSize;	///< @brief Number of bytes captured into the audio buffer.
 					ULWord					acAudioStartSample;		///< @brief	Starting audio sample (valid for capture only).
-					ULWord					acAncTransferSize;		///< @brief Total ancillary data bytes for field 1 transferred
-					ULWord					acAncField2TransferSize;///< @brief Total ancillary data bytes for field 2 transferred.
+					ULWord					acAncTransferSize;		///< @brief Total ancillary data bytes for field 1 transferred (capture only).
+					ULWord					acAncField2TransferSize;///< @brief Total ancillary data bytes for field 2 transferred (capture only).
 				NTV2_TRAILER			acTrailer;				///< @brief	The common structure trailer -- ALWAYS LAST!
 
 			#if !defined (NTV2_BUILDING_DRIVER)
@@ -6755,6 +7105,39 @@ typedef enum
 				**/
 				inline LWord					GetTransferFrame (void) const							{return acTransferFrame;}
 
+				/**
+					@return		My state after the transfer.
+				**/
+				inline NTV2AutoCirculateState	GetState (void) const									{return acState;}
+
+				/**
+					@return		My buffer level after the transfer.
+				**/
+				inline ULWord					GetBufferLevel (void) const								{return acBufferLevel;}
+
+				/**
+					@return		The total number of frames successfully processed (not dropped) since AutoCirculateStart called.
+				**/
+				inline ULWord					GetProcessedFrameCount (void) const						{return acFramesProcessed;}
+
+				/**
+					@return		The total number of frames dropped since AutoCirculateStart called.
+				**/
+				inline ULWord					GetDroppedFrameCount (void) const						{return acFramesDropped;}
+
+				/**
+					@return		The number of audio bytes deposited/transferred into the host audio buffer after
+								the last successful CNTV2Card::AutoCirculateTransfer.
+				**/
+				inline ULWord					GetCapturedAudioByteCount (void) const					{return acAudioTransferSize;}
+
+				/**
+					@return		The number of ancillary data bytes deposited/transferred into the host anc buffer after
+								the last successful CNTV2Card::AutoCirculateTransfer.
+					@param[in]	inField2	Specify \c true for Field 2;  otherwise \c false (the default) for Field 1 (or progessive).
+				**/
+				inline ULWord					GetCapturedAncByteCount (const bool inField2 = false) const	{return inField2 ? acAncField2TransferSize : acAncTransferSize;}
+
 				NTV2_IS_STRUCT_VALID_IMPL(acHeader,acTrailer)
 
 				NTV2_BEGIN_PRIVATE
@@ -6769,7 +7152,7 @@ typedef enum
 			@brief	This object specifies the information that will be transferred to or from the AJA device in the CNTV2Card::AutoCirculateTransfer
 					function call. It will be used by the device driver only if the AUTOCIRCULATE_WITH_ANC option was used in the call to
 					CNTV2Card::AutoCirculateInitForInput or CNTV2Card::AutoCirculateInitForOutput.
-			@note	This struct uses a constructor to properly initialize itself. Do not use \c memset or \c bzero to initialize or "clear" it.
+			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (AUTOCIRCULATE_TRANSFER)
 				NTV2_HEADER						acHeader;					///< @brief	The common structure header -- ALWAYS FIRST!
@@ -6856,8 +7239,8 @@ typedef enum
 					ULWord							acPeerToPeerFlags;			//// @brief	Used to control P2P transfers.
 					ULWord							acFrameRepeatCount;			///< @brief Intended for playout. The number of times to repeat the frame being transferred.
 					LWord							acDesiredFrame;				///< @brief	Used to specify a different frame in the circulate ring to transfer to/from.
-					NTV2_DEPRECATED	NTV2_RP188		acRP188;					///< @deprecated	Use AUTOCIRCULATE_TRANSFER::SetOutputTimeCode instead.
-					NTV2_DEPRECATED	NTV2Crosspoint	acCrosspoint;				///< @deprecated	The SDK will set this field. It will eventually be obsolete.
+					NTV2_SHOULD_BE_DEPRECATED(NTV2_RP188		acRP188);		///< @brief	Will be deprecated -- use AUTOCIRCULATE_TRANSFER::SetOutputTimeCode instead.
+					NTV2_SHOULD_BE_DEPRECATED(NTV2Crosspoint	acCrosspoint);	///< @brief	Will be deprecated -- used internally by the SDK. Will be removed when the driver changes to use NTV2Channel/NTV2Mode.
 					///@}
 				NTV2_TRAILER					acTrailer;					///< @brief	The common structure trailer -- ALWAYS LAST!
 
@@ -7066,6 +7449,20 @@ typedef enum
 					@return		True if successful;  otherwise false.
 				**/
 				bool									GetInputTimeCode (NTV2_RP188 & outTimeCode, const NTV2TCIndex inTCIndex = NTV2_TCINDEX_SDI1) const;
+
+				/**
+					@brief		Retrieves the timecodes from the captured frame that are associated with the given SDI input.
+					@param[out]	outTimeCodes	Receives the timecode values as a mapping of ::NTV2TCIndex values to ::NTV2_RP188 objects.
+					@param[in]	inSDIInput		Specifies the SDI input of interest as an ::NTV2Channel. Defaults to ::NTV2_CHANNEL1 (SDI In 1).
+					@param[in]	inValidOnly		Optionally specifies if only valid timecodes should be returned. Defaults to true.
+												Specify false to return all timecode values associated with the SDI input of interest,
+												even if they're not valid.
+					@note		Note that specifying an SDI input source that's not connected to the framestore associated with the
+								channel being AutoCirculated will likely result in a timecode that's not frame-accurate.
+					@note		To work right, CNTV2Card::AutoCirculateInitForInput must have been initialized with the AUTOCIRCULATE_WITH_RP188 option.
+					@return		True if successful;  otherwise false.
+				**/
+				bool									GetInputTimeCodes (NTV2TimeCodes & outTimeCodes, const NTV2Channel inSDIInput = NTV2_CHANNEL1, const bool inValidOnly = true) const;
 				///@}
 
 				/**
@@ -7121,21 +7518,21 @@ typedef enum
 				inline const FRAME_STAMP &				GetFrameInfo (void) const						{return acTransferStatus.acFrameStamp;}
 
 				/**
-					@return		The exact number of audio bytes transferred into my acAudioBuffer after the last successful
-								call made to CNTV2Card::AutoCirculateTransfer.
-					@note		This function is intended for capture/ingest, not playout.
+					@return		The number of audio bytes deposited/transferred into the host audio buffer after
+								the last successful CNTV2Card::AutoCirculateTransfer.
 				**/
-				inline ULWord							GetCapturedAudioByteCount (void) const			{return acTransferStatus.acAudioTransferSize;}
+				inline ULWord							GetCapturedAudioByteCount (void) const			{return acTransferStatus.GetCapturedAudioByteCount();}
 
-				NTV2_DEPRECATED inline ULWord			GetAudioByteCount (void) const					{return GetCapturedAudioByteCount ();}	///< @deprecated	Use GetCapturedAudioByteCount instead.
+				inline NTV2_DEPRECATED_f(ULWord	GetAudioByteCount (void) const)					{return GetCapturedAudioByteCount ();}	///< @deprecated	Use GetCapturedAudioByteCount instead.
 
 				/**
-					@brief	Returns the number of actual ancillary data bytes that were transferred.
-					@param[in]	inField2	Specify true to get the Field 2 ancillary byte count.
+					@return		The number of ancillary data bytes deposited/transferred into the host anc buffer after
+								the last successful CNTV2Card::AutoCirculateTransfer.
+					@param[in]	inField2	Specify true to obtain the Field 2 ancillary byte count.
 											Specify false (the default) to return the Field 1 (or progessive) ancillary byte count.
-					@return	The number of actual ancillary data bytes that were transferred (F1 or F2).
 				**/
-				inline ULWord							GetAncByteCount (const bool inField2 = false) const		{return inField2 ? acTransferStatus.acAncField2TransferSize : acTransferStatus.acAncTransferSize;}
+				inline ULWord							GetCapturedAncByteCount (const bool inField2 = false) const	{return acTransferStatus.GetCapturedAncByteCount(inField2);}
+				inline NTV2_SHOULD_BE_DEPRECATED(ULWord	GetAncByteCount (const bool inField2 = false) const)	{return GetCapturedAncByteCount(inField2);}	///< @deprecated	Use GetCapturedAncByteCount instead.
 
 				/**
 					@return		My current frame buffer format.
@@ -7145,7 +7542,7 @@ typedef enum
 				/**
 					@return		The frame number that was transferred (or -1 if failed).
 				**/
-				inline LWord							GetTransferFrameNumber (void) const						{return acTransferStatus.acTransferFrame;}
+				inline LWord							GetTransferFrameNumber (void) const						{return acTransferStatus.GetTransferFrame();}
 				///@}
 
 				/**
@@ -7184,6 +7581,39 @@ typedef enum
 		NTV2_STRUCT_END (AUTOCIRCULATE_TRANSFER)
 
 
+        /**
+            @brief	This is used to enable or disable AJADebug logging in the driver.
+            @note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
+        **/
+        NTV2_STRUCT_BEGIN (NTV2DebugLogging)
+            NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
+                NTV2_POINTER	mSharedMemory;		///< @brief	Virtual address of AJADebug shared memory in calling process' context,
+													//			and its length. The AJADebug logging facility owns and manages this memory.
+													//			If NULL or zero length, debug logging will be disabled in the driver.
+													//			If non-NULL and zero length, debug logging will be enabled in the driver.
+                ULWord			mReserved[32];		///< @brief	Reserved for future expansion.
+            NTV2_TRAILER	mTrailer;			///< @brief	The common structure trailer -- ALWAYS LAST!
+
+            #if !defined (NTV2_BUILDING_DRIVER)
+                /**
+                    @brief	Constructs an NTV2DebugLogging struct.
+                    @param[in]	inEnable            False to disable (the default), or True to enable.
+                **/
+                explicit	NTV2DebugLogging (const bool inEnable = false);
+
+                /**
+                    @brief	Prints a human-readable representation of me to the given output stream.
+                    @param	inOutStream		Specifies the output stream to use.
+                    @return	A reference to the output stream.
+                **/
+                std::ostream &	Print (std::ostream & inOutStream) const;
+
+                NTV2_IS_STRUCT_VALID_IMPL(mHeader,mTrailer)
+
+            #endif	//	!defined (NTV2_BUILDING_DRIVER)
+        NTV2_STRUCT_END (NTV2DebugLogging)
+
+
 		#if !defined (NTV2_BUILDING_DRIVER)
 			typedef std::set <NTV2VideoFormat>					NTV2VideoFormatSet;					///< @brief	A set of distinct NTV2VideoFormat values.
 			typedef NTV2VideoFormatSet::const_iterator			NTV2VideoFormatSetConstIter;		///< @brief	A handy const iterator for iterating over an NTV2VideoFormatSet.
@@ -7195,7 +7625,43 @@ typedef enum
 			typedef NTV2StandardSet::const_iterator				NTV2StandardSetConstIter;			///< @brief	A handy const iterator for iterating over an NTV2StandardSet.
 
 			typedef std::set <NTV2InputSource>					NTV2InputSourceSet;					///< @brief	A set of distinct NTV2InputSource values.
-			typedef NTV2InputSourceSet::const_iterator			NTV2InputSourceSetConstIter;		///< @brief	A handy const interator for iterating over an NTV2InputSourceSet.
+			typedef NTV2InputSourceSet::const_iterator			NTV2InputSourceSetConstIter;		///< @brief	A handy const iterator for iterating over an NTV2InputSourceSet.
+
+			typedef	std::vector <UWord>							UWordSequence;						///< @brief	An ordered sequence of UWord (uint16_t) values.
+			typedef	UWordSequence::const_iterator				UWordSequenceConstIter;				///< @brief	A handy const iterator for iterating over a UWordSequence.
+			typedef	UWordSequence::iterator						UWordSequenceIter;					///< @brief	A handy non-const iterator for iterating over a UWordSequence.
+
+			typedef	std::vector <uint32_t>						ULWordSequence;						///< @brief	An ordered sequence of ULWord (uint32_t) values.
+			typedef	ULWordSequence::const_iterator				ULWordSequenceConstIter;			///< @brief	A handy const iterator for iterating over a ULWordSequence.
+			typedef	ULWordSequence::iterator					ULWordSequenceIter;					///< @brief	A handy non-const iterator for iterating over a ULWordSequence.
+
+			typedef	std::vector <uint64_t>						ULWord64Sequence;					///< @brief	An ordered sequence of ULWord64 (uint64_t) values.
+			typedef	ULWord64Sequence::const_iterator			ULWord64SequenceConstIter;			///< @brief	A handy const iterator for iterating over a ULWord64Sequence.
+			typedef	ULWord64Sequence::iterator					ULWord64SequenceIter;				///< @brief	A handy non-const iterator for iterating over a ULWord64Sequence.
+
+			/**
+				@brief		Prints the given UWordSequence's contents into the given output stream.
+				@param		inOutStream		The stream into which the given UWordSequence will be printed.
+				@param[in]	inData			Specifies the UWordSequence to be streamed.
+				@return		The "inOStream" that was specified.
+			**/
+			AJAExport std::ostream & operator << (std::ostream & inOutStream, const UWordSequence & inData);
+
+			/**
+				@brief		Prints the given ULWordSequence's contents into the given output stream.
+				@param		inOutStream		The stream into which the given ULWordSequence will be printed.
+				@param[in]	inData			Specifies the ULWordSequence to be streamed.
+				@return		The "inOStream" that was specified.
+			**/
+			AJAExport std::ostream & operator << (std::ostream & inOutStream, const ULWordSequence & inData);
+
+			/**
+				@brief		Prints the given ULWord64Sequence's contents into the given output stream.
+				@param		inOutStream		The stream into which the given ULWord64Sequence will be printed.
+				@param[in]	inData			Specifies the ULWord64Sequence to be streamed.
+				@return		The "inOStream" that was specified.
+			**/
+			AJAExport std::ostream & operator << (std::ostream & inOutStream, const ULWord64Sequence & inData);
 
 			/**
 				@return		A string that contains the human-readable representation of the given NTV2AutoCirculateState value.
@@ -7470,6 +7936,14 @@ typedef enum
 				@return	The ostream being used.
 			**/
 			AJAExport inline std::ostream &	operator << (std::ostream & inOutStream, const NTV2SDIInputStatus & inObj)	{return inObj.Print (inOutStream);}
+
+			/**
+				@brief	Streams the given NTV2DebugLogging struct to the specified ostream in a human-readable format.
+				@param		inOutStream		Specifies the ostream to use.
+				@param[in]	inObj			Specifies the NTV2DebugLogging to be streamed.
+				@return	The ostream being used.
+			**/
+			AJAExport inline std::ostream &	operator << (std::ostream & inOutStream, const NTV2DebugLogging & inObj)	{return inObj.Print (inOutStream);}
 		#endif	//	!defined (NTV2_BUILDING_DRIVER)
 
 		#if defined (AJAMac)
@@ -8097,8 +8571,8 @@ typedef struct HDRFloatValues{
     uint8_t		staticMetadataDescriptorID;
 }HDRFloatValues;
 
-#define NTV2_IS_VALID_HDR_PRIMARY(__val__)				((__val__ >= 0x0000) && (__val__ <= 0xC350))
-#define NTV2_IS_VALID_HDR_MASTERING_LUMINENCE(__val__)	((__val__ >= 0x0000) && (__val__ <= 0xFFFF))
-#define NTV2_IS_VALID_HDR_LIGHT_LEVEL(__val__)			((__val__ >= 0x0000) && (__val__ <= 0xFFFF))
+#define NTV2_IS_VALID_HDR_PRIMARY(__val__)				((__val__) <= 0x0000C350)
+#define NTV2_IS_VALID_HDR_MASTERING_LUMINENCE(__val__)	(true)
+#define NTV2_IS_VALID_HDR_LIGHT_LEVEL(__val__)			(true)
 
 #endif	//	NTV2PUBLICINTERFACE_H

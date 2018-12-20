@@ -1,6 +1,6 @@
 /**
 	@file		ntv2virtualregisters.h
-	@copyright	Copyright (C) 2011-2017 AJA Video Systems, Inc.All rights reserved.
+	@copyright	Copyright (C) 2011-2018 AJA Video Systems, Inc.All rights reserved.
 	@brief		Declares enums for virtual registers used in all platform drivers and the SDK.
 **/
 
@@ -24,12 +24,11 @@
 typedef enum
 {
 	// Common to all platforms
-	kVRegLinuxDriverVersion					= VIRTUALREG_START,			/* Packed version of Linux driver, used in watcher */
+	kVRegDriverVersion						= VIRTUALREG_START,			///< @brief			Packed driver version -- use NTV2DriverVersionEncode, NTV2DriverVersionDecode* macros to encode/decode
 
 	// Windows platform custom section
-	kVRegRelativeVideoPlaybackDelay			= VIRTUALREG_START,			// Video Delay relative to audio, for Windows Media playback
 	kVRegAudioRecordPinDelay				= VIRTUALREG_START+1,		// Audio Delay relative to video, for Windows Media capture
-	kVRegDriverVersion						= VIRTUALREG_START+2,
+	kVRegRelativeVideoPlaybackDelay			= VIRTUALREG_START+2,		// Video Delay relative to audio, for Windows Media playback
 	kVRegGlobalAudioPlaybackMode			= VIRTUALREG_START+3,		// Shared with Linux, but not Mac
 	kVRegFlashProgramKey					= VIRTUALREG_START+4,
 	kVRegStrictTiming						= VIRTUALREG_START+5,		// Drift Correction requires Strict Frame Timing for Windows Media playback;Required for BackHaul;Correlate Presentation Time Stamp with Graph Clock;Turn off (default) to allow Playback even when Graph Manager gives us a Bogus Clcok!
@@ -125,6 +124,8 @@ typedef enum
 	kVRegFrameBuffer1RGBRange				= VIRTUALREG_START+138,
 	kVRegFrameBuffer1Stereo3DMode			= VIRTUALREG_START+139,
 
+	kVRegHDMIInRgbRange						= VIRTUALREG_START+140,
+	kVRegHDMIOutRgbRange					= VIRTUALREG_START+141,
 	kVRegAnalogInBlackLevel					= VIRTUALREG_START+142,
 	kVRegAnalogInputType					= VIRTUALREG_START+143,
 	kVRegHDMIOutColorSpaceModeCtrl			= VIRTUALREG_START+144,
@@ -152,7 +153,7 @@ typedef enum
 	kVRegAvailable164						= VIRTUALREG_START+164,
 	kVRegRP188SourceSelect					= VIRTUALREG_START+165,
 	kVRegQTCodecModeDebug					= VIRTUALREG_START+166,
-	kVRegHDMIOutColorSpaceModeStatus		= VIRTUALREG_START+167,
+	kVRegHDMIOutColorSpaceModeStatus		= VIRTUALREG_START+167,		// deprecated
 	kVRegDeviceOnline						= VIRTUALREG_START+168,
 	kVRegIsDefaultDevice					= VIRTUALREG_START+169,
 
@@ -176,6 +177,8 @@ typedef enum
 	kVRegReleaseApplication					= VIRTUALREG_START+186,
 	kVRegForceApplicationPID				= VIRTUALREG_START+187,
 	kVRegForceApplicationCode				= VIRTUALREG_START+188,
+	kVRegIpConfigStreamRefresh				= VIRTUALREG_START+189,
+	kVRegSDIInput1Raster					= VIRTUALREG_START+190,
 
 	// COMMON_VIRTUAL_REGS_PROCAMP_CONTROLS
 	kVRegProcAmpSDRegsInitialized			= VIRTUALREG_START+200,
@@ -292,7 +295,7 @@ typedef enum
 	
 	kVRegEFTNeedsUpdating					= VIRTUALREG_START+373,		// set when any retail virtual register has been changed
 	
-	kVRegSuspendSystemAudio					= VIRTUALREG_START+374,	 // set when app wants to use AC audio and disable host audio (e.g., CoreAudio on MacOS)
+	kVRegSuspendSystemAudio					= VIRTUALREG_START+374,     // set when app wants to use AC audio and disable host audio (e.g., CoreAudio on MacOS)
 	kVRegAcquireReferenceCounter			= VIRTUALREG_START+375,
 
 	kVRegTimeStampLastOutput8VerticalHi		= VIRTUALREG_START+376,
@@ -303,17 +306,17 @@ typedef enum
 	kVRegFrameBufferGangCount				= VIRTUALREG_START+379,
 
 	kVRegChannelCrosspointFirst				= VIRTUALREG_START+380,
-																	//	kVRegChannelCrosspointFirst+1
-																	//	kVRegChannelCrosspointFirst+2
-																	//	kVRegChannelCrosspointFirst+3
-																	//	kVRegChannelCrosspointFirst+4
-																	//	kVRegChannelCrosspointFirst+5
-																	//	kVRegChannelCrosspointFirst+6
+                                                                        //	kVRegChannelCrosspointFirst+1
+                                                                        //	kVRegChannelCrosspointFirst+2
+                                                                        //	kVRegChannelCrosspointFirst+3
+                                                                        //	kVRegChannelCrosspointFirst+4
+                                                                        //	kVRegChannelCrosspointFirst+5
+                                                                        //	kVRegChannelCrosspointFirst+6
 	kVRegChannelCrosspointLast				= VIRTUALREG_START+387,		//	kVRegChannelCrosspointFirst+7
 
-	kVRegDriverVersionMajor					= VIRTUALREG_START+388,		// supported by all three platforms
-	kVRegDriverVersionMinor					= VIRTUALREG_START+389,		// used to check SDK version against the driver version
-	kVRegDriverVersionPoint					= VIRTUALREG_START+390,		// when calling ::Open
+//	kVRegDriverVersionMajor					= VIRTUALREG_START+388,		///< @deprecated	Obsolete starting in SDK 13.0, replaced by kVRegDriverVersion
+//	kVRegDriverVersionMinor					= VIRTUALREG_START+389,		///< @deprecated	Obsolete starting in SDK 13.0, replaced by kVRegDriverVersion
+//	kVRegDriverVersionPoint					= VIRTUALREG_START+390,		///< @deprecated	Obsolete starting in SDK 13.0, replaced by kVRegDriverVersion
 	kVRegFollowInputFormat					= VIRTUALREG_START+391,
 
 	kVRegAncField1Offset					= VIRTUALREG_START+392,		///< @brief	How many bytes to subtract from the end of a frame buffer for field 1 ANC
@@ -346,52 +349,52 @@ typedef enum
 	kVRegGatewayEth1						= VIRTUALREG_START+414,
 	
 	kVRegRxcEnable1							= VIRTUALREG_START+415,
-	kVRegRxcPrimaryRxMatch1					= VIRTUALREG_START+416,
-	kVRegRxcPrimarySourceIp1				= VIRTUALREG_START+417,
-	kVRegRxcPrimaryDestIp1					= VIRTUALREG_START+418,
-	kVRegRxcPrimarySourcePort1				= VIRTUALREG_START+419,
-	kVRegRxcPrimaryDestPort1				= VIRTUALREG_START+420,
-	kVRegRxcPrimaryVlan1					= VIRTUALREG_START+421,
-	kVRegRxcSecondaryRxMatch1				= VIRTUALREG_START+422,
-	kVRegRxcSecondarySourceIp1				= VIRTUALREG_START+423,
-	kVRegRxcSecondaryDestIp1				= VIRTUALREG_START+424,
-	kVRegRxcSecondarySourcePort1			= VIRTUALREG_START+425,
-	kVRegRxcSecondaryDestPort1				= VIRTUALREG_START+426,
-	kVRegRxcSecondaryVlan1					= VIRTUALREG_START+427,
+    kVRegRxcSfp1RxMatch1					= VIRTUALREG_START+416,
+    kVRegRxcSfp1SourceIp1                   = VIRTUALREG_START+417,
+    kVRegRxcSfp1DestIp1                     = VIRTUALREG_START+418,
+    kVRegRxcSfp1SourcePort1                 = VIRTUALREG_START+419,
+    kVRegRxcSfp1DestPort1                   = VIRTUALREG_START+420,
+    kVRegRxcSfp1Vlan1                       = VIRTUALREG_START+421,
+    kVRegRxcSfp2RxMatch1                    = VIRTUALREG_START+422,
+    kVRegRxcSfp2SourceIp1                   = VIRTUALREG_START+423,
+    kVRegRxcSfp2DestIp1                     = VIRTUALREG_START+424,
+    kVRegRxcSfp2SourcePort1                 = VIRTUALREG_START+425,
+    kVRegRxcSfp2DestPort1                   = VIRTUALREG_START+426,
+    kVRegRxcSfp2Vlan1                       = VIRTUALREG_START+427,
 	kVRegRxcSsrc1							= VIRTUALREG_START+428,
 	kVRegRxcPlayoutDelay1					= VIRTUALREG_START+429,
 
 	kVRegRxcEnable2							= VIRTUALREG_START+430,
-	kVRegRxcPrimaryRxMatch2					= VIRTUALREG_START+431,
-	kVRegRxcPrimarySourceIp2				= VIRTUALREG_START+432,
-	kVRegRxcPrimaryDestIp2					= VIRTUALREG_START+433,
-	kVRegRxcPrimarySourcePort2				= VIRTUALREG_START+434,
-	kVRegRxcPrimaryDestPort2				= VIRTUALREG_START+435,
-	kVRegRxcPrimaryVlan2					= VIRTUALREG_START+436,
-	kVRegRxcSecondaryRxMatch2				= VIRTUALREG_START+437,
-	kVRegRxcSecondarySourceIp2				= VIRTUALREG_START+438,
-	kVRegRxcSecondaryDestIp2				= VIRTUALREG_START+439,
-	kVRegRxcSecondarySourcePort2			= VIRTUALREG_START+440,
-	kVRegRxcSecondaryDestPort2				= VIRTUALREG_START+441,
-	kVRegRxcSecondaryVlan2					= VIRTUALREG_START+442,
+    kVRegRxcSfp1RxMatch2					= VIRTUALREG_START+431,
+    kVRegRxcSfp1SourceIp2                   = VIRTUALREG_START+432,
+    kVRegRxcSfp1DestIp2                     = VIRTUALREG_START+433,
+    kVRegRxcSfp1SourcePort2                 = VIRTUALREG_START+434,
+    kVRegRxcSfp1DestPort2                   = VIRTUALREG_START+435,
+    kVRegRxcSfp1Vlan2                       = VIRTUALREG_START+436,
+    kVRegRxcSfp2RxMatch2                    = VIRTUALREG_START+437,
+    kVRegRxcSfp2SourceIp2                   = VIRTUALREG_START+438,
+    kVRegRxcSfp2DestIp2                     = VIRTUALREG_START+439,
+    kVRegRxcSfp2SourcePort2                 = VIRTUALREG_START+440,
+    kVRegRxcSfp2DestPort2                   = VIRTUALREG_START+441,
+    kVRegRxcSfp2Vlan2                       = VIRTUALREG_START+442,
 	kVRegRxcSsrc2							= VIRTUALREG_START+443,
 	kVRegRxcPlayoutDelay2					= VIRTUALREG_START+444,
 
 	kVRegTxcEnable3							= VIRTUALREG_START+445,
-	kVRegTxcPrimaryLocalPort3				= VIRTUALREG_START+446,
-	kVRegTxcPrimaryRemoteIp3				= VIRTUALREG_START+447,
-	kVRegTxcPrimaryRemotePort3				= VIRTUALREG_START+448,
-	kVRegTxcSecondaryLocalPort3				= VIRTUALREG_START+449,
-	kVRegTxcSecondaryRemoteIp3				= VIRTUALREG_START+450,
-	kVRegTxcSecondaryRemotePort3			= VIRTUALREG_START+451,
+    kVRegTxcSfp1LocalPort3                  = VIRTUALREG_START+446,
+    kVRegTxcSfp1RemoteIp3                   = VIRTUALREG_START+447,
+    kVRegTxcSfp1RemotePort3                 = VIRTUALREG_START+448,
+    kVRegTxcSfp2LocalPort3                  = VIRTUALREG_START+449,
+    kVRegTxcSfp2RemoteIp3                   = VIRTUALREG_START+450,
+    kVRegTxcSfp2RemotePort3                 = VIRTUALREG_START+451,
 
 	kVRegTxcEnable4							= VIRTUALREG_START+452,
-	kVRegTxcPrimaryLocalPort4				= VIRTUALREG_START+453,
-	kVRegTxcPrimaryRemoteIp4				= VIRTUALREG_START+454,
-	kVRegTxcPrimaryRemotePort4				= VIRTUALREG_START+455,
-	kVRegTxcSecondaryLocalPort4				= VIRTUALREG_START+456,
-	kVRegTxcSecondaryRemoteIp4				= VIRTUALREG_START+457,
-	kVRegTxcSecondaryRemotePort4			= VIRTUALREG_START+458,
+    kVRegTxcSfp1LocalPort4                  = VIRTUALREG_START+453,
+    kVRegTxcSfp1RemoteIp4                   = VIRTUALREG_START+454,
+    kVRegTxcSfp1RemotePort4                 = VIRTUALREG_START+455,
+    kVRegTxcSfp2LocalPort4                  = VIRTUALREG_START+456,
+    kVRegTxcSfp2RemoteIp4                   = VIRTUALREG_START+457,
+    kVRegTxcSfp2RemotePort4                 = VIRTUALREG_START+458,
 	
 	kVRegMailBoxAcquire						= VIRTUALREG_START+459,
 	kVRegMailBoxRelease						= VIRTUALREG_START+460,
@@ -470,11 +473,23 @@ typedef enum
 	kVRegAnalogAudioIOConfiguration			= VIRTUALREG_START+523,
 	kVRegHdmiHdrOutChanged					= VIRTUALREG_START+524,
 
-	kVRegLastAJA							= VIRTUALREG_START+525,		///< @brief	The last AJA virtual register slot
+	kVRegDisableAutoVPID					= VIRTUALREG_START+525,
+	kVRegEnableBT2020						= VIRTUALREG_START+526,
+	kVRegHdmiHdrOutMode						= VIRTUALREG_START+527,
+
+    kVRegServicesForceInit                  = VIRTUALREG_START+528,		// set true when power state changes
+    kVRegServicesModeFinal               	= VIRTUALREG_START+529,	
+
+    kVRegLastAJA							= VIRTUALREG_START+530,		///< @brief	The last AJA virtual register slot
 	kVRegFirstOEM							= kVRegLastAJA + 1,			///< @brief	The first virtual register slot available for general use
 	kVRegLast								= VIRTUALREG_START + MAX_NUM_VIRTUAL_REGISTERS - 1	///< @brief	Last virtual register slot
 
 } VirtualRegisterNum;
+
+
+#if !defined(NTV2_DEPRECATE_15_0)
+	#define	kVRegLinuxDriverVersion				VIRTUALREG_START		///< @deprecated	Obsolete in SDK 15.0, use kVRegDriverVersion instead
+#endif
 
 #if !defined (NTV2_DEPRECATE_12_7)
 	//	The old virtual register names will be deprecated sometime after SDK 13.0.0

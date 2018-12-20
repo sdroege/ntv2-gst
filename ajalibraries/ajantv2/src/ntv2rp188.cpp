@@ -1,11 +1,13 @@
 /**
 	@file		ntv2rp188.cpp
 	@brief		Implements the CRP188 class. See SMPTE RP188 standard for details.
-	@copyright	(C) 2007-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2007-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2rp188.h"
 #include "stdio.h" // for sprintf
+
+using namespace std;
 
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -430,7 +432,7 @@ CRP188::CRP188 (const NTV2_RP188 & inRP188, const TimecodeFormat tcFormat)
 	SetRP188 (inRP188, tcFormat);
 }
 
-CRP188::CRP188 (string & sRP188, const TimecodeFormat tcFormat)
+CRP188::CRP188 (const string & sRP188, const TimecodeFormat tcFormat)
 {
 	Init();
     SetRP188(sRP188, tcFormat);
@@ -593,7 +595,7 @@ void CRP188::SetRP188 (const NTV2_RP188 & inRP188, const TimecodeFormat inFormat
 }
 
 
-void CRP188::SetRP188 (string &sRP188, const TimecodeFormat tcFormat)
+void CRP188::SetRP188 (const string &sRP188, const TimecodeFormat tcFormat)
 {
 	if (tcFormat != kTCFormatUnknown)
 		_tcFormat = tcFormat;
@@ -1694,16 +1696,16 @@ bool CRP188::InitBurnIn (NTV2FrameBufferFormat frameBufferFormat, NTV2FrameDimen
 									char val = 0;
 									switch (dot)
 									{
-										case 0:		val = (char)0x10;		break;
-										case 1:		val = (char)0x4c;		break;
-										case 2:		val = (char)0x86;		break;
-										case 3:		val = (char)0xc0;		break;
+										case 0:		val = char(0x040 >> 2);	break;	//	16
+										case 1:		val = char(0x164 >> 2);	break;	//	89
+										case 2:		val = char(0x288 >> 2);	break;	//	162
+										case 3:		val = char(0x3AC >> 2);	break;	//	235
 									}
 
 										// each rendered pixel is duplicated N times
 									for (int xdup = 0; xdup < dotWidth; xdup++)
 									{
-										*pRenderMap++ = (char)0x80;		// C
+										*pRenderMap++ = char(0x80);	// C
 										*pRenderMap++ = val;		// Y
 									}
 								}
@@ -1713,10 +1715,10 @@ bool CRP188::InitBurnIn (NTV2FrameBufferFormat frameBufferFormat, NTV2FrameDimen
 									int val = 0;
 									switch (dot)
 									{
-										case 0:		val =  64;		break;
-										case 1:		val = 356;		break;
-										case 2:		val = 648;		break;
-										case 3:		val = 940;		break;
+										case 0:		val = 0x040;	break;	//	64
+										case 1:		val = 0x164;	break;	//	356
+										case 2:		val = 0x288;	break;	//	648
+										case 3:		val = 0x3AC;	break;	//	940
 									}
 
 										// each rendered pixel is duplicated N times

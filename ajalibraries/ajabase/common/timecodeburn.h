@@ -1,6 +1,6 @@
 /**
 	@file		timecodeburn.h
-	@copyright	Copyright (C) 2012-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2012-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJATimeCodeBurn class.
 **/
 
@@ -24,9 +24,9 @@ public:
 	 *	Render a small set of characters for timecode ahead of time...This needs to be called before
 	 *  BurnTimeCode or BurnTimeCode will fail.
 	 *
-	 *	@param[in]	pixelFormat
-	 *	@param[in]	numPixels
-	 *	@param[in]	numLines
+	 *	@param[in]	pixelFormat		Specifies the pixel format of the rendering buffer.
+	 *	@param[in]	numPixels		Specifies the raster bitmap width.
+	 *	@param[in]	numLines		Specifies the raster bitmap height.
 	 */
 	AJA_EXPORT bool RenderTimeCodeFont (AJA_PixelFormat pixelFormat, uint32_t numPixels, uint32_t numLines);
 
@@ -35,8 +35,14 @@ public:
 	 *
 	 *
 	 *	@param[in]	pBaseVideoAddress	Base address of Raster
-	 *	@param[in]	pTimeCodeString		Something like "00:00:00:00"
-	 *	@param[in]	percentY		    Percent down the screen. if 0, will make it 80
+	 *	@param[in]	inTimeCodeStr		A string containing something like "00:00:00:00"
+	 *	@param[in]	inYPercent		    Percent down the screen. If 0, will make it 80.
+	 *	@returns    True if successful;  otherwise false.
+	 */
+	AJA_EXPORT bool BurnTimeCode (void * pBaseVideoAddress, const std::string & inTimeCodeStr, const uint32_t inYPercent);
+
+	/**
+	 *	DEPRECATED: Use std::string version of this function.
 	 */
 	AJA_EXPORT bool BurnTimeCode (char * pBaseVideoAddress, const char * pTimeCodeString, const uint32_t percentY);
 

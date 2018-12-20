@@ -1,7 +1,7 @@
 /**
 	@file		ntv2m31ehparam.cpp
 	@brief		Implementation of non-device-specific M31 class register getter/setter methods for EH params.
-	@copyright	(C) 2015-2017 AJA Video Systems, Inc.  Proprietary and Confidential information.
+	@copyright	(C) 2015-2018 AJA Video Systems, Inc.  Proprietary and Confidential information.
 **/
 
 #include "ntv2m31ehparam.h"

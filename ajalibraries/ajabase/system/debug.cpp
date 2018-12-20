@@ -1,6 +1,6 @@
 /**
 	@file		debug.cpp
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Implements the AJADebug class.
 **/
 
@@ -44,6 +44,9 @@ AJADebug::~AJADebug()
 AJAStatus 
 AJADebug::Open(bool incrementRefCount)
 {
+	if (!sLock.IsValid())
+		return AJA_STATUS_INITIALIZE;
+
 	AJAAutoLock lock(&sLock);
 
 	// set the debug flag
@@ -133,13 +136,19 @@ AJADebug::Open(bool incrementRefCount)
             addDebugGroupToLabelVector(AJA_DebugUnit_CC608Encode);
             addDebugGroupToLabelVector(AJA_DebugUnit_CC708Decode);
             addDebugGroupToLabelVector(AJA_DebugUnit_CC708Service);
-            addDebugGroupToLabelVector(AJA_DebugUnit_CC708SvcBlkQue);
+            addDebugGroupToLabelVector(AJA_DebugUnit_CC708ServiceBlockQueue);
             addDebugGroupToLabelVector(AJA_DebugUnit_CC708Window);
             addDebugGroupToLabelVector(AJA_DebugUnit_CC708Encode);
             addDebugGroupToLabelVector(AJA_DebugUnit_CCFont);
             addDebugGroupToLabelVector(AJA_DebugUnit_SMPTEAnc);
             addDebugGroupToLabelVector(AJA_DebugUnit_AJAAncData);
             addDebugGroupToLabelVector(AJA_DebugUnit_AJAAncList);
+            addDebugGroupToLabelVector(AJA_DebugUnit_BFT);
+            addDebugGroupToLabelVector(AJA_DebugUnit_PnP);
+            addDebugGroupToLabelVector(AJA_DebugUnit_Persistence);
+            addDebugGroupToLabelVector(AJA_DebugUnit_Avid);
+            addDebugGroupToLabelVector(AJA_DebugUnit_DriverInterface);
+            addDebugGroupToLabelVector(AJA_DebugUnit_AutoCirculate);
 
             for(int i=AJA_DebugUnit_FirstUnused;i<AJA_DebugUnit_Size;i++)
             {
@@ -317,6 +326,13 @@ AJADebug::IsActive(int32_t index)
 	}
 
     return true;
+}
+
+
+bool
+AJADebug::IsOpen(void)
+{
+	return spShare != NULL;
 }
 
 
@@ -1001,6 +1017,21 @@ AJADebug::GetGroupString(int32_t group)
 }
 
 
+const std::string &
+AJADebug::GetGroupName(const int32_t group)
+{
+	static const std::string sRangeErr("<bad index>");
+	static const std::string sNoLabelErr("<empty>");
+    if(group < 0 || group >= (int32_t)sGroupLabelVector.size())
+        return sRangeErr;
+
+    if(sGroupLabelVector.at(group).empty())
+        return sNoLabelErr;
+
+    return sGroupLabelVector.at(group);
+}
+
+
 AJAStatus
 AJADebug::SaveState(char* pFileName)
 {
@@ -1170,4 +1201,24 @@ std::string AJAStatusToString (const AJAStatus inStatus)
         case AJA_STATUS_REBOOT:             return "AJA_STATUS_REBOOT";
 	}
 	return "<bad AJAStatus>";
+}
+
+
+void *
+AJADebug::GetPrivateDataLoc()
+{
+	if (!sLock.IsValid())
+		return NULL;
+	AJAAutoLock lock(&sLock);
+	return spShare;
+}
+
+
+size_t
+AJADebug::GetPrivateDataLen()
+{
+	if (!sLock.IsValid())
+		return 0;
+	AJAAutoLock lock(&sLock);
+	return spShare ? sizeof(AJADebugShare) : 0;
 }

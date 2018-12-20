@@ -1,12 +1,13 @@
 /**
 	@file		testpatterngen.h
-	@copyright	Copyright (C) 2010-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2010-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJATestPatternGen class.
 **/
 
 #ifndef AJA_TESTPATTERN_GEN
 #define AJA_TESTPATTERN_GEN
 
+#if !defined(NTV2_DEPRECATE_15_0)
 #include "types.h"
 #include "videotypes.h"
 #include "videoutilities.h"
@@ -32,6 +33,7 @@ enum AJATestPatternSelect
 	AJA_TestPatt_ZonePlate,
 	AJA_TestPatt_ColorQuadrant,
 	AJA_TestPatt_ColorQuadrantBorder,
+    AJA_TestPatt_ColorQuadrantTSI,
 	AJA_TestPatt_All
 };
 
@@ -68,6 +70,7 @@ protected:
 	virtual bool DrawZonePlateFrame();
 	virtual bool DrawQuandrantBorderFrame();
 	virtual bool DrawColorQuandrantFrame();
+    virtual bool DrawColorQuandrantTSIFrame();
 
 protected:
 	AJATestPatternSelect _patternNumber;
@@ -86,5 +89,7 @@ protected:
 	AJA_BayerColorPhase _bayerPhase;
 
 };	//	AJATestPatternGen
+
+#endif	//	!defined(NTV2_DEPRECATE_15_0)
 
 #endif	//	AJA_TESTPATTERN_GEN

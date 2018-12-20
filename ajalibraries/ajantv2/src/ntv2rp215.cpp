@@ -1,7 +1,7 @@
 /**
 	@file		ntv2rp215.cpp
 	@brief		Implements the CNTV2RP215Decoder class. See SMPTE RP215 standard for details.
-	@copyright	(C) 2006-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2006-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2rp215.h"
@@ -335,7 +335,7 @@ UWord raw215Data[] =
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
-;
+
 
 CNTV2RP215Decoder::CNTV2RP215Decoder(ULWord* pFrameBufferBaseAddress,NTV2VideoFormat videoFormat,NTV2FrameBufferFormat fbFormat)
 	: _frameBufferBasePointer(pFrameBufferBaseAddress),
@@ -368,7 +368,7 @@ bool CNTV2RP215Decoder::Locate()
 {
 	bool found = false;
 
-	NTV2FormatDescriptor fd = GetFormatDescriptor(_videoFormat,_fbFormat,NTV2_VANCMODE_OFF);
+	NTV2FormatDescriptor fd (_videoFormat,_fbFormat);
 	UWord* rp215Linebuffer = new UWord[fd.numPixels*2];
 	switch (_fbFormat )
 	{
@@ -397,7 +397,7 @@ bool CNTV2RP215Decoder::Locate()
 			}
 		}
 		break;
-	case NTV2_FBF_10BIT_DPX_LITTLEENDIAN:
+    case NTV2_FBF_10BIT_DPX_LE:
 		break;
 	case NTV2_FBF_10BIT_YCBCR:
 		{

@@ -1,7 +1,7 @@
 /**
 	@file		ntv2nubtypes.h
 	@brief		Declares data types and structures used in NTV2 "nub" packets.
-	@copyright	(C) 2006-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2006-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef __NTV2NUBTYPES_H
@@ -226,14 +226,6 @@ typedef struct
 	ULWord testPatternDMAEnable;		// Actually a bool
 	ULWord testPatternNumber;
 } NTV2DownloadTestPatternPayload;
-
-// Only tested on Mac.  Windows and Linux use a virtual register for driver version which is not a special case.
-typedef struct
-{
-	LWord  handle;			// A session cookie required for reg gets/sets and close
-	ULWord result;			// Actually a bool
-	ULWord driverVersion;
-} NTV2GetDriverVersionPayload;
 
 #if 0
 #define	NTV2NUB_DISCOVER_QUERY	"Our chief weapons are?"

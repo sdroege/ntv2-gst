@@ -27,30 +27,10 @@
 #define	NTV2DeviceGetNumAudioEngines	NTV2DeviceGetNumAudioSystems
 
 
-//	Most of the device features functions are generated from '.csv' files using a Python script.
+//	Most of the device features functions are generated from a Python script.
 //	The script writes the implementations into 'ntv2devicefeatures.hpp', and the declarations into 'ntv2devicefeatures.hh'...
 #include "ntv2devicefeatures.hh"
 
-/*
-	@return	True if the device having the given ID has LED audio meters;  otherwise false.
-	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
-*/
-AJAExport bool NTV2DeviceHasLEDAudioMeters(const NTV2DeviceID inDeviceID);
-/*
-	@return	True if the device having the given ID has a headphone jack;  otherwise false.
-	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
-*/
-AJAExport bool NTV2DeviceHasHeadphoneJack(const NTV2DeviceID inDeviceID);
-/*
-	@return	True if the device having the given ID has a pair of unbalanced RCA audio monitor output jacks;  otherwise false.
-	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
-*/
-AJAExport bool NTV2DeviceHasAudioMonitorRCAJacks(const NTV2DeviceID inDeviceID);
-/*
-	@return	True if the device having the given ID has a bi-directional analog audio connector;  otherwise false.
-	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
-*/
-AJAExport bool NTV2DeviceHasBiDirectionalAnalogAudio(const NTV2DeviceID inDeviceID);
 /*
 	@return	True if the device having the given ID can do audio output;  otherwise false.
 	@param[in]	inDeviceID	Specifies the NTV2DeviceID of the device of interest.
@@ -62,10 +42,21 @@ AJAExport bool NTV2DeviceCanDoAudioOut(const NTV2DeviceID inDeviceID);
 */
 AJAExport bool NTV2DeviceCanDoAudioIn(const NTV2DeviceID inDeviceID);
 
-
+AJAExport bool NTV2DeviceCanDo292Out(NTV2DeviceID boardID, UWord index0);
 AJAExport bool NTV2DeviceCanDo3GOut (NTV2DeviceID boardID, UWord index0);
 AJAExport bool NTV2DeviceCanDo12GOut(NTV2DeviceID boardID, UWord index0);
+AJAExport bool NTV2DeviceCanDo292In(NTV2DeviceID boardID, UWord index0);
+AJAExport bool NTV2DeviceCanDo3GIn(NTV2DeviceID boardID, UWord index0);
+AJAExport bool NTV2DeviceCanDo12GIn(NTV2DeviceID boardID, UWord index0);
 AJAExport bool NTV2DeviceCanDoLTCEmbeddedN (NTV2DeviceID boardID, UWord index0);
+
+/**
+	@return	The minimum number of 8MB chunks that will accommodate a raster having the given frame geometry and pixel format.
+	@param[in]	inFG	A valid frame geometry.
+	@param[in]	inFBF	A valid frame buffer format.
+**/
+AJAExport UWord Get8MBFrameSizeFactor (const NTV2FrameGeometry inFG, const NTV2FrameBufferFormat inFBF);
+
 
 // Overloading not supported by the ANSI C compiler used for Linux drivers.
 // 
@@ -97,78 +88,92 @@ AJAExport bool NTV2DeviceGetVideoFormatFromState (	NTV2VideoFormat *		pOutValue,
 													const NTV2FrameRate		inFrameRate,
 													const NTV2FrameGeometry	inFrameGeometry,
 													const NTV2Standard		inStandard,
-													const ULWord			inIsSMPTE372Enabled);
+                                                    const ULWord			inIsSMPTE372Enabled);
 
 AJAExport bool NTV2DeviceGetVideoFormatFromState_Ex (	NTV2VideoFormat *		pOutValue,
 														const NTV2FrameRate		inFrameRate,
 														const NTV2FrameGeometry	inFrameGeometry,
 														const NTV2Standard		inStandard,
 														const ULWord			inIsSMPTE372Enabled,
-														const bool				inIsProgressivePicture);
+                                                        const bool				inIsProgressivePicture);
+
+AJAExport bool NTV2DeviceGetVideoFormatFromState_Ex2 (	NTV2VideoFormat *		pOutValue,
+                                                        const NTV2FrameRate		inFrameRate,
+                                                        const NTV2FrameGeometry	inFrameGeometry,
+                                                        const NTV2Standard		inStandard,
+                                                        const ULWord			inIsSMPTE372Enabled,
+                                                        const bool				inIsProgressivePicture,
+                                                        const bool              inIsSquareDivision);
 
 AJAExport bool NTV2DeviceCanConnect (const NTV2DeviceID inDeviceID, const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt);	///< @note	!!! NOT IMPLEMENTED YET !!!
 AJAExport bool NTV2DeviceCanDoTCIndex (const NTV2DeviceID inDeviceID, const NTV2TCIndex inTCIndex);	///< @return	True if the device having the given ID supports the specified NTV2TCIndex.
+AJAExport bool NTV2DeviceCanDoInputTCIndex (const NTV2DeviceID inDeviceID, const NTV2TCIndex inTCIndex);	///< @return	True if the device having the given ID supports the specified NTV2TCIndex for input.
 AJAExport NTV2AudioSystem NTV2DeviceGetAudioMixerSystem(const NTV2DeviceID inDeviceID);
+AJAExport NTV2AudioSystem NTV2DeviceGetHostAudioSystem(const NTV2DeviceID inDeviceID);
 AJAExport bool NTV2DeviceROMHasBankSelect (const NTV2DeviceID inDeviceID);
-AJAExport NTV2_DEPRECATED UWord NTV2DeviceGetNumAudioStreams (NTV2DeviceID boardID);		///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumAudioSystems instead.
-AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoAudioN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumAudioSystems instead.
-AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoLTCOutN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumLTCOutputs instead.
-AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoLTCInN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumLTCInputs instead.
-AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoRS422N (const NTV2DeviceID inDeviceID, const NTV2Channel inChannel);	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumSerialPorts instead.
+AJAExport NTV2_DEPRECATED_f(UWord NTV2DeviceGetNumAudioStreams (NTV2DeviceID boardID));		///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumAudioSystems instead.
+AJAExport NTV2_DEPRECATED_f(bool NTV2DeviceCanDoAudioN (NTV2DeviceID boardID, UWord index0));	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumAudioSystems instead.
+AJAExport NTV2_DEPRECATED_f(bool NTV2DeviceCanDoLTCOutN (NTV2DeviceID boardID, UWord index0));	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumLTCOutputs instead.
+AJAExport NTV2_DEPRECATED_f(bool NTV2DeviceCanDoLTCInN (NTV2DeviceID boardID, UWord index0));	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumLTCInputs instead.
+AJAExport NTV2_DEPRECATED_f(bool NTV2DeviceCanDoRS422N (const NTV2DeviceID inDeviceID, const NTV2Channel inChannel));	///< @deprecated	Will be deprecated soon. Use NTV2DeviceGetNumSerialPorts instead.
+
+#if !defined (NTV2_DEPRECATE_14_3)
+	AJAExport NTV2_DEPRECATED_f(bool NTV2DeviceCanDoFreezeOutput (const NTV2DeviceID inDeviceID));	///< @deprecated	This function is obsolete.
+#endif	//	!defined (NTV2_DEPRECATE_14_3)
 
 #if !defined (NTV2_DEPRECATE)
-	AJAExport NTV2_DEPRECATED	bool NTV2DeviceCanDoProAudio (NTV2DeviceID boardID);											///< @deprecated	This function is obsolete.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoProcAmp(NTV2DeviceID boardID);												///< @deprecated	This function is obsolete.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoBrightnessAdjustment(NTV2DeviceID boardID, NTV2LSVideoADCMode videoADCMode);	///< @deprecated	This function is obsolete.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoContrastAdjustment(NTV2DeviceID boardID, NTV2LSVideoADCMode videoADCMode);	///< @deprecated	This function is obsolete.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoSaturationAdjustment(NTV2DeviceID boardID, NTV2LSVideoADCMode videoADCMode);	///< @deprecated	This function is obsolete.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoHueAdjustment(NTV2DeviceID boardID, NTV2LSVideoADCMode videoADCMode);		///< @deprecated	This function is obsolete.
+	#define	NTV2DeviceCanDoProAudio(_boardID_)								false
+	#define	NTV2BoardCanDoProcAmp(_boardID_)								false
+	#define	NTV2BoardCanDoBrightnessAdjustment(_boardID_,_videoADCMode_)	false
+	#define	NTV2BoardCanDoContrastAdjustment(_boardID_,_videoADCMode_)		false
+	#define	NTV2BoardCanDoSaturationAdjustment(_boardID_,_videoADCMode_)	false
+	#define	NTV2BoardCanDoHueAdjustment(_boardID_,_videoADCMode_)			false
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio2 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio3 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio4 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio5 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio6 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio7 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoAudio8 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoAudioN instead.
+	#define NTV2BoardCanDoAudio(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 0)
+	#define NTV2BoardCanDoAudio2(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 1)
+	#define NTV2BoardCanDoAudio3(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 2)
+	#define NTV2BoardCanDoAudio4(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 3)
+	#define NTV2BoardCanDoAudio5(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 4)
+	#define NTV2BoardCanDoAudio6(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 5)
+	#define NTV2BoardCanDoAudio7(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 6)
+	#define NTV2BoardCanDoAudio8(_boardID_)			NTV2DeviceCanDoAudioN((_boardID_), 7)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3G (NTV2DeviceID boardID);					///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut2 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut3 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut4 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut5 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut6 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut7 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDo3GOut8 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDo3GOut instead.
+	#define NTV2BoardCanDo3G(_boardID_)				NTV2DeviceCanDo3GOut((_boardID_), 0)
+	#define NTV2BoardCanDo3GOut2(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 1)
+	#define NTV2BoardCanDo3GOut3(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 2)
+	#define NTV2BoardCanDo3GOut4(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 3)
+	#define NTV2BoardCanDo3GOut5(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 4)
+	#define NTV2BoardCanDo3GOut6(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 5)
+	#define NTV2BoardCanDo3GOut7(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 6)
+	#define NTV2BoardCanDo3GOut8(_boardID_)			NTV2DeviceCanDo3GOut((_boardID_), 7)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCOut (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoLTCOutN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCOut2 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoLTCOutN instead.
+	#define	NTV2BoardCanDoMixer2(_boardID_)			(NTV2DeviceGetNumMixers(_boardID_) >= 2)
+	#define	NTV2BoardCanDoMixer3(_boardID_)			(NTV2DeviceGetNumMixers(_boardID_) >= 3)
+	#define	NTV2BoardCanDoMixer4(_boardID_)			(NTV2DeviceGetNumMixers(_boardID_) >= 4)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoMixer2 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceGetNumMixers instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoMixer3 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceGetNumMixers instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoMixer4 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceGetNumMixers instead.
+	#define	NTV2BoardCanDoLTCIn(_boardID_)			NTV2DeviceCanDoLTCInN((_boardID_), 0)
+	#define	NTV2BoardCanDoLTCIn2(_boardID_)			NTV2DeviceCanDoLTCInN((_boardID_), 1)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoUART (NTV2DeviceID boardID);					///< @deprecated	Use NTV2DeviceCanDoRS422N instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoUART2 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoRS422N instead.
+	#define	NTV2BoardCanDoLTCOut(_boardID_)			NTV2DeviceCanDoLTCOutN((_boardID_), 0)
+	#define	NTV2BoardCanDoLTCOut2(_boardID_)		NTV2DeviceCanDoLTCOutN((_boardID_), 1)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCIn (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoLTCInN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCIn2 (NTV2DeviceID boardID);				///< @deprecated	Use NTV2DeviceCanDoLTCInN instead.
+	#define NTV2BoardCanDoLTCEmbedded(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 0)
+	#define NTV2BoardCanDoLTCEmbedded2(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 1)
+	#define NTV2BoardCanDoLTCEmbedded3(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 2)
+	#define NTV2BoardCanDoLTCEmbedded4(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 3)
+	#define NTV2BoardCanDoLTCEmbedded5(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 4)
+	#define NTV2BoardCanDoLTCEmbedded6(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 5)
+	#define NTV2BoardCanDoLTCEmbedded7(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 6)
+	#define NTV2BoardCanDoLTCEmbedded8(_boardID_)	NTV2DeviceCanDoLTCEmbeddedN((_boardID_), 7)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded2 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded3 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded4 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded5 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded6 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded7 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoLTCEmbedded8 (NTV2DeviceID boardID);			///< @deprecated	Use NTV2DeviceCanDoLTCEmbeddedN instead.
+	#define NTV2BoardCanDoUART(_boardID_)			NTV2DeviceCanDoUARTN((_boardID_), 0)
+	#define NTV2BoardCanDoUART2(_boardID_)			NTV2DeviceCanDoUARTN((_boardID_), 1)
 
-	AJAExport NTV2_DEPRECATED	bool NTV2BoardCanDoUARTN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Use NTV2DeviceCanDoRS422N instead.
-	AJAExport NTV2_DEPRECATED	bool NTV2DeviceCanDoUARTN (NTV2DeviceID boardID, UWord index0);	///< @deprecated	Use NTV2DeviceCanDoRS422N instead.
+	#define	NTV2BoardCanDoUARTN(_boardID_,_ndx0_)	NTV2DeviceCanDoRS422N((_boardID_),(_ndx0_))
+	#define	NTV2DeviceCanDoUARTN(_boardID_,_ndx0_)	NTV2DeviceCanDoRS422N((_boardID_),(_ndx0_))
 #endif	//	!defined (NTV2_DEPRECATE)
 
-#if 1	//	NOTE:  THESE WILL BE UNDEFINED WITH NTV2_DEPRECATE STARTING WITH SDK 13.0
+#if !defined (NTV2_DEPRECATE_14_2)	//	UNDEFINED AS OF SDK 14.2
 	#define	NTV2BoardCanChangeEmbeddedAudioClock		NTV2DeviceCanChangeEmbeddedAudioClock			///< @deprecated	Use NTV2DeviceCanChangeEmbeddedAudioClock instead.
 	#define	NTV2BoardCanChangeFrameBufferSize			NTV2DeviceCanChangeFrameBufferSize				///< @deprecated	Use NTV2DeviceCanChangeFrameBufferSize instead.
 	#define	NTV2BoardCanDisableUFC						NTV2DeviceCanDisableUFC							///< @deprecated	Use NTV2DeviceCanDisableUFC instead.
@@ -231,7 +236,6 @@ AJAExport NTV2_DEPRECATED bool NTV2DeviceCanDoRS422N (const NTV2DeviceID inDevic
 	#define	NTV2BoardCanDoVideoProcessing				NTV2DeviceCanDoVideoProcessing					///< @deprecated	Use NTV2DeviceCanDoVideoProcessing instead.
 	#define	NTV2BoardCanDoWidget						NTV2DeviceCanDoWidget							///< @deprecated	Use NTV2DeviceCanDoWidget instead.
 	#define	NTV2BoardGetActiveMemorySize				NTV2DeviceGetActiveMemorySize					///< @deprecated	Use NTV2DeviceGetActiveMemorySize instead.
-	#define	NTV2BoardGetAudioFrameBuffer				NTV2DeviceGetAudioFrameBuffer					///< @deprecated	Use NTV2DeviceGetAudioFrameBuffer instead.
 	#define	NTV2BoardGetAudioFrameBuffer				NTV2DeviceGetAudioFrameBuffer					///< @deprecated	Use NTV2DeviceGetAudioFrameBuffer instead.
 	#define	NTV2BoardGetAudioFrameBuffer2				NTV2DeviceGetAudioFrameBuffer2					///< @deprecated	Use NTV2DeviceGetAudioFrameBuffer2 instead.
 	#define	NTV2BoardGetDownConverterDelay				NTV2DeviceGetDownConverterDelay					///< @deprecated	Use NTV2DeviceGetDownConverterDelay instead.

@@ -1,7 +1,7 @@
 /**
 	@file		ntv2vpidfromspec.cpp
 	@brief		Generates a VPID based on a specification struct. See the SMPTE 352 standard for details.
-	@copyright	(C) 2012-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2012-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		This file is included in driver builds. It must not contain any c++.
 **/
 
@@ -44,6 +44,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	bool	isStereo				= false;
 	bool	is6G					= false;
 	bool	is12G					= false;
+	bool	enableBT2020			= false;
 	VPIDChannel vpidChannel			= VPIDChannel_1;
 
 	uint8_t	byte1 = 0;
@@ -66,10 +67,13 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	is6G					= pInVPIDSpec->isOutput6G;
 	is12G					= pInVPIDSpec->isOutput12G;
 	vpidChannel				= pInVPIDSpec->vpidChannel;
+	enableBT2020			= pInVPIDSpec->enableBT2020;
+
 
 	if (! NTV2_IS_WIRE_FORMAT (outputFormat))
 	{
 		*pOutVPID = 0;
+
 		return true;
 	}
 
@@ -80,8 +84,8 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	isProgressivePicture	= NTV2_VIDEO_FORMAT_HAS_PROGRESSIVE_PICTURE (outputFormat);
 	isProgressiveTransport	= isProgressivePicture;							//	Must be a progressive format to start
 
-	if (NTV2_IS_720P_VIDEO_FORMAT (outputFormat))
-		isProgressiveTransport = false;										//	720p does not use progressive transport
+	if (NTV2_IS_720P_VIDEO_FORMAT(outputFormat) && !is3G)
+		isProgressiveTransport = false;
 
 	if (NTV2_IS_PSF_VIDEO_FORMAT (outputFormat))
 		isProgressiveTransport = false;										//	PSF is never a progressive transport
@@ -201,6 +205,26 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x2048x1080p_2500:
 	case NTV2_FORMAT_4x2048x1080p_2997:
 	case NTV2_FORMAT_4x2048x1080p_3000:
+    case NTV2_FORMAT_3840x2160psf_2398:
+    case NTV2_FORMAT_3840x2160psf_2400:
+    case NTV2_FORMAT_3840x2160psf_2500:
+    case NTV2_FORMAT_3840x2160p_2398:
+    case NTV2_FORMAT_3840x2160p_2400:
+    case NTV2_FORMAT_3840x2160p_2500:
+    case NTV2_FORMAT_3840x2160p_2997:
+    case NTV2_FORMAT_3840x2160p_3000:
+    case NTV2_FORMAT_3840x2160psf_2997:
+    case NTV2_FORMAT_3840x2160psf_3000:
+    case NTV2_FORMAT_4096x2160psf_2398:
+    case NTV2_FORMAT_4096x2160psf_2400:
+    case NTV2_FORMAT_4096x2160psf_2500:
+    case NTV2_FORMAT_4096x2160p_2398:
+    case NTV2_FORMAT_4096x2160p_2400:
+    case NTV2_FORMAT_4096x2160p_2500:
+    case NTV2_FORMAT_4096x2160p_2997:
+    case NTV2_FORMAT_4096x2160p_3000:
+    case NTV2_FORMAT_4096x2160psf_2997:
+    case NTV2_FORMAT_4096x2160psf_3000:
 		if (isTSI)
 		{
 			if(is12G)
@@ -239,6 +263,16 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x2048x1080p_5000:
 	case NTV2_FORMAT_4x2048x1080p_5994:
 	case NTV2_FORMAT_4x2048x1080p_6000:
+    case NTV2_FORMAT_3840x2160p_5000:
+    case NTV2_FORMAT_3840x2160p_5994:
+    case NTV2_FORMAT_3840x2160p_6000:
+    case NTV2_FORMAT_4096x2160p_4795:
+    case NTV2_FORMAT_4096x2160p_4800:
+    case NTV2_FORMAT_4096x2160p_5000:
+    case NTV2_FORMAT_4096x2160p_5994:
+    case NTV2_FORMAT_4096x2160p_6000:
+    case NTV2_FORMAT_4096x2160p_11988:
+    case NTV2_FORMAT_4096x2160p_12000:
 		if (isTSI)
 		{
 			if(is12G)
@@ -326,7 +360,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		 ! NTV2_IS_720P_VIDEO_FORMAT	(outputFormat) &&
 		 ! NTV2_IS_2K_1080_VIDEO_FORMAT	(outputFormat))
 	{
-		if (is3G && !isLevelB && !isDualLink)
+		if (is3G && !isLevelB)
 			byte3 |= (1UL << 7);			//	0x80
 		else
 			byte3 |= (1UL << 5);			//	0x20
@@ -339,6 +373,20 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 			byte3 |= (1UL << 7);			//	0x80
 		else
 			byte3 |= (1UL << 5);			//	0x20
+	}
+
+	//Colorimetry
+	if ((NTV2_IS_4K_VIDEO_FORMAT(outputFormat) ||
+		NTV2_IS_HD_VIDEO_FORMAT(outputFormat)) &&
+		enableBT2020)
+	{
+		if ((!NTV2_IS_FBF_RGB(pixelFormat) &&
+			NTV2_IS_HIGH_NTV2FrameRate(frameRate)) ||
+			(NTV2_IS_FBF_RGB(pixelFormat) &&
+			!NTV2_IS_HIGH_NTV2FrameRate(frameRate)))
+		{
+			byte3 |= (VPIDDynamicRange_400 << 4);
+		}
 	}
 
 	//	Sampling structure
@@ -363,7 +411,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 			break;
 
 		case NTV2_FBF_10BIT_DPX:
-		case NTV2_FBF_10BIT_DPX_LITTLEENDIAN:
+		case NTV2_FBF_10BIT_DPX_LE:
 		case NTV2_FBF_10BIT_RGB:
 		case NTV2_FBF_24BIT_RGB:
 		case NTV2_FBF_24BIT_BGR:
@@ -444,7 +492,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FBF_10BIT_YCBCR:
 	case NTV2_FBF_10BIT_RGB:
 	case NTV2_FBF_10BIT_DPX:
-	case NTV2_FBF_10BIT_DPX_LITTLEENDIAN:
+	case NTV2_FBF_10BIT_DPX_LE:
 	case NTV2_FBF_10BIT_RGB_PACKED:
 	case NTV2_FBF_10BIT_YCBCR_DPX:
 	case NTV2_FBF_10BIT_ARGB:

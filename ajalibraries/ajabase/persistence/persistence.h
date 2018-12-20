@@ -1,6 +1,6 @@
 /**
 	@file		persistence/persistence.h
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJAPersistence class.
 **/
 
@@ -23,7 +23,6 @@ enum AJAPersistenceType
 	AJAPersistenceTypeEnd
 };
 
-
 /**
  * Class used to talk to the board in such a way as to maintain a persistant state 
  * across apps and reboots.
@@ -39,15 +38,16 @@ public:
     void SetParams(const std::string& appID="", const std::string& deviceType="", const std::string& deviceNumber="", bool bSharePrefFile=false);
     void GetParams(std::string& appID, std::string& deviceType, std::string& deviceNumber, bool& bSharePrefFile);
 
-    bool SetValue(const std::string& key, void *value, AJAPersistenceType type, int blobBytes = 0);
-    bool GetValue(const std::string& key, void *value, AJAPersistenceType type, int blobBytes = 0);
+    bool SetValue(const std::string& key, void *value, AJAPersistenceType type, size_t blobBytes = 0);
+    bool GetValue(const std::string& key, void *value, AJAPersistenceType type, size_t blobBytes = 0);
 	bool FileExists();
+    bool ClearPrefFile();
 	bool DeletePrefFile();
 
-    bool GetValuesInt(const std::string& key_query, std::vector<std::string>& keys, std::vector<int>& values);
-    bool GetValuesBool(const std::string& key_query, std::vector<std::string>& keys, std::vector<bool>& values);
-    bool GetValuesDouble(const std::string& key_query, std::vector<std::string>& keys, std::vector<double>& values);
-    bool GetValuesString(const std::string& key_query, std::vector<std::string>& keys, std::vector<std::string>& values);
+    bool GetValuesInt(const std::string& keyQuery, std::vector<std::string>& keys, std::vector<int>& values);
+    bool GetValuesBool(const std::string& keyQuery, std::vector<std::string>& keys, std::vector<bool>& values);
+    bool GetValuesDouble(const std::string& keyQuery, std::vector<std::string>& keys, std::vector<double>& values);
+    bool GetValuesString(const std::string& keyQuery, std::vector<std::string>& keys, std::vector<std::string>& values);
 	
 private:	
 

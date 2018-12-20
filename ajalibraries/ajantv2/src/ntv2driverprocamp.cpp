@@ -1,17 +1,17 @@
 /**
 	@file		ntv2driverprocamp.cpp
 	@brief		Implementation of driver procamp utility functions.
-	@copyright	(C) 2003-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2003-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		Because this module is compiled into the driver, it must remain straight ANSI 'C' -- no C++ or STL.
 				Since the Linux driver is not C++ based, a devicenumber is required in some functions in place of "this" pointer.
 **/
 
 #include "ntv2driverprocamp.h"
+#if defined(NTV2_BUILDING_DRIVER)
 
 #ifdef AJALinux
 #include <linux/jiffies.h>
 #include "registerio.h"
-#include "ntv2driverdma.h"
 #include "driverdbg.h"
 #include "ntv2driverdbgmsgctl.h"
 #define ENABLE_DEBUG_PRINT
@@ -217,9 +217,7 @@ bool GetVirtualProcampRegister(	VirtualRegisterNum virtualRegisterNum,
 /*****************************************************************************************
  *	RestoreHardwareProcampRegisters
  *****************************************************************************************/
-// Call this function to restore ProcAmp registers (from virtual register) after a Xilinx
-// bitfile load. Note that if you change the ADCMode (Xilinx), it also wipes out the ProcAmp
-// registers
+// Call this function to restore ProcAmp registers (from virtual register)
 
 
 #ifdef AJAMac  
@@ -762,3 +760,4 @@ static bool I2CWriteControl(ULWord deviceNumber, ULWord value)
 	return false;	// Not implemented for Windows yet.
 }
 
+#endif	//	defined(NTV2_BUILDING_DRIVER)

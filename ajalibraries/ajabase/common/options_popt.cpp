@@ -704,7 +704,9 @@ poptInit(int argc, const char ** argv,
 
 #define	POPT_WCHAR_HACK
 #ifdef 	POPT_WCHAR_HACK
+#ifndef AJAMac
 #include <wchar.h>			/* for mbsrtowcs */
+#endif
 #endif
 
 /**
@@ -783,12 +785,13 @@ static size_t maxColumnWidth(FILE *fp)
 static inline size_t stringDisplayWidth(const char *s)
 {
     size_t n = strlen(s);
+#ifndef AJAMac
     mbstate_t t;
 
     memset ((void *)&t, 0, sizeof (t));	/* In initial state.  */
     /* Determine number of display characters.  */
     n = mbsrtowcs (NULL, &s, n, &t);
-
+#endif
     return n;
 }
 
@@ -858,7 +861,7 @@ getArgDescrip(const struct poptOption * opt,
  * @param lineLength	display positions remaining
  * @param opt		option(s)
  * @param translation_domain	translation domain
- * @return
+ * @return	a pointer to the display string.
  */
 static char *
 singleOptionDefaultValue(size_t lineLength,
@@ -1376,7 +1379,7 @@ typedef struct poptDone_s {
  * @param opt		option(s)
  * @param translation_domain	translation domain
  * @param done		tables already processed
- * @return
+ * @return the size of the current column
  */
 static size_t singleTableUsage(poptContext con, FILE * fp, columns_t columns,
 		const struct poptOption * opt,

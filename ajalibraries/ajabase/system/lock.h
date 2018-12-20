@@ -1,6 +1,6 @@
 /**
 	@file		lock.h
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJALock class.
 **/
 
@@ -48,6 +48,12 @@ public:
 	 *				AJA_STATUS_OPEN		Lock not initialized
 	 */
 	virtual AJAStatus Unlock();
+
+	/**
+	 *	@return		True if valid (has implementation).
+	 *				False if not valid.
+	 */
+	virtual inline bool IsValid(void) const {return mpImpl != NULL;}
 
 private:
 

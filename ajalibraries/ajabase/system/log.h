@@ -1,6 +1,6 @@
 /**
 	@file		log.h
-	@copyright	Copyright (C) 2012-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2012-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJATimeLog class.
 **/
 
@@ -82,12 +82,12 @@ extern void __cdecl log_odprintf(const char *format, ...);
 
 #endif
 
-
+#ifndef Make4CC
 #define Make4CC(my4CC)  ((my4CC < 0x40) ?  ' '						 : ((char*)(&my4CC))[3]), \
 						((my4CC < 0x40) ?  ' '						 : ((char*)(&my4CC))[2]), \
 						((my4CC < 0x40) ? ('0' + (char)(my4CC / 10)) : ((char*)(&my4CC))[1]), \
 						((my4CC < 0x40) ? ('0' + (char)(my4CC % 10)) : ((char*)(&my4CC))[0])
-
+#endif
 
 /** 
  *	Supports auto initialization of logger, if needed
@@ -99,13 +99,11 @@ public:
 
     /**
 	 *	Singleton initialization of logging service.
-	 *  @param[in]	...			Variable length parameter list for logging. Same formatting as printf
 	 */
 	AJALog();
     
     /**
 	 *	Singleton release of logging service.
-	 *  @param[in]	...			Variable length parameter list for logging. Same formatting as printf
 	 */
 	virtual ~AJALog();
     

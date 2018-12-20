@@ -1,7 +1,7 @@
 /**
 	@file		ntv2vpidfromspec.h
 	@brief		Declares functions for the straight C implementations of VPID generation from a specification.
-	@copyright	(C) 2004-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		This file is included in driver builds. It must not contain any C++.
 **/
 
@@ -31,6 +31,7 @@ typedef struct
 	VPIDAudio				audioCarriage;			///< @brief	Specifies how audio is carried in additional channels.
 	bool					isOutput6G;				///< @brief	If true, the transport on the wire is 6G.
 	bool					isOutput12G;			///< @brief	If true, the transport on the wire is 12G.
+	bool					enableBT2020;			///< @brief	If true, the VPID will insert BT.2020 data.
 } VPIDSpec;
 
 /**

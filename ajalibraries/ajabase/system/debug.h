@@ -1,6 +1,6 @@
 /**
 	@file		debug.h
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJADebug class.
 **/
 
@@ -29,15 +29,15 @@
  *  @param[in]	_expression_	Boolean expression that should be true.
  */
 
-/** @def AJA_REPORT(_index_, _severity_, ...)
+/** @def AJA_REPORT(_index_, _severity_, _format_)
  *	Report debug messages to active destinations.  
  *	@hideinitializer
  *
  *	In Windows, this macro will specify the file name and line number of the report.
  *  
  *  @param[in]	_index_		Send message to this destination index.
- *  @param[in]	_severity_	Severity (\c AJA_DEBUG_SEVERITY) of the message to report.
- *  @param[in]	...			Format parameters passed to vsprintf. The first is the format itself.
+ *  @param[in]	_severity_	Severity (::AJA_DEBUG_SEVERITY) of the message to report.
+ *  @param[in]	_format_	Format parameters passed to vsprintf. The first is the format itself.
  */
 
 /**	@} */
@@ -238,6 +238,14 @@ public:
 	 */
     static bool IsActive(int32_t index);
 
+	/**
+	 *	Is the debug system open?
+	 *
+     *	@return		true                    Debug system is open and ready for use.
+     *				false                   Debug system not open.
+	 */
+    static bool IsOpen(void);
+
 	/** 
 	 *	Is this class built with AJA_DEBUG defined. 
 	 *
@@ -250,7 +258,7 @@ public:
 	 *	Report debug message to the specified destination index.
 	 *
 	 *	@param[in]	index		Report the message to this destination index.
-	 *	@param[in]	severity	Severity (\c AJA_DEBUG_SEVERITY) of the message to report.
+	 *	@param[in]	severity	Severity (::AJA_DEBUG_SEVERITY) of the message to report.
 	 *	@param[in]	pFileName	The source filename reporting the message.
 	 *	@param[in]	lineNumber	The line number in the source file reporting the message.
 	 *  @param[in]	...			Format parameters to be passed to vsprintf. The first is the format itself.
@@ -261,7 +269,7 @@ public:
      *	Report debug message to the specified destination index.
      *
      *	@param[in]	index		Report the message to this destination index.
-     *	@param[in]	severity	Severity (\c AJA_DEBUG_SEVERITY) of the message to report.
+     *	@param[in]	severity	Severity (::AJA_DEBUG_SEVERITY) of the message to report.
      *	@param[in]	pFileName	The source filename reporting the message.
      *	@param[in]	lineNumber	The line number in the source file reporting the message.
      *  @param[in]	message		The message to report.
@@ -482,6 +490,14 @@ public:
      */
     static const char* GetGroupString(int32_t group);
 
+    /**
+     *	Get the string associated with a debug message group.
+     *
+     *	@param[in]	group	Index of the message group string to return.
+     *	@return				Group string
+     */
+    static const std::string & GetGroupName(const int32_t group);
+
 	/**
 	 *	Write group state to a file.
 	 *
@@ -509,6 +525,8 @@ public:
 	 */
 	static int64_t DebugTime();
 
+	static void * GetPrivateDataLoc (void);
+	static size_t GetPrivateDataLen (void);
 private:
 };
 

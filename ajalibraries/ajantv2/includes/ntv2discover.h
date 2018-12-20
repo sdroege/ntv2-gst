@@ -1,7 +1,7 @@
 /**
 	@file		ntv2discover.h
 	@brief		Declares the NTV nub discovery functions.
-	@copyright	Copyright 2006-2017 AJA Video Systems, Inc. All rights reserved.
+	@copyright	Copyright 2006-2018 AJA Video Systems, Inc. All rights reserved.
 **/
 
 #ifndef NTV2DISCOVER_H
@@ -22,16 +22,14 @@
 #define DISCOVER_FOUND_NOBODY	(-3)
 
 // Discover nubs on all network interfaces
-AJAExport int	ntv2DiscoverNubs (	UWord					boardMask,
-									int						inMaxNubs,				//	Maximum number of nubs (size of sockaddr_in and boardInventory arrays)
+AJAExport int	ntv2DiscoverNubs (	int						inMaxNubs,				//	Maximum number of nubs (size of sockaddr_in and boardInventory arrays)
 									struct sockaddr_in		their_addr [],			//	Array of responders
 									NTV2DiscoverRespPayload	boardInventory [],		//	Available boards for each responder
 									int &					outFoundNubCount,		//	How many nubs were found (no more than inMaxNubs)
 									int						inWaitTimeoutSecs,		//	How long to wait for discover responses In seconds
 									int						sendto_count	= 5);	//	default
 
-AJAExport int	ntv2DiscoverNubs (	char *					hostname,
-									UWord					boardMask,
+AJAExport int	ntv2DiscoverNubs (	const char *			hostname,
 									int						inMaxNubs, 				//	Maximum number of nubs (size of sockaddr_in and boardInventory arrays)
 									struct sockaddr_in		their_addr [],			//	Array of responders
 									NTV2DiscoverRespPayload	boardInventory [],		//	Available boards for each responder

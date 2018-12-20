@@ -1,7 +1,7 @@
 /**
 	@file		ntv2driverinterface.h
 	@brief		Declares the CNTV2DriverInterface base class.
-	@copyright	(C) 2004-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2DRIVERINTERFACE_H
@@ -11,12 +11,11 @@
 
 #include "ajatypes.h"
 #include "ntv2enums.h"
-#include "videodefines.h"
-#include "audiodefines.h"
-
+#include "ntv2videodefines.h"
+#include "ntv2audiodefines.h"
 #include "ntv2nubtypes.h"
 #include "ntv2publicinterface.h"
-
+#include "ntv2devicefeatures.h"
 #include <string>
 
 #if defined(AJALinux ) || defined(AJAMac)
@@ -41,7 +40,7 @@ typedef struct
 
 
 /**
-	@brief	I'm the base class that undergirds the platform-specific derived classes (from which CNTV2Card is ultimately derived).
+	@brief	I'm the base class that undergirds the platform-specific derived classes (from which ::CNTV2Card is ultimately derived).
 **/
 class AJAExport CNTV2DriverInterface
 {
@@ -51,23 +50,33 @@ public:
 
 public:
 	/**
+		@brief	Answers with a 4-byte value that uniquely identifies the kind of AJA device I'm talking to.
+		@return	The 4-byte value that identifies the kind of AJA device this is.
+	**/
+	virtual NTV2DeviceID		GetDeviceID (void);
+
+	/**
+		@brief	Answers with this device's zero-based index number (relative to other known devices).
+		@return	This device's zero-based index number.
+	**/
+	virtual inline UWord		GetIndexNumber (void) const		{return _boardNumber;}
+
+	/**
 		@brief		Opens an AJA device so that it can be monitored and/or controlled.
 		@result		True if successful; otherwise false.
 		@param[in]	inDeviceIndex		Optionally specifies a zero-based index number of the AJA device to open.
 										Defaults to zero, which is the first AJA device found.
-		@param[in]	displayError		Optionally specifies if an alert dialog should be displayed if a failure occurs
-										when attempting to open the AJA device (on host platforms that support alert dialogs).
-										Defaults to false.
-		@param[in]	eDeviceType			Optionally specifies the type of AJA device to look for. This parameter is obsolete.
-		@param[in]	hostName			Optionally specifies the name of a host machine on the local area network that has
-										one or more AJA devices attached to it. Defaults to NULL, which attempts to open AJA
-										devices on the local host. If not NULL, must be a valid pointer to a buffer containing
-										a zero-terminated character string.
+		@param[in]	inHostName			Optionally specifies the name of a host machine on the local area network that has
+										one or more AJA devices attached to it. Defaults to the empty string, which attempts
+										to open AJA devices on the local host.
 	**/
-	virtual bool Open(UWord inDeviceIndex=0, bool displayError = false,
-					  NTV2DeviceType eDeviceType = DEVICETYPE_UNKNOWN,
-					  const char *hostName = 0) = 0;
-
+	virtual bool Open(const UWord inDeviceIndex = 0,
+					  const std::string & inHostName = std::string()) = 0;
+#if !defined(NTV2_DEPRECATE_14_3)
+	virtual bool Open(UWord inDeviceIndex, bool displayError,
+					  NTV2DeviceType eDeviceType,
+					  const char *hostName) = 0;
+#endif	//	!defined(NTV2_DEPRECATE_14_3)
 
 	// call this before Open to set the shareable feature of the Card
 	virtual bool SetShareMode (bool bShared) = 0;
@@ -110,8 +119,13 @@ public:
 	**/
 	virtual bool	WriteRegister (ULWord inRegisterNumber,  ULWord inValue,  ULWord inMask = 0xFFFFFFFF,  ULWord inShift = 0);
 
-protected:
-	virtual bool	ReadRegister (ULWord inRegisterNumber,  ULWord * pOutValue,  ULWord inMask = 0xFFFFFFFF,  ULWord inShift = 0);
+//protected:
+#if !defined(NTV2_DEPRECATE_14_3)
+	virtual inline NTV2_SHOULD_BE_DEPRECATED(bool	ReadRegister (const ULWord inRegNum, ULWord * pOutValue, const ULWord inRegMask = 0xFFFFFFFF, const ULWord inRegShift = 0x0))
+	{
+		return pOutValue ? ReadRegister(inRegNum, *pOutValue, inRegMask, inRegShift) : false;
+	}
+#endif	//	!defined(NTV2_DEPRECATE_14_3)
 
 public:
 	/**
@@ -121,23 +135,40 @@ public:
 		@result		True if successful; otherwise false.
 		@param[in]	inRegisterNumber	Specifies the RegisterNum of the real register, or VirtualRegisterNum of the virtual register
 										on the AJA device to be read.
-		@param[out]	outValue			Specifies a valid, non-NULL address of the ULWord that is to receive the register value obtained
-										from the device.
-		@param[in]	inMask				Optionally specifies a bit mask to be applied after reading the real device register.
-										Defaults to 0xFFFFFFFF, which does not perform any masking.
-										A zero mask (0x00000000) is also ignored.
-										This parameter is ignored when reading a virtual register.
+		@param[out]	outValue			Receives the register value obtained from the device.
+		@param[in]	inMask				Optionally specifies a bit mask to be applied after reading the device register.
+										Zero and 0xFFFFFFFF masks are ignored. Defaults to 0xFFFFFFFF (no masking).
 		@param[in]	inShift				Optionally specifies the number of bits to right-shift the value obtained
-										from the device register after any mask has been applied.
-										Defaults to zero, which performs no bit shift.
-										This parameter is ignored when reading a virtual register.
+										from the device register after the mask has been applied. Defaults to zero (no shift).
 		@note		This function should be used only when there is no higher-level function available to accomplish the desired task.
 		@note		The mask and shift parameters are ignored when reading a virtual register.
 	**/
-	virtual inline bool	ReadRegister (const ULWord inRegisterNumber,  ULWord & outValue,  const ULWord inMask = 0xFFFFFFFF,  const ULWord inShift = 0)
-	{
-		return ReadRegister (inRegisterNumber, &outValue, inMask, inShift);
-	}
+	virtual bool	ReadRegister (const ULWord inRegisterNumber,  ULWord & outValue,  const ULWord inMask = 0xFFFFFFFF,  const ULWord inShift = 0);
+
+	/**
+		@brief		This template function reads all or part of the 32-bit contents of a specific register (real or virtual)
+					from the AJA device, and if successful, returns its value automatically casted to the scalar type of the
+					"outValue" parameter.
+		@result		True if successful; otherwise false.
+		@param[in]	inRegisterNumber	Specifies the RegisterNum of the real register, or VirtualRegisterNum of the virtual register
+										on the AJA device to be read.
+		@param[out]	outValue			Receives the register value obtained from the device, automatically casted to the parameter's type.
+										Its type must be statically castable from ULWord (i.e. it must be a scalar).
+		@param[in]	inMask				Optionally specifies a bit mask to be applied after reading the device register.
+										Zero and 0xFFFFFFFF masks are ignored. Defaults to 0xFFFFFFFF (no masking).
+		@param[in]	inShift				Optionally specifies the number of bits to right-shift the value obtained
+										from the device register after the mask has been applied. Defaults to zero (no shift).
+		@note		This function should be used only when there is no higher-level function available to accomplish the desired task.
+		@note		The mask and shift parameters are ignored when reading a virtual register.
+	**/
+	template<typename T>	bool ReadRegister(const ULWord inRegisterNumber,  T & outValue,  const ULWord inMask = 0xFFFFFFFF,  const ULWord inShift = 0)
+							{
+								ULWord regValue(0);
+								bool result (ReadRegister(inRegisterNumber, regValue, inMask, inShift));
+								if (result)
+									outValue = T(regValue);
+								return result;
+							}
 
 	// Read multiple registers at once.
 	virtual bool ReadRegisterMulti(	ULWord numRegs,
@@ -207,8 +238,6 @@ public:
 	virtual bool ControlDriverDebugMessages(NTV2_DriverDebugMessageSet msgSet,
 		  									bool enable ) = 0;
 
-    virtual bool GetDriverVersion(ULWord* driverVersion) = 0;
-
 	/**
 		@return		True if the device is ready to be fully operable;  otherwise false.
 		@param[in]	inCheckValid	If true, additionally checks CNTV2Card::IsMBSystemValid. Defaults to false.
@@ -219,13 +248,16 @@ public:
     virtual bool		IsDeviceReady (bool inCheckValid = false);
 	virtual bool		IsMBSystemValid (void);
 	virtual bool		IsMBSystemReady (void);
-	virtual bool		IsKonaIPDevice (void);
+#if !defined(NTV2_DEPRECATE_15_0)
+	virtual inline bool	IsKonaIPDevice (void)			{return ::NTV2DeviceCanDoIP(GetDeviceID());}	///< @deprecated	Call CNTV2Card::IsIPDevice instead.
+#endif //	!defined(NTV2_DEPRECATE_12_7)
+	virtual inline bool	IsIPDevice (void)				{return ::NTV2DeviceCanDoIP(GetDeviceID());}	///< @return	True if I am an IP device (instead of SDI or HDMI).
 
 
     // Utility methods:
 	#if !defined (NTV2_DEPRECATE)
-		AJA_VIRTUAL NTV2_DEPRECATED NTV2BoardType	GetCompileFlag (void);
-		virtual NTV2_DEPRECATED inline bool			BoardOpened (void) const		{ return IsOpen (); }
+		AJA_VIRTUAL NTV2_DEPRECATED_f(NTV2BoardType	GetCompileFlag (void));
+		virtual inline NTV2_DEPRECATED_f(bool		BoardOpened (void) const)		{ return IsOpen (); }
 	#endif	//	!NTV2_DEPRECATE
 
 	/**
@@ -244,16 +276,16 @@ public:
 	virtual inline ULWord		GetAudioFrameBufferNumber (void) const				{ return (GetNumFrameBuffers () - 1); }
 	virtual inline ULWord		GetFrameBufferSize (void) const						{ return _ulFrameBufferSize; }
 
-	virtual NTV2_DEPRECATED bool DriverGetBitFileInformation (BITFILE_INFO_STRUCT & bitFileInfo,  NTV2BitFileType bitFileType = NTV2_VideoProcBitFile);	///< @deprecated	This function is obsolete.
+	virtual bool DriverGetBitFileInformation (BITFILE_INFO_STRUCT & bitFileInfo,  NTV2BitFileType bitFileType = NTV2_VideoProcBitFile);
 
 	virtual bool DriverGetBuildInformation (BUILD_INFO_STRUCT & outBuildInfo);
 
     virtual bool GetPackageInformation(PACKAGE_INFO_STRUCT & packageInfo);
 
 	// Functions for cards that support more than one bitfile
-
-	virtual NTV2_DEPRECATED bool SwitchBitfile (NTV2DeviceID boardID, NTV2BitfileType bitfile)		{ (void) boardID; (void) bitfile; return false; }	///< @deprecated	This function is obsolete.
-
+#if !defined(NTV2_DEPRECATE_12_7)
+	virtual inline NTV2_DEPRECATED_f(bool SwitchBitfile (NTV2DeviceID boardID, NTV2BitfileType bitfile))	{ (void) boardID; (void) bitfile; return false; }	///< @deprecated	This function is obsolete.
+#endif
 #if defined (NTV2_NUB_CLIENT_SUPPORT)
 	virtual inline const char *	GetHostName (void) const							{ return _hostname.c_str (); }
 
@@ -267,7 +299,9 @@ public:
     virtual inline bool						HevcSendMessage (HevcMessageHeader * /*pMessage*/)		{ return false; }
 
 protected:
-	virtual NTV2_DEPRECATED bool			DisplayNTV2Error (const char * str)		{ (void) str; return  false;}	///< @deprecated	This function is obsolete.
+#if !defined(NTV2_DEPRECATE_12_7)
+	virtual inline NTV2_DEPRECATED_f(bool	DisplayNTV2Error (const char * str))	{ (void) str; return  false;}	///< @deprecated	This function is obsolete.
+#endif
 #if defined (NTV2_NUB_CLIENT_SUPPORT)
 	virtual bool				OpenRemote (UWord inDeviceIndex,
 											bool displayErrorMessage,
@@ -306,7 +340,6 @@ protected:
 
     UWord					_boardNumber;			///< @brief	My device index number.
     bool					_boardOpened;			///< @brief	True if I'm open and connected to the device.
-    NTV2DeviceType			_boardType;				///< @brief	This is obsolete.
 	NTV2DeviceID			_boardID;				///< @brief	My cached device ID.
     bool					_displayErrorMessage;	///< @brief	This is obsolete.
 	ULWord					_pciSlot;				//	FIXFIXFIX	Replace this with a std::string that identifies my location in the host device tree.

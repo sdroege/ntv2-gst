@@ -1,15 +1,15 @@
 /**
 	@file		ntv2resample.h
 	@brief		Declares a number of pixel resampling functions.
-	@copyright	(C) 2004-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 #ifndef RESAMPLE_H
 #define RESAMPLE_H
 
 #include "ajaexport.h"
 #include "ajatypes.h"
-#include "fixed.h"
-#include "videodefines.h"
+#include "ntv2fixed.h"
+#include "ntv2videodefines.h"
 
 
 // ReSampleLine

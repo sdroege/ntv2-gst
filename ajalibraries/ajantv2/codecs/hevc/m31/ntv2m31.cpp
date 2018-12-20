@@ -1,7 +1,7 @@
 /**
 	@file		ntv2m31.cpp
 	@brief		Implementation of non-device-specific M31 class methods.
-	@copyright	(C) 2015-2017 AJA Video Systems, Inc.  Proprietary and Confidential information.
+	@copyright	(C) 2015-2018 AJA Video Systems, Inc.  Proprietary and Confidential information.
 **/
 
 #include "ntv2m31.h"
@@ -928,10 +928,10 @@ uint32_t CNTV2m31::GetPresetLinePitch(M31VideoPreset preset)
 
 	switch (pData->frameBufferFormat)
 	{
-	case NTV2_FBF_8BIT_YCBCR_420PL:
+    case NTV2_FBF_8BIT_YCBCR_420PL2:
 		linePitch = pData->pixelsPerLine;
 		break;
-	case NTV2_FBF_10BIT_YCBCR_422PL:
+    case NTV2_FBF_8BIT_YCBCR_422PL2:
 		linePitch = pData->pixelsPerLine * 10 / 8;
 		break;
 	case NTV2_FBF_8BIT_YCBCR:
@@ -958,10 +958,10 @@ uint32_t CNTV2m31::GetPresetPitchCount(M31VideoPreset preset)
 
 	switch (pData->frameBufferFormat)
 	{
-	case NTV2_FBF_8BIT_YCBCR_420PL:
+    case NTV2_FBF_8BIT_YCBCR_420PL2:
 		pitchCount = pData->linesPerFrame * 3 / 2;
 		break;
-	case NTV2_FBF_10BIT_YCBCR_422PL:
+    case NTV2_FBF_10BIT_YCBCR_422PL2:
 		pitchCount = pData->linesPerFrame * 2;
 		break;
 	case NTV2_FBF_8BIT_YCBCR:

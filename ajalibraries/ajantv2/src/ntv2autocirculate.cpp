@@ -1,21 +1,44 @@
 /**
 	@file		ntv2autocirculate.cpp
 	@brief		Implements the CNTV2Card AutoCirculate API functions.
-	@copyright	(C) 2004-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2card.h"
 #include "ntv2devicefeatures.h"
 #include "ntv2utils.h"
+#include "ajabase/system/lock.h"
+#include "ajabase/system/debug.h"
+#include "ajaanc/includes/ancillarylist.h"
+#include "ajaanc/includes/ancillarydata_timecode_atc.h"
+#include "ajabase/common/timecode.h"
 #include <iomanip>
 #include <assert.h>
+
+
 using namespace std;
+
 
 #if defined(_DEBUG)
 	//	Debug builds can clear Anc buffers during A/C capture
 	#define	AJA_NTV2_CLEAR_DEVICE_ANC_BUFFER_AFTER_CAPTURE_XFER		//	Requires non-zero kVRegZeroDeviceAncPostCapture
 	#define AJA_NTV2_CLEAR_HOST_ANC_BUFFER_TAIL_AFTER_CAPTURE_XFER	//	Requires non-zero kVRegZeroHostAncPostCapture
 #endif	//	_DEBUG
+
+//	Logging Macros
+#define ACINSTP(_p_)		" inst=" << HEX16(uint64_t(_p_))
+#define ACTHIS				ACINSTP(this)
+
+#define	ACFAIL(__x__)		AJA_sERROR  (AJA_DebugUnit_AutoCirculate, AJAFUNC << ": " << __x__)
+#define	ACWARN(__x__)		AJA_sWARNING(AJA_DebugUnit_AutoCirculate, AJAFUNC << ": " << __x__)
+#define	ACNOTE(__x__)		AJA_sNOTICE (AJA_DebugUnit_AutoCirculate, AJAFUNC << ": " << __x__)
+#define	ACINFO(__x__)		AJA_sINFO   (AJA_DebugUnit_AutoCirculate, AJAFUNC << ": " << __x__)
+#define	ACDBG(__x__)		AJA_sDEBUG  (AJA_DebugUnit_AutoCirculate, AJAFUNC << ": " << __x__)
+
+
+static const char	gFBAllocLockName[]	=	"com.aja.ntv2.mutex.FBAlloc";
+static AJALock		gFBAllocLock(gFBAllocLockName);	//	New in SDK 15:	Global mutex to avoid device frame buffer allocation race condition
+
 
 #if !defined (NTV2_DEPRECATE_12_6)
 static const NTV2Channel gCrosspointToChannel [] = {	/* NTV2CROSSPOINT_CHANNEL1	==>	*/	NTV2_CHANNEL1,
@@ -483,20 +506,14 @@ bool   CNTV2Card::GetAutoCirculate(NTV2Crosspoint channelSpec, AUTOCIRCULATE_STA
 
 bool CNTV2Card::FindUnallocatedFrames (const UByte inFrameCount, LWord & outStartFrame, LWord & outEndFrame)
 {
+	AUTOCIRCULATE_STATUS			acStatus;
+	typedef	std::set <uint16_t>		U16Set;
+	typedef U16Set::const_iterator	U16SetConstIter;
+	U16Set							allocatedFrameNumbers;
+	ULWord							isQuadMode1	(0);
+	ULWord							isQuadMode5	(0);
+
 	//	Look for a contiguous group of available frame buffers...
-	static const NTV2Crosspoint	gCrosspoints[] = {	NTV2CROSSPOINT_CHANNEL1,	NTV2CROSSPOINT_CHANNEL2,	NTV2CROSSPOINT_CHANNEL3,	NTV2CROSSPOINT_CHANNEL4,
-													NTV2CROSSPOINT_CHANNEL5,	NTV2CROSSPOINT_CHANNEL6,	NTV2CROSSPOINT_CHANNEL7,	NTV2CROSSPOINT_CHANNEL8,
-													NTV2CROSSPOINT_INPUT1,		NTV2CROSSPOINT_INPUT2,		NTV2CROSSPOINT_INPUT3,		NTV2CROSSPOINT_INPUT4,
-													NTV2CROSSPOINT_INPUT5,		NTV2CROSSPOINT_INPUT6,		NTV2CROSSPOINT_INPUT7,		NTV2CROSSPOINT_INPUT8 };
-	static const unsigned		nCrosspoints	(sizeof (gCrosspoints) / sizeof (NTV2Crosspoint));
-
-	AUTOCIRCULATE_STATUS_STRUCT			acStatus;
-	typedef	std::set <LWord>			LWordSet;
-	typedef LWordSet::const_iterator	LWordSetConstIter;
-	LWordSet							allocatedFrameNumbers;
-	ULWord								isQuadMode1	(0);
-	ULWord								isQuadMode5	(0);
-
 	outStartFrame = outEndFrame = 0;
 	if (!_boardOpened)
 		return false;
@@ -507,36 +524,31 @@ bool CNTV2Card::FindUnallocatedFrames (const UByte inFrameCount, LWord & outStar
 	GetQuadFrameEnable (isQuadMode5, NTV2_CHANNEL5);
 
 	//	Inventory all allocated frames...
-	for (unsigned ndx (0);  ndx < nCrosspoints;  ndx++)
-	{
-		const NTV2Crosspoint	xpt	(gCrosspoints [ndx]);
-		::memset (&acStatus, 0, sizeof (acStatus));
-
-		if (GetAutoCirculate (xpt, &acStatus)  &&  acStatus.state != NTV2_AUTOCIRCULATE_DISABLED)
+	for (NTV2Channel chan(NTV2_CHANNEL1);  chan < NTV2_MAX_NUM_CHANNELS;  chan = NTV2Channel(chan+1))
+		if (AutoCirculateGetStatus(chan, acStatus)  &&  !acStatus.IsStopped())
 		{
-			LWord	endFrameNum	(acStatus.endFrame);
+			uint16_t	endFrameNum	(acStatus.GetEndFrame());
 
 			//	Quadruple the number of allocated frame buffers if quad mode is enabled and this is channel 1 or 5...
-			if (isQuadMode1  &&  (xpt == NTV2CROSSPOINT_INPUT1 || xpt == NTV2CROSSPOINT_CHANNEL1))
-				endFrameNum = (acStatus.endFrame - acStatus.startFrame + 1) * 4  +  acStatus.startFrame  -  1;
-			else if (isQuadMode5  &&  (xpt == NTV2CROSSPOINT_INPUT5 || xpt == NTV2CROSSPOINT_CHANNEL5))
-				endFrameNum = (acStatus.endFrame - acStatus.startFrame + 1) * 4  +  acStatus.startFrame  -  1;
+			if (isQuadMode1  &&  chan == NTV2_CHANNEL1)
+				endFrameNum = acStatus.GetFrameCount() * 4  +  acStatus.GetStartFrame()  -  1;
+			else if (isQuadMode5  &&  chan == NTV2_CHANNEL5)
+				endFrameNum = acStatus.GetFrameCount() * 4  +  acStatus.GetStartFrame()  -  1;
 
-			for (LWord num (acStatus.startFrame);  num <= endFrameNum;  num++)
-				allocatedFrameNumbers.insert (num);
+			for (uint16_t num(acStatus.GetStartFrame());  num <= endFrameNum;  num++)
+				allocatedFrameNumbers.insert(num);
 		}	//	if A/C active
-	}	//	for each AutoCirculate crosspoint
 
 	//	Find a contiguous band of unallocated frame numbers...
-	const LWord			finalFrameNumber	(::NTV2DeviceGetNumberFrameBuffers (_boardID) - 1);
-	LWord				startFrameNumber	(0);
-	LWord				endFrameNumber		(startFrameNumber + inFrameCount - 1);
-	LWordSetConstIter	iter				(allocatedFrameNumbers.begin ());
+	const uint16_t		finalFrameNumber	(::NTV2DeviceGetNumberFrameBuffers(_boardID) - 1);
+	uint16_t			startFrameNumber	(0);
+	uint16_t			endFrameNumber		(startFrameNumber + inFrameCount - 1);
+	U16SetConstIter		iter				(allocatedFrameNumbers.begin());
 
-	while (iter != allocatedFrameNumbers.end ())
+	while (iter != allocatedFrameNumbers.end())
 	{
-		LWord	allocatedStartFrame	(*iter);
-		LWord	allocatedEndFrame	(allocatedStartFrame);
+		uint16_t	allocatedStartFrame	(*iter);
+		uint16_t	allocatedEndFrame	(allocatedStartFrame);
 
 		//	Find the end of this allocated band...
 		while (++iter != allocatedFrameNumbers.end ()  &&  *iter == (allocatedEndFrame + 1))
@@ -551,10 +563,14 @@ bool CNTV2Card::FindUnallocatedFrames (const UByte inFrameCount, LWord & outStar
 	}
 
 	if (startFrameNumber > finalFrameNumber || endFrameNumber > finalFrameNumber)
+	{
+		ACFAIL("Cannot find " << DEC(inFrameCount) << " unallocated frames");
 		return false;
+	}
 
-	outStartFrame = startFrameNumber;
-	outEndFrame = endFrameNumber;
+	outStartFrame = LWord(startFrameNumber);
+	outEndFrame = LWord(endFrameNumber);
+	ACDBG("Found unused " << DEC(UWord(inFrameCount)) << "-frame block (frames " << DEC(outStartFrame) << "-" << DEC(outEndFrame) << ")");
 	return true;
 
 }	//	FindUnallocatedFrames
@@ -586,21 +602,57 @@ bool CNTV2Card::AutoCirculateInitForInput (	const NTV2Channel		inChannel,
 											const UByte				inStartFrameNumber,
 											const UByte				inEndFrameNumber)
 {
-	LWord	startFrameNumber(0);
-	LWord	endFrameNumber	(0);
-
-	if (!NTV2_IS_VALID_CHANNEL (inChannel))
+	if (!NTV2_IS_VALID_CHANNEL(inChannel))
 		return false;	//	Must be valid channel
 	if (inNumChannels == 0)
 		return false;	//	At least one channel
+	if (!gFBAllocLock.IsValid())
+		return false;	//	Mutex not ready
 
-	if ((inEndFrameNumber - inStartFrameNumber) != 0)
+	AJAAutoLock	autoLock (&gFBAllocLock);	//	Avoid AutoCirculate buffer collisions
+	LWord	startFrameNumber(static_cast <LWord>(inStartFrameNumber));
+	LWord	endFrameNumber	(static_cast <LWord>(inEndFrameNumber));
+	if (inFrameCount)
 	{
-		startFrameNumber = inStartFrameNumber;
-		endFrameNumber = inEndFrameNumber;
+		if (inEndFrameNumber - inStartFrameNumber)
+			ACWARN ("Start and End frame numbers (" << DEC(startFrameNumber) << ", " << DEC(endFrameNumber)
+					<< ") specified with non-zero frame count (" << DEC(uint16_t(inFrameCount)) << ")");
+
+		if (!FindUnallocatedFrames (inFrameCount, startFrameNumber, endFrameNumber))
+			return false;
 	}
-	else if (!FindUnallocatedFrames (inFrameCount, startFrameNumber, endFrameNumber))
-		return false;
+	else if (endFrameNumber == 0  &&  startFrameNumber == 0)
+	{
+		ACFAIL ("Zero frames requested");
+		return false;	//	inFrameCount zero
+	}
+
+	if (endFrameNumber < startFrameNumber)
+	{
+		ACFAIL ("End frame (" << DEC(endFrameNumber) << ") < Start frame (" << DEC(startFrameNumber) << ")");
+		return false;	//	endFrame must be > startFrame
+	}
+	if ((endFrameNumber - startFrameNumber + 1) < 2)
+	{
+		ACFAIL ("Frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber) << " < 2 frames");
+		return false;	//	must be at least 2 frames
+	}
+
+	//	Warn about interference from other channels...
+	for (UWord chan(0);  chan < ::NTV2DeviceGetNumFrameStores(_boardID);  chan++)
+	{
+		ULWord		frameNum(0);
+		NTV2Mode	mode(NTV2_MODE_INVALID);
+		bool		isEnabled(false);
+		if (inChannel != chan)
+			if (IsChannelEnabled(NTV2Channel(chan), isEnabled)  &&  isEnabled)		//	FrameStore is enabled
+				if (GetMode(NTV2Channel(chan), mode)  &&  mode == NTV2_MODE_INPUT)	//	Channel is capturing
+					if (GetInputFrame(NTV2Channel(chan), frameNum))
+						if (frameNum >= ULWord(startFrameNumber)  &&  frameNum <= ULWord(endFrameNumber))	//	Frame in range
+							ACWARN ("FrameStore " << DEC(chan+1) << " is writing frame " << DEC(frameNum)
+									<< " -- will corrupt AutoCirculate channel " << DEC(inChannel+1) << " input frames "
+									<< DEC(startFrameNumber) << "-" << DEC(endFrameNumber));
+	}
 
 	//	Fill in our OS independent data structure...
 	AUTOCIRCULATE_DATA	autoCircData	(eInitAutoCirc);
@@ -621,7 +673,12 @@ bool CNTV2Card::AutoCirculateInitForInput (	const NTV2Channel		inChannel,
 	autoCircData.bVal7 = inOptionFlags & AUTOCIRCULATE_WITH_ANC ? true : false;
 	autoCircData.bVal8 = inOptionFlags & AUTOCIRCULATE_WITH_LTC ? true : false;
 
-	return AutoCirculate (autoCircData);	//	Call the OS-specific method
+	const bool result (AutoCirculate(autoCircData));	//	Call the OS-specific method
+	if (result)
+		ACINFO("Channel " << DEC(inChannel+1) << " initialized using frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber));
+	else
+		ACFAIL("Channel " << DEC(inChannel+1) << " initialization failed");
+	return result;
 
 }	//	AutoCirculateInitForInput
 
@@ -634,21 +691,56 @@ bool CNTV2Card::AutoCirculateInitForOutput (const NTV2Channel		inChannel,
 											const UByte				inStartFrameNumber,
 											const UByte				inEndFrameNumber)
 {
-	LWord	startFrameNumber(0);
-	LWord	endFrameNumber	(0);
-
-	if (!NTV2_IS_VALID_CHANNEL (inChannel))
+	if (!NTV2_IS_VALID_CHANNEL(inChannel))
 		return false;	//	Must be valid channel
 	if (inNumChannels == 0)
 		return false;	//	At least one channel
+	if (!gFBAllocLock.IsValid())
+		return false;	//	Mutex not ready
 
-	if ((inEndFrameNumber - inStartFrameNumber) != 0)
+	AJAAutoLock	autoLock (&gFBAllocLock);	//	Avoid AutoCirculate buffer collisions
+	LWord	startFrameNumber(static_cast <LWord>(inStartFrameNumber));
+	LWord	endFrameNumber	(static_cast <LWord>(inEndFrameNumber));
+	if (inFrameCount)
 	{
-		startFrameNumber = inStartFrameNumber;
-		endFrameNumber = inEndFrameNumber;
+		if (inEndFrameNumber - inStartFrameNumber)
+			ACWARN ("Start and End frame numbers (" << DEC(startFrameNumber) << ", " << DEC(endFrameNumber)
+					<< ") specified with non-zero frame count (" << DEC(uint16_t(inFrameCount)) << ")");
+
+		if (!FindUnallocatedFrames (inFrameCount, startFrameNumber, endFrameNumber))
+			return false;
 	}
-	else if (!FindUnallocatedFrames (inFrameCount, startFrameNumber, endFrameNumber))
-		return false;
+	else if (endFrameNumber == 0  &&  startFrameNumber == 0)
+	{
+		ACFAIL ("Zero frames requested");
+		return false;	//	inFrameCount zero
+	}
+
+	if (endFrameNumber < startFrameNumber)
+	{
+		ACFAIL ("End frame (" << DEC(endFrameNumber) << ") < Start frame (" << DEC(startFrameNumber) << ")");
+		return false;	//	endFrame must be > startFrame
+	}
+	if ((endFrameNumber - startFrameNumber + 1) < 2)
+	{
+		ACFAIL ("Frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber) << " < 2 frames");
+		return false;	//	must be at least 2 frames
+	}
+
+	for (UWord chan(0);  chan < ::NTV2DeviceGetNumFrameStores(_boardID);  chan++)
+	{
+		ULWord		frameNum(0);
+		NTV2Mode	mode(NTV2_MODE_INVALID);
+		bool		isEnabled(false);
+		if (inChannel != chan)
+			if (IsChannelEnabled(NTV2Channel(chan), isEnabled)  &&  isEnabled)		//	FrameStore is enabled
+				if (GetMode(NTV2Channel(chan), mode)  &&  mode == NTV2_MODE_INPUT)	//	Channel is capturing
+					if (GetInputFrame(NTV2Channel(chan), frameNum))
+						if (frameNum >= ULWord(startFrameNumber)  &&  frameNum <= ULWord(endFrameNumber))	//	Frame in range
+							ACWARN("FrameStore " << DEC(chan+1) << " is writing frame " << DEC(frameNum)
+								<< " -- will corrupt AutoCirculate channel " << DEC(inChannel+1) << " output frames "
+								<< DEC(startFrameNumber) << "-" << DEC(endFrameNumber));
+	}
 
 	//	Fill in our OS independent data structure...
 	AUTOCIRCULATE_DATA	autoCircData	(eInitAutoCirc);
@@ -669,7 +761,12 @@ bool CNTV2Card::AutoCirculateInitForOutput (const NTV2Channel		inChannel,
 	autoCircData.bVal7 = ((inOptionFlags & AUTOCIRCULATE_WITH_ANC) != 0) ? true : false;
 	autoCircData.bVal8 = ((inOptionFlags & AUTOCIRCULATE_WITH_LTC) != 0) ? true : false;
 
-	return AutoCirculate (autoCircData);	//	Call the OS-specific method
+	const bool result (AutoCirculate(autoCircData));	//	Call the OS-specific method
+	if (result)
+		ACINFO("Channel " << DEC(inChannel+1) << " initialized using frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber));
+	else
+		ACFAIL("Channel " << DEC(inChannel+1) << " initialization failed");
+	return result;
 
 }	//	AutoCirculateInitForOutput
 
@@ -681,7 +778,12 @@ bool CNTV2Card::AutoCirculateStart (const NTV2Channel inChannel, const ULWord64 
 	autoCircData.lVal2 = static_cast <LWord> (inStartTime & 0xFFFFFFFF);
 	if (!GetCurrentACChannelCrosspoint (*this, inChannel, autoCircData.channelSpec))
 		return false;
-	return AutoCirculate (autoCircData);
+	const bool result (AutoCirculate(autoCircData));
+	if (result)
+		ACINFO("Started channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Failed to start channel " << DEC(inChannel+1));
+	return result;
 }
 
 
@@ -700,16 +802,28 @@ bool CNTV2Card::AutoCirculateStop (const NTV2Channel inChannel, const bool inAbo
 	const bool	stopInputFailed		(!AutoCirculate (stopInput));
 	const bool	stopOutputFailed	(!AutoCirculate (stopOutput));
 	if (stopInputFailed && stopOutputFailed)
+	{
+		ACFAIL("Failed to stop channel " << DEC(inChannel+1));
 		return false;	//	Both failed
+	}
 	if (inAbort)
+	{
+		ACINFO("Aborted channel " << DEC(inChannel+1));
 		return true;	//	In abort case, no more to do!
+	}
 
 	//	Wait until driver changes AC state to DISABLED...
-	bool result = GetMode (inChannel, mode);
-	if (NTV2_IS_INPUT_MODE (mode))		WaitForInputFieldID (NTV2_FIELD0, inChannel);
-	if (NTV2_IS_OUTPUT_MODE (mode))		WaitForOutputFieldID (NTV2_FIELD0, inChannel);
-	if (AutoCirculateGetStatus (inChannel, acStatus)  &&  acStatus.acState != NTV2_AUTOCIRCULATE_DISABLED)
-		return AutoCirculateStop (inChannel, true);	//	something's wrong -- abort (WARNING: RECURSIVE CALL!)
+	bool result (GetMode(inChannel, mode));
+	if (NTV2_IS_INPUT_MODE(mode))
+		WaitForInputFieldID(NTV2_FIELD0, inChannel);
+	if (NTV2_IS_OUTPUT_MODE(mode))
+		WaitForOutputFieldID(NTV2_FIELD0, inChannel);
+	if (AutoCirculateGetStatus(inChannel, acStatus)  &&  acStatus.acState != NTV2_AUTOCIRCULATE_DISABLED)
+	{
+		ACWARN("Failed to stop channel " << DEC(inChannel+1) << " -- retrying with ABORT");
+		return AutoCirculateStop(inChannel, true);	//	something's wrong -- abort (WARNING: RECURSIVE CALL!)
+	}
+	ACINFO("Stopped channel " << DEC(inChannel+1));
 	return result;
 
 }	//	AutoCirculateStop
@@ -722,7 +836,13 @@ bool CNTV2Card::AutoCirculatePause (const NTV2Channel inChannel)
 	autoCircData.bVal1		= false;
 	if (!GetCurrentACChannelCrosspoint (*this, inChannel, autoCircData.channelSpec))
 		return false;
-	return AutoCirculate (autoCircData);
+
+	const bool result(AutoCirculate(autoCircData));
+	if (result)
+		ACINFO("Paused channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Failed to pause channel " << DEC(inChannel+1));
+	return result;
 
 }	//	AutoCirculatePause
 
@@ -735,7 +855,13 @@ bool CNTV2Card::AutoCirculateResume (const NTV2Channel inChannel, const bool inC
 	autoCircData.bVal2 = inClearDropCount;
 	if (!GetCurrentACChannelCrosspoint (*this, inChannel, autoCircData.channelSpec))
 		return false;
-	return AutoCirculate (autoCircData);
+
+	const bool result(AutoCirculate(autoCircData));
+	if (result)
+		ACINFO("Resumed channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Failed to resume channel " << DEC(inChannel+1));
+	return result;
 
 }	//	AutoCirculateResume
 
@@ -747,7 +873,13 @@ bool CNTV2Card::AutoCirculateFlush (const NTV2Channel inChannel, const bool inCl
     autoCircData.bVal1 = inClearDropCount;
 	if (!GetCurrentACChannelCrosspoint (*this, inChannel, autoCircData.channelSpec))
 		return false;
-	return AutoCirculate (autoCircData);
+
+	const bool result(AutoCirculate(autoCircData));
+	if (result)
+		ACINFO("Flushed channel " << DEC(inChannel+1) << ", " << (inClearDropCount?"cleared":"retained") << " drop count");
+	else
+		ACFAIL("Failed to flush channel " << DEC(inChannel+1));
+	return result;
 
 }	//	AutoCirculateFlush
 
@@ -759,7 +891,13 @@ bool CNTV2Card::AutoCirculatePreRoll (const NTV2Channel inChannel, const ULWord 
 	autoCircData.lVal1 = inPreRollFrames;
 	if (!GetCurrentACChannelCrosspoint (*this, inChannel, autoCircData.channelSpec))
 		return false;
-	return AutoCirculate (autoCircData);
+
+	const bool result(AutoCirculate(autoCircData));
+	if (result)
+		ACINFO("Prerolled " << DEC(inPreRollFrames) << " frame(s) on channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Failed to preroll " << DEC(inPreRollFrames) << " frame(s) on channel " << DEC(inChannel+1));
+	return result;
 
 }	//	AutoCirculatePreRoll
 
@@ -782,48 +920,22 @@ bool CNTV2Card::AutoCirculateGetStatus (const NTV2Channel inChannel, AUTOCIRCULA
 	if (_remoteHandle != INVALID_NUB_HANDLE)
 		return false;
 #endif	//	defined (NTV2_NUB_CLIENT_SUPPORT)
-	if (!NTV2Message (reinterpret_cast <NTV2_HEADER *> (&outStatus)))
-	{
-		//	Try it the old way...
-		AUTOCIRCULATE_STATUS_STRUCT	tmpStruct;
-		::memset (&tmpStruct, 0, sizeof (tmpStruct));
-
-		tmpStruct.channelSpec = ::NTV2ChannelToInputCrosspoint (inChannel);
-		GetAutoCirculate (tmpStruct.channelSpec, &tmpStruct);
-		if (tmpStruct.state != NTV2_AUTOCIRCULATE_DISABLED)
-			return outStatus.CopyFrom (tmpStruct);
-
-		tmpStruct.channelSpec = ::NTV2ChannelToOutputCrosspoint (inChannel);
-		GetAutoCirculate (tmpStruct.channelSpec, &tmpStruct);
-		if (tmpStruct.state != NTV2_AUTOCIRCULATE_DISABLED)
-			return outStatus.CopyFrom (tmpStruct);
-
-		AUTOCIRCULATE_STATUS	notRunning (::NTV2ChannelToOutputCrosspoint (inChannel));
-		outStatus = notRunning;
-		return true;	//	AutoCirculate not running on this channel
-	}
-	return true;
+	const bool result(NTV2Message(reinterpret_cast<NTV2_HEADER *>(&outStatus)));
+	if (result)
+		ACDBG("GetStatus successful on channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Failed to get status on channel " << DEC(inChannel+1));
+	return result;
 
 }	//	AutoCirculateGetStatus
 
 
 bool CNTV2Card::AutoCirculateGetFrameStamp (const NTV2Channel inChannel, const ULWord inFrameNum, FRAME_STAMP & outFrameStamp)
 {
-	//	Try the new driver call first...
+	//	Use the new driver call...
 	outFrameStamp.acFrameTime = LWord64 (inChannel);
 	outFrameStamp.acRequestedFrame = inFrameNum;
-	if (!NTV2Message (reinterpret_cast <NTV2_HEADER *> (&outFrameStamp)))
-	{
-		//	Fail -- try it the old way...
-		NTV2Crosspoint		crosspoint	(NTV2CROSSPOINT_INVALID);
-		if (!GetCurrentACChannelCrosspoint (*this, inChannel, crosspoint))
-			return false;
-
-		//	Use the old A/C driver call...
-		FRAME_STAMP_STRUCT	oldFrameStampStruct;
-		return GetFrameStamp (crosspoint, inFrameNum, &oldFrameStampStruct)  &&  outFrameStamp.SetFrom (oldFrameStampStruct);
-	}
-	return true;
+	return NTV2Message (reinterpret_cast <NTV2_HEADER *> (&outFrameStamp));
 
 }	//	AutoCirculateGetFrameStamp
 
@@ -835,7 +947,13 @@ bool CNTV2Card::AutoCirculateSetActiveFrame (const NTV2Channel inChannel, const 
 	autoCircData.lVal1 = inNewActiveFrame;
 	if (!GetCurrentACChannelCrosspoint (*this, inChannel, autoCircData.channelSpec))
 		return false;
-	return AutoCirculate (autoCircData);
+
+	const bool result(AutoCirculate(autoCircData));
+	if (result)
+		ACINFO("Set active frame to " << DEC(inNewActiveFrame) << " on channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Failed to set active frame to " << DEC(inNewActiveFrame) << " on channel " << DEC(inChannel+1));
+	return result;
 
 }	//	AutoCirculateSetActiveFrame
 
@@ -868,69 +986,75 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 			inOutXferInfo.SetAllOutputTimeCodes (pArray [NTV2_TCINDEX_DEFAULT]);
 	}
 
-	//	Use the new A/C driver call...
-	bool	result	(false);
-	inOutXferInfo.acCrosspoint = crosspoint;
-	result = NTV2Message (reinterpret_cast <NTV2_HEADER *> (&inOutXferInfo));
+	if (NTV2DeviceCanDo2110(_boardID))
+		if (NTV2_IS_OUTPUT_CROSSPOINT(crosspoint)  &&  inOutXferInfo.acOutputTimeCodes  &&  (inOutXferInfo.GetAncBuffer(true) || inOutXferInfo.GetAncBuffer(false)))
+			S2110AddTimecodesToAncBuffers(inChannel, inOutXferInfo);
+
+	/////////////////////////////////////////////////////////////////////////////
+		//	Call the driver...
+		bool	result	(false);
+		inOutXferInfo.acCrosspoint = crosspoint;
+		result = NTV2Message (reinterpret_cast <NTV2_HEADER *> (&inOutXferInfo));
+	/////////////////////////////////////////////////////////////////////////////
+
 	if (result  &&  taskMode == NTV2_STANDARD_TASKS  &&  NTV2_IS_INPUT_CROSSPOINT (crosspoint))
 	{
-		//	Hack for retail mode capture
+		//	After 12.? shipped, we discovered problems with timecode capture in our classic retail stuff.
+		//	The acTimeCodes[NTV2_TCINDEX_DEFAULT] was coming up empty.
+		//	Rather than fix all three drivers -- the Right, but Difficult Thing To Do --
+		//	we decided to do the Easy Thing, here, in user-space.
+
+		//	First, determine the ControlPanel's current Input source (SDIIn1/HDMIIn1 or SDIIn2/HDMIIn2)...
 		ULWord	inputSelect	(NTV2_Input1Select);
-		ReadRegister (kVRegInputSelect, &inputSelect);
-		if (inputSelect == NTV2_Input2Select)
+		ReadRegister (kVRegInputSelect, inputSelect);
+		const bool	bIsInput2	(inputSelect == NTV2_Input2Select);
+
+		//	Next, determine the ControlPanel's current TimeCode source (LTC? VITC1? VITC2)...
+		RP188SourceSelect TimecodeSource(kRP188SourceEmbeddedLTC);
+		CNTV2DriverInterface::ReadRegister(kVRegRP188SourceSelect, TimecodeSource);
+
+		//	Now convert that into an NTV2TCIndex...
+		NTV2TCIndex TimecodeIndex = NTV2_TCINDEX_DEFAULT;
+		switch (TimecodeSource)
 		{
-			//	Copy input 2 tc into default location
-			RP188SourceSelect TimecodeSource;
-			ReadRegister(kVRegRP188SourceSelect, (ULWord*)&TimecodeSource);
-			NTV2TCIndex TimecodeIndex = NTV2_TCINDEX_DEFAULT;
-			switch (TimecodeSource)
-			{
-				case kRP188SourceEmbeddedLTC:		TimecodeIndex = NTV2_TCINDEX_SDI2_LTC;		break;
-				case kRP188SourceEmbeddedVITC1:		TimecodeIndex = NTV2_TCINDEX_SDI2;			break;
-				case kRP188SourceEmbeddedVITC2:		TimecodeIndex = NTV2_TCINDEX_SDI2_2;		break;
-				case kRP188SourceLTCPort:			TimecodeIndex = NTV2_TCINDEX_LTC1;			break;
-				default:							TimecodeIndex = NTV2_TCINDEX_SDI2_LTC;		break;
-			}
-			NTV2_RP188	tcValue;
-			inOutXferInfo.GetInputTimeCode(tcValue, TimecodeIndex);
-			NTV2_RP188 *	pArray	(reinterpret_cast <NTV2_RP188 *> (inOutXferInfo.acTransferStatus.acFrameStamp.acTimeCodes.GetHostPointer()));
-			if (pArray)
-				pArray [NTV2_TCINDEX_DEFAULT] = tcValue;
+			default:
+			case kRP188SourceEmbeddedLTC:		TimecodeIndex = bIsInput2 ? NTV2_TCINDEX_SDI2_LTC : NTV2_TCINDEX_SDI1_LTC;	break;
+			case kRP188SourceEmbeddedVITC1:		TimecodeIndex = bIsInput2 ? NTV2_TCINDEX_SDI2     : NTV2_TCINDEX_SDI1;		break;
+			case kRP188SourceEmbeddedVITC2:		TimecodeIndex = bIsInput2 ? NTV2_TCINDEX_SDI2_2   : NTV2_TCINDEX_SDI1_2;	break;
+			case kRP188SourceLTCPort:			TimecodeIndex = NTV2_TCINDEX_LTC1;											break;
 		}
-		else
-		{
-			//	Copy input 2 tc into input 1...
-			RP188SourceSelect TimecodeSource;
-			ReadRegister(kVRegRP188SourceSelect, (ULWord*)&TimecodeSource);
-			NTV2TCIndex TimecodeIndex = NTV2_TCINDEX_DEFAULT;
-			switch (TimecodeSource)
-			{
-				case kRP188SourceEmbeddedLTC:		TimecodeIndex = NTV2_TCINDEX_SDI1_LTC;		break;
-				case kRP188SourceEmbeddedVITC1:		TimecodeIndex = NTV2_TCINDEX_SDI1;			break;
-				case kRP188SourceEmbeddedVITC2:		TimecodeIndex = NTV2_TCINDEX_SDI1_2;		break;
-				case kRP188SourceLTCPort:			TimecodeIndex = NTV2_TCINDEX_LTC1;			break;
-				default:							TimecodeIndex = NTV2_TCINDEX_SDI1_LTC;		break;
-			}
-			NTV2_RP188	tcValue;
-			inOutXferInfo.GetInputTimeCode(tcValue, TimecodeIndex);
-			NTV2_RP188 *	pArray(reinterpret_cast <NTV2_RP188 *> (inOutXferInfo.acTransferStatus.acFrameStamp.acTimeCodes.GetHostPointer()));
-			if (pArray)
-				pArray[NTV2_TCINDEX_DEFAULT] = tcValue;
+
+		//	Fetch the TimeCode value that's in that NTV2TCIndex slot...
+		NTV2_RP188	tcValue;
+		inOutXferInfo.GetInputTimeCode(tcValue, TimecodeIndex);
+		if (TimecodeIndex == NTV2_TCINDEX_LTC1)
+		{	//	Special case for external LTC:
+			//	Our driver currently returns all-zero DBB values for external LTC.
+			//	It should probably at least set DBB BIT(17) "selected RP188 received" if external LTC is present.
+			//	Ticket 3367: Our QuickTime 'vdig' relies on DBB BIT(17) being set, or it assumes timecode is invalid
+			if (tcValue.fLo  &&  tcValue.fHi  &&  tcValue.fLo != 0xFFFFFFFF  &&  tcValue.fHi != 0xFFFFFFFF)
+				tcValue.fDBB |= 0x00020000;
 		}
+
+		//	Valid or not, stuff that TimeCode value into inOutXferInfo.acTransferStatus.acFrameStamp.acTimeCodes[NTV2_TCINDEX_DEFAULT]...
+		NTV2_RP188 *	pArray	(reinterpret_cast <NTV2_RP188 *> (inOutXferInfo.acTransferStatus.acFrameStamp.acTimeCodes.GetHostPointer()));
+		if (pArray)
+			pArray [NTV2_TCINDEX_DEFAULT] = tcValue;
 	}	//	if NTV2Message OK && retail mode && capturing
+
 	#if defined (AJA_NTV2_CLEAR_DEVICE_ANC_BUFFER_AFTER_CAPTURE_XFER)
 		if (result  &&  NTV2_IS_INPUT_CROSSPOINT(crosspoint))
 		{
 			ULWord	doZeroing	(0);
-			if (ReadRegister(kVRegZeroDeviceAncPostCapture, &doZeroing)  &&  doZeroing)
+			if (ReadRegister(kVRegZeroDeviceAncPostCapture, doZeroing)  &&  doZeroing)
 			{	//	Zero out the Anc buffer on the device...
 				static NTV2_POINTER	gClearDeviceAncBuffer;
 				const LWord		xferFrame	(inOutXferInfo.GetTransferFrameNumber());
 				ULWord			ancOffsetF1	(0);
 				ULWord			ancOffsetF2	(0);
 				NTV2Framesize	fbSize		(NTV2_FRAMESIZE_INVALID);
-				ReadRegister(kVRegAncField1Offset, &ancOffsetF1);
-				ReadRegister(kVRegAncField2Offset, &ancOffsetF2);
+				ReadRegister(kVRegAncField1Offset, ancOffsetF1);
+				ReadRegister(kVRegAncField2Offset, ancOffsetF2);
 				GetFrameBufferSize(inChannel, fbSize);
 				const ULWord	fbByteCount	(::NTV2FramesizeToByteCount(fbSize));
 				const ULWord	ancOffset	(ancOffsetF2 > ancOffsetF1  ?  ancOffsetF2  :  ancOffsetF1);	//	Use whichever is larger
@@ -951,16 +1075,17 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 			}
 		}
 	#endif	//	AJA_NTV2_CLEAR_DEVICE_ANC_BUFFER_AFTER_CAPTURE_XFER
+
 	#if defined (AJA_NTV2_CLEAR_HOST_ANC_BUFFER_TAIL_AFTER_CAPTURE_XFER)
 		if (result  &&  NTV2_IS_INPUT_CROSSPOINT(crosspoint))
 		{
 			ULWord	doZeroing	(0);
-			if (ReadRegister(kVRegZeroHostAncPostCapture, &doZeroing)  &&  doZeroing)
+			if (ReadRegister(kVRegZeroHostAncPostCapture, doZeroing)  &&  doZeroing)
 			{	//	Zero out everything past the last captured Anc byte in the client's host buffer(s)... 
 				NTV2_POINTER &	clientAncBufferF1	(inOutXferInfo.acANCBuffer);
 				NTV2_POINTER &	clientAncBufferF2	(inOutXferInfo.acANCField2Buffer);
-				const ULWord	ancF1ByteCount		(inOutXferInfo.GetAncByteCount(false));
-				const ULWord	ancF2ByteCount		(inOutXferInfo.GetAncByteCount(true));
+				const ULWord	ancF1ByteCount		(inOutXferInfo.GetCapturedAncByteCount(false));
+				const ULWord	ancF2ByteCount		(inOutXferInfo.GetCapturedAncByteCount(true));
 				void *			pF1TailEnd			(clientAncBufferF1.GetHostAddress(ancF1ByteCount));
 				void *			pF2TailEnd			(clientAncBufferF2.GetHostAddress(ancF2ByteCount));
 				if (pF1TailEnd  &&  clientAncBufferF1.GetByteCount() > ancF1ByteCount)
@@ -970,6 +1095,99 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 			}
 		}
 	#endif	//	AJA_NTV2_CLEAR_HOST_ANC_BUFFER_TAIL_AFTER_CAPTURE_XFER
+	if (result)
+		ACDBG("Transfer successful for channel " << DEC(inChannel+1));
+	else
+		ACFAIL("Transfer failed on channel " << DEC(inChannel+1));
 	return result;
 
 }	//	AutoCirculateTransfer
+
+
+static const AJA_FrameRate	sAJARate2NTV2Rate[] = {	AJA_FrameRate_Unknown,	//	NTV2_FRAMERATE_UNKNOWN	= 0,
+													AJA_FrameRate_6000,		//	NTV2_FRAMERATE_6000		= 1,
+													AJA_FrameRate_5994,		//	NTV2_FRAMERATE_5994		= 2,
+													AJA_FrameRate_3000,		//	NTV2_FRAMERATE_3000		= 3,
+													AJA_FrameRate_2997,		//	NTV2_FRAMERATE_2997		= 4,
+													AJA_FrameRate_2500,		//	NTV2_FRAMERATE_2500		= 5,
+													AJA_FrameRate_2400,		//	NTV2_FRAMERATE_2400		= 6,
+													AJA_FrameRate_2398,		//	NTV2_FRAMERATE_2398		= 7,
+													AJA_FrameRate_5000,		//	NTV2_FRAMERATE_5000		= 8,
+													AJA_FrameRate_4800,		//	NTV2_FRAMERATE_4800		= 9,
+													AJA_FrameRate_4795,		//	NTV2_FRAMERATE_4795		= 10,
+													AJA_FrameRate_12000,	//	NTV2_FRAMERATE_12000	= 11,
+													AJA_FrameRate_11988,	//	NTV2_FRAMERATE_11988	= 12,
+													AJA_FrameRate_1500,		//	NTV2_FRAMERATE_1500		= 13,
+													AJA_FrameRate_1498,		//	NTV2_FRAMERATE_1498		= 14,
+													AJA_FrameRate_1900,		//	NTV2_FRAMERATE_1900		= 15,	// Formerly 09 in older SDKs
+													AJA_FrameRate_1898,		//	NTV2_FRAMERATE_1898		= 16, 	// Formerly 10 in older SDKs
+													AJA_FrameRate_1800,		//	NTV2_FRAMERATE_1800		= 17,	// Formerly 11 in older SDKs
+													AJA_FrameRate_1798};	//	NTV2_FRAMERATE_1798		= 18,	// Formerly 12 in older SDKs
+
+bool CNTV2Card::S2110AddTimecodesToAncBuffers (const NTV2Channel inChannel, AUTOCIRCULATE_TRANSFER & inOutXferInfo)
+{
+	//	IP 2110 Playout only:	Add relevant transmit timecodes to outgoing Anc
+	NTV2FrameRate		ntv2Rate		(NTV2_FRAMERATE_UNKNOWN);
+	bool				result			(GetFrameRate(ntv2Rate, inChannel));
+	bool				isProgressive	(false);
+	NTV2Standard		standard		(NTV2_STANDARD_INVALID);
+	NTV2_POINTER &		ancF1			(inOutXferInfo.acANCBuffer);
+	NTV2_POINTER &		ancF2			(inOutXferInfo.acANCField2Buffer);
+	AJAAncillaryList	pkts;
+
+	if (!result)
+		return false;	//	Can't get frame rate
+	if (!NTV2_IS_VALID_NTV2FrameRate(ntv2Rate))
+		return false;	//	Bad frame rate
+	if (!IsProgressiveStandard(isProgressive, inChannel))
+		return false;	//	Can't get isProgressive
+	if (!GetStandard(standard, inChannel))
+		return false;	//	Can't get standard
+	if (AJA_FAILURE(AJAAncillaryList::SetFromIPAncData(ancF1, ancF2, pkts)))
+		return false;	//	Packet import failed
+
+	const NTV2SmpteLineNumber	smpteLineNumInfo	(::GetSmpteLineNumber(standard));
+	const uint32_t				F2StartLine			(smpteLineNumInfo.GetFirstActiveLine(NTV2_FIELD1));
+	const AJA_FrameRate			ajaRate				(sAJARate2NTV2Rate[ntv2Rate]);
+	const AJATimeBase			ajaTB				(ajaRate);
+	const NTV2TCIndexes			tcIndexes			(::GetTCIndexesForSDIConnector(inChannel));
+	const size_t				maxNumTCs			(inOutXferInfo.acOutputTimeCodes.GetByteCount() / sizeof(NTV2_RP188));
+	NTV2_RP188 *				pTimecodes			(reinterpret_cast<NTV2_RP188*>(inOutXferInfo.acOutputTimeCodes.GetHostPointer()));
+
+	//	For each timecode index for this channel...
+	for (NTV2TCIndexesConstIter it(tcIndexes.begin());  it != tcIndexes.end();  ++it)
+	{
+		const NTV2TCIndex	tcNdx(*it);
+		if (size_t(tcNdx) >= maxNumTCs)
+			continue;	//	Skip -- not in the array
+		if (!NTV2_IS_SDI_TIMECODE_INDEX(tcNdx))
+			continue;	//	Skip -- analog or invalid
+
+		const NTV2_RP188	regTC	(pTimecodes[tcNdx]);
+		if (!regTC)
+			continue;	//	Skip -- invalid timecode (all FFs)
+
+		const bool	isDF (ajaTB.IsNonIntegralRatio());
+		AJATimeCode						tc;		tc.SetRP188(regTC.fDBB, regTC.fLo, regTC.fHi, ajaTB);
+		AJAAncillaryData_Timecode_ATC	atc;	atc.SetTimecode (tc, ajaTB, isDF);
+		atc.AJAAncillaryData_Timecode_ATC::SetDBB (uint8_t(regTC.fDBB & 0x000000FF), uint8_t(regTC.fDBB & 0x0000FF00 >> 8));
+		if (NTV2_IS_ATC_VITC2_TIMECODE_INDEX(tcNdx))	//	VITC2?
+			atc.SetDBB1PayloadType(AJAAncillaryData_Timecode_ATC_DBB1PayloadType_VITC2);
+		else
+		{	//	F1
+			if (NTV2_IS_ATC_VITC1_TIMECODE_INDEX(tcNdx))	//	VITC1?
+				atc.SetDBB1PayloadType(AJAAncillaryData_Timecode_ATC_DBB1PayloadType_VITC1);
+			else if (NTV2_IS_ATC_LTC_TIMECODE_INDEX(tcNdx))	//	LTC?
+				atc.SetDBB1PayloadType(AJAAncillaryData_Timecode_ATC_DBB1PayloadType_LTC);
+			else
+				continue;
+		}
+		atc.GeneratePayloadData();
+		pkts.AddAncillaryData(atc);
+	}	//	for each timecode index value
+
+	pkts.SortListByLocation();
+	ancF1.Fill(ULWord(0));	ancF2.Fill(ULWord(0));
+	return AJA_SUCCESS(pkts.GetIPTransmitData (ancF1, ancF2, isProgressive, F2StartLine));
+
+}	//	S2110AddTimecodesToAncBuffers

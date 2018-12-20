@@ -23,7 +23,7 @@
 #include <netinet/in.h>	// htons and friends
 #endif
 
-#define MAXBITFILE_HEADERSIZE 256
+#define MAXBITFILE_HEADERSIZE 512
 #define MAXMCSINFOSIZE 256
 #define MAXMCSLICENSESIZE 256
 #define MCS_STEPS      6
@@ -37,7 +37,7 @@ typedef enum
 	SOC2_FLASHBLOCK,
 	MAC_FLASHBLOCK,
 	MCS_INFO_BLOCK,
-	LICENSE_BLOCK,
+	LICENSE_BLOCK
 }FlashBlockID;
 
 typedef enum
@@ -51,6 +51,7 @@ typedef enum
 struct MacAddr
 {
 	uint8_t mac[6];
+	std::string AsString(void) const;
 };
 
 
@@ -59,31 +60,31 @@ class AJAExport CNTV2KonaFlashProgram : public CNTV2Card
 public:
 	CNTV2KonaFlashProgram();
 
-	CNTV2KonaFlashProgram (const UWord boardNumber, const bool displayErrorMessage = false,
-		const UWord ulBoardType = DEVICETYPE_NTV2);	//	 | BOARDTYPE_AJAXENA2);
+	CNTV2KonaFlashProgram (const UWord boardNumber);
 
 	virtual ~CNTV2KonaFlashProgram();
 
 public:
-	virtual bool	SetBoard (UWord boardNumber, NTV2DeviceType boardType = DEVICETYPE_NTV2, uint32_t index = 0);
+	virtual bool	SetBoard (UWord boardNumber, uint32_t index = 0);
 	bool			ReadHeader (FlashBlockID flashBlock);
 	bool			ReadInfoString();
 	void			SetBitFile (const char *bitFileName, FlashBlockID blockNumber = AUTO_FLASHBLOCK);
 	bool			SetMCSFile (const char *sMCSFileName);
-    void			Program (bool verify = true);
+    void			Program (bool fullVerify = false);
     bool            ProgramFromMCS(bool verify);
     bool            ProgramSOC(bool verify = true);
 	void			ProgramCustom ( const char *sCustomFileName, const uint32_t addr);
 	void			EraseBlock (FlashBlockID blockNumber);
 	bool			EraseChip (UWord chip = 0);
-	bool			CreateSRecord ();
+	bool			CreateSRecord (bool bChangeEndian);
 	bool			CreateEDIDIntelRecord ();
     void			SetQuietMode ();
-	bool			VerifyFlash (FlashBlockID flashBlockNumber);
+	bool			VerifyFlash (FlashBlockID flashBlockNumber, bool fullVerify = false);
 	bool			SetBankSelect (BankSelect bankNumber);
 	bool			SetFlashBlockIDBank(FlashBlockID blockID);
     bool            ROMHasBankSelect();
 	uint32_t			ReadBankSelect ();
+    void            SetMBReset();
 
 	std::string & GetDesignName()
 	{
@@ -240,6 +241,7 @@ public:
     int32_t               _mcsStep;
     CNTV2MCSfile	_mcsFile;
 	std::vector<uint8_t> _partitionBuffer;
+    uint32_t        _failSafePadding;
 
 	typedef enum {
 		READID_COMMAND=0x9F,

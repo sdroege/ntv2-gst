@@ -1,7 +1,7 @@
 /**
 	@file		ntv2debug.cpp
 	@brief		Implements the NTV2 debug output functions.
-	@copyright	(C) 2004-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		Because this module is compiled into the driver, it must remain straight ANSI 'C' -- no C++ or STL.
 **/
 
@@ -9,6 +9,7 @@
 #include "ntv2debug.h"
 
 
+#if !defined(NTV2_DEPRECATE_14_3)
 const char * NTV2DeviceTypeString (NTV2DeviceType type)
 {
 	const char *result = "";
@@ -24,183 +25,98 @@ const char * NTV2DeviceTypeString (NTV2DeviceType type)
 
 	return (result);
 }
+#endif	//	!defined(NTV2_DEPRECATE_14_3)
 
 
 const char * NTV2DeviceIDString (const NTV2DeviceID id)
 {
 	switch (id)
 	{
-	#if !defined (NTV2_DEPRECATE)
-		case BOARD_ID_XENA_SD:
-		case BOARD_ID_XENA_SD22:
-		case BOARD_ID_XENA_HD:
-		case BOARD_ID_XENA_HD22:
-		case BOARD_ID_HDNTV2:
-		case BOARD_ID_KSD11:
-		//case BOARD_ID_XENA_SD_MM:
-		case BOARD_ID_KSD22:
-		//case BOARD_ID_XENA_SD22_MM:
-		case BOARD_ID_KHD11:
-		//case BOARD_ID_XENA_HD_MM:
-		case BOARD_ID_XENA_HD22_MM:
-		case BOARD_ID_HDNTV2_MM:
-		case BOARD_ID_KONA_SD:
-		case BOARD_ID_KONA_HD:
-		case BOARD_ID_KONA_HD2:
-		case BOARD_ID_KONAR:
-		case BOARD_ID_KONAR_MM:
-		case BOARD_ID_KONA2:
-		case BOARD_ID_HDNTV:
-		case BOARD_ID_KONALS:
-		//case BOARD_ID_XENALS:
-		case BOARD_ID_KONAHDS:
-		//case BOARD_ID_KONALH:
-		//case BOARD_ID_XENALH:
-		case BOARD_ID_XENADXT:
-		//case BOARD_ID_XENAHS:
-		case BOARD_ID_KONAX:
-		case BOARD_ID_XENAX:
-		case BOARD_ID_XENAHS2:
-		case BOARD_ID_FS1:
-		case BOARD_ID_FS2:
-		case BOARD_ID_MOAB:
-		case BOARD_ID_XENAX2:
-		case BOARD_ID_BORG:
-		case BOARD_ID_BONES:
-		case BOARD_ID_BARCLAY:
-		case BOARD_ID_KIPRO_QUAD:
-		case BOARD_ID_KIPRO_SPARE1:
-		case BOARD_ID_KIPRO_SPARE2:
-		case BOARD_ID_FORGE:			break;
-
-		//case BOARD_ID_KONA3:
-        case BOARD_ID_XENA2:						return "BOARD_ID_KONA3";						break;
-        case BOARD_ID_LHI_T:						return "BOARD_ID_LHI_T";						break;
-	#endif	//	!defined (NTV2_DEPRECATE)
-        case DEVICE_ID_KONALHI:						return "DEVICE_ID_KONALHI";						break;
-        case DEVICE_ID_KONALHIDVI:					return "DEVICE_ID_KONALHIDVI";					break;
-        case DEVICE_ID_IOEXPRESS:					return "DEVICE_ID_IOEXPRESS";					break;
-        case DEVICE_ID_CORVID1:						return "DEVICE_ID_CORVID1";						break;
-        case DEVICE_ID_CORVID22:					return "DEVICE_ID_CORVID22";					break;
-        case DEVICE_ID_CORVID3G:					return "DEVICE_ID_CORVID3G";					break;
-        case DEVICE_ID_KONA3G:						return "DEVICE_ID_KONA3G";						break;
-        case DEVICE_ID_KONA3GQUAD:					return "DEVICE_ID_KONA3GQUAD";					break;
-        case DEVICE_ID_KONALHEPLUS:					return "DEVICE_ID_KONALHEPLUS";					break;
-        case DEVICE_ID_IOXT:						return "DEVICE_ID_IOXT";						break;
-        case DEVICE_ID_CORVID24:					return "DEVICE_ID_CORVID24";					break;
-        case DEVICE_ID_TTAP:						return "DEVICE_ID_TTAP";						break;
-        case DEVICE_ID_IO4K:						return "DEVICE_ID_IO4K";						break;
-        case DEVICE_ID_IO4KUFC:						return "DEVICE_ID_IO4KUFC";						break;
-        case DEVICE_ID_KONA4:						return "DEVICE_ID_KONA4";						break;
-        case DEVICE_ID_KONA4UFC:					return "DEVICE_ID_KONA4UFC";					break;
-        case DEVICE_ID_CORVID88:					return "DEVICE_ID_CORVID88";					break;
-        case DEVICE_ID_CORVID44:					return "DEVICE_ID_CORVID44";					break;
-        case DEVICE_ID_CORVIDHEVC:					return "DEVICE_ID_CORVIDHEVC";					break;
-        case DEVICE_ID_CORVIDHBR:					return "DEVICE_ID_CORVIDHBR";					break;
-        case DEVICE_ID_KONAIP_2022:                 return "DEVICE_ID_KONAIP_2022";                 break;
-        case DEVICE_ID_KONAIP_4CH_2SFP:				return "DEVICE_ID_KONAIP_4CH_2SFP";				break;
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K";		break;
-        case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "DEVICE_ID_KONAIP_2TX_1SFP_J2K";			break;
-        case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "DEVICE_ID_KONAIP_2RX_1SFP_J2K";			break;
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "DEVICE_ID_KONAIP_1RX_1TX_2110";			break;
-		case DEVICE_ID_KONAIP_2110:                 return "DEVICE_ID_KONAIP_2110";                 break;
-		case DEVICE_ID_IO4KPLUS:					return "DEVICE_ID_IO4KPLUS";					break;
-        case DEVICE_ID_IOIP_2022:					return "DEVICE_ID_IOIP_2022";					break;
-        case DEVICE_ID_IOIP_2110:					return "DEVICE_ID_IOIP_2110";					break;
-        case DEVICE_ID_NOTFOUND:					return "DEVICE_ID_NOTFOUND";					break;
+		case DEVICE_ID_KONALHI:						return "DEVICE_ID_KONALHI";
+		case DEVICE_ID_KONALHIDVI:					return "DEVICE_ID_KONALHIDVI";
+		case DEVICE_ID_IOEXPRESS:					return "DEVICE_ID_IOEXPRESS";
+		case DEVICE_ID_CORVID1:						return "DEVICE_ID_CORVID1";
+		case DEVICE_ID_CORVID22:					return "DEVICE_ID_CORVID22";
+		case DEVICE_ID_CORVID3G:					return "DEVICE_ID_CORVID3G";
+		case DEVICE_ID_KONA3G:						return "DEVICE_ID_KONA3G";
+		case DEVICE_ID_KONA3GQUAD:					return "DEVICE_ID_KONA3GQUAD";
+		case DEVICE_ID_KONALHEPLUS:					return "DEVICE_ID_KONALHEPLUS";
+		case DEVICE_ID_IOXT:						return "DEVICE_ID_IOXT";
+		case DEVICE_ID_CORVID24:					return "DEVICE_ID_CORVID24";
+		case DEVICE_ID_TTAP:						return "DEVICE_ID_TTAP";
+		case DEVICE_ID_IO4K:						return "DEVICE_ID_IO4K";
+		case DEVICE_ID_IO4KUFC:						return "DEVICE_ID_IO4KUFC";
+		case DEVICE_ID_KONA4:						return "DEVICE_ID_KONA4";
+		case DEVICE_ID_KONA4UFC:					return "DEVICE_ID_KONA4UFC";
+		case DEVICE_ID_CORVID88:					return "DEVICE_ID_CORVID88";
+		case DEVICE_ID_CORVID44:					return "DEVICE_ID_CORVID44";
+		case DEVICE_ID_CORVIDHEVC:					return "DEVICE_ID_CORVIDHEVC";
+		case DEVICE_ID_CORVIDHBR:					return "DEVICE_ID_CORVIDHBR";
+		case DEVICE_ID_KONAIP_2022:					return "DEVICE_ID_KONAIP_2022";
+		case DEVICE_ID_KONAIP_4CH_2SFP:				return "DEVICE_ID_KONAIP_4CH_2SFP";
+		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K";
+		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "DEVICE_ID_KONAIP_2TX_1SFP_J2K";
+		case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "DEVICE_ID_KONAIP_2RX_1SFP_J2K";
+		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "DEVICE_ID_KONAIP_1RX_1TX_2110";
+		case DEVICE_ID_KONAIP_2110:					return "DEVICE_ID_KONAIP_2110";
+		case DEVICE_ID_IO4KPLUS:					return "DEVICE_ID_IO4KPLUS";
+		case DEVICE_ID_IOIP_2022:					return "DEVICE_ID_IOIP_2022";
+		case DEVICE_ID_IOIP_2110:					return "DEVICE_ID_IOIP_2110";
+		case DEVICE_ID_KONA1:						return "DEVICE_ID_KONA1";
+		case DEVICE_ID_KONAHDMI:					return "DEVICE_ID_KONAHDMI";
+		case DEVICE_ID_KONA5:						return "DEVICE_ID_KONA5";
+		case DEVICE_ID_KONA5_12G:					return "DEVICE_ID_KONA5_12G";
+		case DEVICE_ID_NOTFOUND:					return "DEVICE_ID_NOTFOUND";
 	}
 	return "";
 }
 
- 
+
 const char * NTV2DeviceString (const NTV2DeviceID id)
 {
 	switch (id)
 	{
-	#if !defined (NTV2_DEPRECATE)
-		case BOARD_ID_XENA_SD:
-		case BOARD_ID_XENA_SD22:
-		case BOARD_ID_XENA_HD:
-		case BOARD_ID_XENA_HD22:
-		case BOARD_ID_HDNTV2:
-		case BOARD_ID_KSD11:
-		//case BOARD_ID_XENA_SD_MM:
-		case BOARD_ID_KSD22:
-		//case BOARD_ID_XENA_SD22_MM:
-		case BOARD_ID_KHD11:
-		//case BOARD_ID_XENA_HD_MM:
-		case BOARD_ID_XENA_HD22_MM:
-		case BOARD_ID_HDNTV2_MM:
-		case BOARD_ID_KONA_SD:
-		case BOARD_ID_KONA_HD:
-		case BOARD_ID_KONA_HD2:
-		case BOARD_ID_KONAR:
-		case BOARD_ID_KONAR_MM:
-		case BOARD_ID_KONA2:
-		case BOARD_ID_HDNTV:
-		case BOARD_ID_KONALS:
-		//case BOARD_ID_XENALS:
-		case BOARD_ID_KONAHDS:
-		//case BOARD_ID_KONALH:
-		//case BOARD_ID_XENALH:
-		case BOARD_ID_XENADXT:
-		//case BOARD_ID_XENAHS:
-		case BOARD_ID_KONAX:
-		case BOARD_ID_XENAX:
-		case BOARD_ID_XENAHS2:
-		case BOARD_ID_FS1:
-		case BOARD_ID_FS2:
-		case BOARD_ID_MOAB:
-		case BOARD_ID_XENAX2:
-		case BOARD_ID_BORG:
-		case BOARD_ID_BONES:
-		case BOARD_ID_BARCLAY:
-		case BOARD_ID_KIPRO_QUAD:
-		case BOARD_ID_KIPRO_SPARE1:
-		case BOARD_ID_KIPRO_SPARE2:
-		case BOARD_ID_FORGE:			break;
-
-		//case BOARD_ID_KONA3:
-		case BOARD_ID_XENA2:						return "Kona3";						break;
-		case BOARD_ID_LHI_T:						return "KonaLHiT";					break;
-	#endif	//	!defined (NTV2_DEPRECATE)
-		case DEVICE_ID_KONALHI:						return "KonaLHi";					break;
-		case DEVICE_ID_KONALHIDVI:					return "KonaLHiDVI";				break;
-		case DEVICE_ID_IOEXPRESS:					return "IoExpress";					break;
-		case DEVICE_ID_CORVID1:						return "Corvid1";					break;
-		case DEVICE_ID_CORVID22:					return "Corvid22";					break;
-		case DEVICE_ID_CORVID3G:					return "Corvid3G";					break;
-		case DEVICE_ID_KONA3G:						return "Kona3G";					break;
-		case DEVICE_ID_KONA3GQUAD:					return "Kona3GQuad";				break;
-		case DEVICE_ID_KONALHEPLUS:					return "KonaLHePlus";				break;
-		case DEVICE_ID_IOXT:						return "IoXT";						break;
-		case DEVICE_ID_CORVID24:					return "Corvid24";					break;
-		case DEVICE_ID_TTAP:						return "TTap";						break;
-		case DEVICE_ID_IO4K:						return "Io4K";						break;
-		case DEVICE_ID_IO4KUFC:						return "Io4KUfc";					break;
-		case DEVICE_ID_KONA4:						return "Kona4";						break;
-		case DEVICE_ID_KONA4UFC:					return "Kona4Ufc";					break;
-		case DEVICE_ID_CORVID88:					return "Corvid88";					break;
-		case DEVICE_ID_CORVID44:					return "Corvid44";					break;
-		case DEVICE_ID_CORVIDHEVC:					return "CorvidHEVC";				break;
-		case DEVICE_ID_CORVIDHBR:					return "CorvidHBR";					break;
-		case DEVICE_ID_KONAIP_2022:                 return "KonaIP_2022";               break;
-		case DEVICE_ID_KONAIP_4CH_2SFP:				return "KonaIP_4ch_2sfp";			break;
-		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "KonaIP_1Rx_1Tx_1sfp_j2k";	break;
-        case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "KonaIP_2Tx_1sfp_j2k";		break;
-        case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "KonaIP_2Rx_1sfp_j2k";		break;
-		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "KonaIP_1RX_1TX_2110";		break;
-		case DEVICE_ID_KONAIP_2110:                 return "KonaIP_2110";               break;
-		case DEVICE_ID_IO4KPLUS:					return "DNxIV";						break;
-        case DEVICE_ID_IOIP_2022:					return "DNxIP_2022";				break;
-        case DEVICE_ID_IOIP_2110:					return "DNxIP_2110";				break;
-        case DEVICE_ID_NOTFOUND:					return "Unknown";					break;
+		case DEVICE_ID_KONALHI:						return "KonaLHi";
+		case DEVICE_ID_KONALHIDVI:					return "KonaLHiDVI";
+		case DEVICE_ID_IOEXPRESS:					return "IoExpress";
+		case DEVICE_ID_CORVID1:						return "Corvid1";
+		case DEVICE_ID_CORVID22:					return "Corvid22";
+		case DEVICE_ID_CORVID3G:					return "Corvid3G";
+		case DEVICE_ID_KONA3G:						return "Kona3G";
+		case DEVICE_ID_KONA3GQUAD:					return "Kona3GQuad";
+		case DEVICE_ID_KONALHEPLUS:					return "KonaLHePlus";
+		case DEVICE_ID_IOXT:						return "IoXT";
+		case DEVICE_ID_CORVID24:					return "Corvid24";
+		case DEVICE_ID_TTAP:						return "TTap";
+		case DEVICE_ID_IO4K:						return "Io4K";
+		case DEVICE_ID_IO4KUFC:						return "Io4KUfc";
+		case DEVICE_ID_KONA4:						return "Kona4";
+		case DEVICE_ID_KONA4UFC:					return "Kona4Ufc";
+		case DEVICE_ID_CORVID88:					return "Corvid88";
+		case DEVICE_ID_CORVID44:					return "Corvid44";
+		case DEVICE_ID_CORVIDHEVC:					return "CorvidHEVC";
+		case DEVICE_ID_CORVIDHBR:					return "CorvidHBR";
+		case DEVICE_ID_KONAIP_2022:					return "KonaIP_2022";
+		case DEVICE_ID_KONAIP_4CH_2SFP:				return "KonaIP_4ch2SFP";
+		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "KonaIP_1Rx1Tx1SFPJ2K";
+		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "KonaIP_2Tx1SFPJ2K";
+		case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "KonaIP_2Rx1SFPJ2K";
+		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "KonaIP_1Rx1Tx2110";
+		case DEVICE_ID_KONAIP_2110:					return "KonaIP_2110";
+		case DEVICE_ID_IO4KPLUS:					return "DNxIV";
+		case DEVICE_ID_IOIP_2022:					return "DNxIP_2022";
+		case DEVICE_ID_IOIP_2110:					return "DNxIP_2110";
+		case DEVICE_ID_KONA1:						return "Kona1";
+		case DEVICE_ID_KONAHDMI:					return "KonaHDMI";
+		case DEVICE_ID_KONA5:						return "Kona5";
+		case DEVICE_ID_KONA5_12G:					return "Kona5_12G";
+		case DEVICE_ID_NOTFOUND:					return "Unknown";
 	}
 
 	return "";
 }
 
- 
+
 const char *NTV2StandardString (NTV2Standard std)
 {
 	const char *result = "";
@@ -219,20 +135,20 @@ const char *NTV2StandardString (NTV2Standard std)
 		case NTV2_STANDARD_4096x2160p:	result = "NTV2_STANDARD_4096x2160p";	break;
 		case NTV2_STANDARD_3840HFR:		result = "NTV2_STANDARD_3840HFR";		break;
 		case NTV2_STANDARD_4096HFR:		result = "NTV2_STANDARD_4096HFR";		break;
-#if !defined (_DEBUG)
-		default:
-#endif
 		case NTV2_STANDARD_INVALID:		result = "NTV2_STANDARD_INVALID";		break;
+#if !defined (_DEBUG)
+		default:						result = "";							break;
+#endif
 	}
 
 	return (result);
 }
- 
- 
+
+
 const char *NTV2FrameBufferFormatString (NTV2FrameBufferFormat fmt)
 {
 	const char *result = "";
-	
+
 	switch (fmt)
 	{
 		case NTV2_FBF_10BIT_YCBCR:				result = "NTV2_FBF_10BIT_YCBCR";			break;
@@ -267,20 +183,20 @@ const char *NTV2FrameBufferFormatString (NTV2FrameBufferFormat fmt)
 		case NTV2_FBF_10BIT_YCBCR_422PL2:		result = "NTV2_FBF_10BIT_YCBCR_422PL2";		break;
 		case NTV2_FBF_8BIT_YCBCR_420PL2:		result = "NTV2_FBF_8BIT_YCBCR_420PL2";		break;
 		case NTV2_FBF_8BIT_YCBCR_422PL2:		result = "NTV2_FBF_8BIT_YCBCR_422PL2";		break;
-#if !defined (_DEBUG)
-		default:
-#endif
 		case NTV2_FBF_INVALID:					result = "NTV2_FBF_INVALID";				break;
+#if !defined (_DEBUG)
+		default:								result = "";								break;
+#endif
 	}
-	
+
 	return (result);
 }
 
- 
+
 const char *NTV2FrameGeometryString (NTV2FrameGeometry geom)
 {
 	const char *result = "";
-	
+
 	switch (geom)
 	{
 		case NTV2_FG_1920x1080:		result = "NTV2_FG_1920x1080";		break;
@@ -301,20 +217,20 @@ const char *NTV2FrameGeometryString (NTV2FrameGeometry geom)
 		case NTV2_FG_720x612:		result = "NTV2_FG_720x612";			break;
 		case NTV2_FG_4x1920x1080:	result = "NTV2_FG_4x1920x1080";		break;
 		case NTV2_FG_4x2048x1080:	result = "NTV2_FG_4x2048x1080";		break;
-#if !defined (_DEBUG)
-		default:
-#endif
 		case NTV2_FG_INVALID:		result = "NTV2_FG_INVALID";			break;
+#if !defined (_DEBUG)
+		default:					result = "";			break;
+#endif
 	}
-	
+
 	return (result);
 }
- 
- 
+
+
 const char *NTV2FrameRateString (NTV2FrameRate rate)
 {
 	const char *result = "";
-	
+
 	switch (rate)
 	{
 		case NTV2_FRAMERATE_12000:		result = "NTV2_FRAMERATE_12000";	break;
@@ -335,13 +251,13 @@ const char *NTV2FrameRateString (NTV2FrameRate rate)
 		case NTV2_FRAMERATE_1798:		result = "NTV2_FRAMERATE_1798";		break;
 		case NTV2_FRAMERATE_1500:		result = "NTV2_FRAMERATE_1500";		break;
 		case NTV2_FRAMERATE_1498:		result = "NTV2_FRAMERATE_1498";		break;
-#if !defined (_DEBUG)
-		default:
-#endif
-		case NTV2_NUM_FRAMERATES:
+		case NTV2_NUM_FRAMERATES:		result = "";						break;
 		case NTV2_FRAMERATE_INVALID:	result = "NTV2_FRAMERATE_INVALID";	break;
+#if !defined (_DEBUG)
+		default:						result = "";						break;
+#endif
 	}
-	
+
 	return (result);
 }
 
@@ -349,15 +265,12 @@ const char *NTV2FrameRateString (NTV2FrameRate rate)
 const char *NTV2VideoFormatString (NTV2VideoFormat fmt)
 {
 	const char *result = "";
-	
+
 	switch (fmt)
 	{
-//		case NTV2_FORMAT_1080psf_2500:
-		case NTV2_FORMAT_1080i_5000:				result = "NTV2_FORMAT_1080i_5000  /  NTV2_FORMAT_1080psf_2500";			break;
-//		case NTV2_FORMAT_1080psf_2997:
-		case NTV2_FORMAT_1080i_5994:				result = "NTV2_FORMAT_1080i_5994  /  NTV2_FORMAT_1080psf_2997";			break;
-//		case NTV2_FORMAT_1080psf_3000:
-		case NTV2_FORMAT_1080i_6000:				result = "NTV2_FORMAT_1080i_6000  /  NTV2_FORMAT_1080psf_3000";			break;
+		case NTV2_FORMAT_1080i_5000:				result = "NTV2_FORMAT_1080i_5000/NTV2_FORMAT_1080psf_2500";			break;
+		case NTV2_FORMAT_1080i_5994:				result = "NTV2_FORMAT_1080i_5994/NTV2_FORMAT_1080psf_2997";			break;
+		case NTV2_FORMAT_1080i_6000:				result = "NTV2_FORMAT_1080i_6000/NTV2_FORMAT_1080psf_3000";			break;
 		case NTV2_FORMAT_720p_5994:					result = "NTV2_FORMAT_720p_5994";			break;
 		case NTV2_FORMAT_720p_6000:					result = "NTV2_FORMAT_720p_6000";			break;
 		case NTV2_FORMAT_1080psf_2398:				result = "NTV2_FORMAT_1080psf_2398";		break;
@@ -372,11 +285,11 @@ const char *NTV2VideoFormatString (NTV2VideoFormat fmt)
 		case NTV2_FORMAT_1080p_2K_2500:				result = "NTV2_FORMAT_1080p_2K_2500";		break;
 		case NTV2_FORMAT_1080p_2K_2997:				result = "NTV2_FORMAT_1080p_2K_2997";		break;
 		case NTV2_FORMAT_1080p_2K_3000:				result = "NTV2_FORMAT_1080p_2K_3000";		break;
-		case NTV2_FORMAT_1080p_2K_4795:				result = "NTV2_FORMAT_1080p_2K_4795  /  NTV2_FORMAT_1080p_2K_4795_A";	break;
-		case NTV2_FORMAT_1080p_2K_4800:				result = "NTV2_FORMAT_1080p_2K_4800  /  NTV2_FORMAT_1080p_2K_4800_A";	break;
-		case NTV2_FORMAT_1080p_2K_5000:				result = "NTV2_FORMAT_1080p_2K_5000  /  NTV2_FORMAT_1080p_2K_5000_A";	break;
-		case NTV2_FORMAT_1080p_2K_5994:				result = "NTV2_FORMAT_1080p_2K_5994  /  NTV2_FORMAT_1080p_2K_5994_A";	break;
-		case NTV2_FORMAT_1080p_2K_6000:				result = "NTV2_FORMAT_1080p_2K_6000  /  NTV2_FORMAT_1080p_2K_6000_A";	break;
+		case NTV2_FORMAT_1080p_2K_4795_A:			result = "NTV2_FORMAT_1080p_2K_4795_A";		break;
+		case NTV2_FORMAT_1080p_2K_4800_A:			result = "NTV2_FORMAT_1080p_2K_4800_A";		break;
+		case NTV2_FORMAT_1080p_2K_5000_A:			result = "NTV2_FORMAT_1080p_2K_5000_A";		break;
+		case NTV2_FORMAT_1080p_2K_5994_A:			result = "NTV2_FORMAT_1080p_2K_5994_A";		break;
+		case NTV2_FORMAT_1080p_2K_6000_A:			result = "NTV2_FORMAT_1080p_2K_6000_A";		break;
 		case NTV2_FORMAT_1080p_2K_4795_B:			result = "NTV2_FORMAT_1080p_2K_4795_B";		break;
 		case NTV2_FORMAT_1080p_2K_4800_B:			result = "NTV2_FORMAT_1080p_2K_4800_B";		break;
 		case NTV2_FORMAT_1080p_2K_5000_B:			result = "NTV2_FORMAT_1080p_2K_5000_B";		break;
@@ -389,13 +302,12 @@ const char *NTV2VideoFormatString (NTV2VideoFormat fmt)
 		case NTV2_FORMAT_1080psf_2997_2:			result = "NTV2_FORMAT_1080psf_2997_2";		break;
 		case NTV2_FORMAT_1080psf_3000_2:			result = "NTV2_FORMAT_1080psf_3000_2";		break;
 		case NTV2_FORMAT_720p_5000:					result = "NTV2_FORMAT_720p_5000";			break;
-		case NTV2_FORMAT_1080p_5000_B:				result = "NTV2_FORMAT_1080p_5000_B  /  NTV2_FORMAT_1080p_5000";		break;
-		case NTV2_FORMAT_1080p_5994_B:				result = "NTV2_FORMAT_1080p_5994_B  /  NTV2_FORMAT_1080p_5994";		break;
-		case NTV2_FORMAT_1080p_6000_B:				result = "NTV2_FORMAT_1080p_6000_B  /  NTV2_FORMAT_1080p_6000";		break;
+		case NTV2_FORMAT_1080p_5000_B:				result = "NTV2_FORMAT_1080p_5000_B";		break;
+		case NTV2_FORMAT_1080p_5994_B:				result = "NTV2_FORMAT_1080p_5994_B";		break;
+		case NTV2_FORMAT_1080p_6000_B:				result = "NTV2_FORMAT_1080p_6000_B";		break;
 		case NTV2_FORMAT_1080p_5000_A:				result = "NTV2_FORMAT_1080p_5000_A";		break;
 		case NTV2_FORMAT_1080p_5994_A:				result = "NTV2_FORMAT_1080p_5994_A";		break;
 		case NTV2_FORMAT_1080p_6000_A:				result = "NTV2_FORMAT_1080p_6000_A";		break;
-		case NTV2_FORMAT_END_HIGH_DEF_FORMATS:		result = "NTV2_FORMAT_UNKNOWN";				break;
 		case NTV2_FORMAT_720p_2398:					result = "NTV2_FORMAT_720p_2398";			break;
 		case NTV2_FORMAT_720p_2500:					result = "NTV2_FORMAT_720p_2500";			break;
 		case NTV2_FORMAT_525_5994:					result = "NTV2_FORMAT_525_5994";			break;
@@ -404,13 +316,11 @@ const char *NTV2VideoFormatString (NTV2VideoFormat fmt)
 		case NTV2_FORMAT_525_2400:					result = "NTV2_FORMAT_525_2400";			break;
 		case NTV2_FORMAT_525psf_2997:				result = "NTV2_FORMAT_525psf_2997";			break;
 		case NTV2_FORMAT_625psf_2500:				result = "NTV2_FORMAT_625psf_2500";			break;
-		case NTV2_FORMAT_END_STANDARD_DEF_FORMATS:	result = "NTV2_FORMAT_UNKNOWN";				break;
 		case NTV2_FORMAT_2K_1498:					result = "NTV2_FORMAT_2K_1498";				break;
 		case NTV2_FORMAT_2K_1500:					result = "NTV2_FORMAT_2K_1500";				break;
 		case NTV2_FORMAT_2K_2398:					result = "NTV2_FORMAT_2K_2398";				break;
 		case NTV2_FORMAT_2K_2400:					result = "NTV2_FORMAT_2K_2400";				break;
 		case NTV2_FORMAT_2K_2500:					result = "NTV2_FORMAT_2K_2500";				break;
-		case NTV2_FORMAT_END_2K_DEF_FORMATS:		result = "NTV2_FORMAT_UNKNOWN";				break;
 		case NTV2_FORMAT_4x1920x1080psf_2398:		result = "NTV2_FORMAT_4x1920x1080psf_2398";	break;
 		case NTV2_FORMAT_4x1920x1080psf_2400:		result = "NTV2_FORMAT_4x1920x1080psf_2400";	break;
 		case NTV2_FORMAT_4x1920x1080psf_2500:		result = "NTV2_FORMAT_4x1920x1080psf_2500";	break;
@@ -441,14 +351,47 @@ const char *NTV2VideoFormatString (NTV2VideoFormat fmt)
 		case NTV2_FORMAT_4x2048x1080p_6000:			result = "NTV2_FORMAT_4x2048x1080p_6000";	break;
 		case NTV2_FORMAT_4x2048x1080p_11988:		result = "NTV2_FORMAT_4x2048x1080p_11988";	break;
 		case NTV2_FORMAT_4x2048x1080p_12000:		result = "NTV2_FORMAT_4x2048x1080p_12000";	break;
-		case NTV2_FORMAT_END_HIGH_DEF_FORMATS2:		result = "NTV2_FORMAT_UNKNOWN";				break;
-//		case NTV2_MAX_NUM_VIDEO_FORMATS:			result = "NTV2_FORMAT_UNKNOWN";				break;
+		case NTV2_FORMAT_3840x2160psf_2398: 		result = "NTV2_FORMAT_3840x2160psf_2398";	break;
+		case NTV2_FORMAT_3840x2160psf_2400:			result = "NTV2_FORMAT_3840x2160psf_2400";	break;
+		case NTV2_FORMAT_3840x2160psf_2500:			result = "NTV2_FORMAT_3840x2160psf_2500";	break;
+		case NTV2_FORMAT_3840x2160p_2398:			result = "NTV2_FORMAT_3840x2160p_2398";	break;
+		case NTV2_FORMAT_3840x2160p_2400:			result = "NTV2_FORMAT_3840x2160p_2400";	break;
+		case NTV2_FORMAT_3840x2160p_2500:			result = "NTV2_FORMAT_3840x2160p_2500";	break;
+		case NTV2_FORMAT_3840x2160p_2997:			result = "NTV2_FORMAT_3840x2160p_2997";	break;
+		case NTV2_FORMAT_3840x2160p_3000:			result = "NTV2_FORMAT_3840x2160p_3000";	break;
+		case NTV2_FORMAT_3840x2160psf_2997:			result = "NTV2_FORMAT_3840x2160psf_2997";	break;
+		case NTV2_FORMAT_3840x2160psf_3000:			result = "NTV2_FORMAT_3840x2160psf_3000";	break;
+		case NTV2_FORMAT_3840x2160p_5000:			result = "NTV2_FORMAT_3840x2160p_5000";	break;
+		case NTV2_FORMAT_3840x2160p_5994:			result = "NTV2_FORMAT_3840x2160p_5994";	break;
+		case NTV2_FORMAT_3840x2160p_6000:			result = "NTV2_FORMAT_3840x2160p_6000";	break;
+		case NTV2_FORMAT_4096x2160psf_2398:			result = "NTV2_FORMAT_4096x2160psf_2398";	break;
+		case NTV2_FORMAT_4096x2160psf_2400:			result = "NTV2_FORMAT_4096x2160psf_2400";	break;
+		case NTV2_FORMAT_4096x2160psf_2500:			result = "NTV2_FORMAT_4096x2160psf_2500";	break;
+		case NTV2_FORMAT_4096x2160p_2398:			result = "NTV2_FORMAT_4096x2160p_2398";	break;
+		case NTV2_FORMAT_4096x2160p_2400:			result = "NTV2_FORMAT_4096x2160p_2400";	break;
+		case NTV2_FORMAT_4096x2160p_2500:			result = "NTV2_FORMAT_4096x2160p_2500";	break;
+		case NTV2_FORMAT_4096x2160p_2997:			result = "NTV2_FORMAT_4096x2160p_2997";	break;
+		case NTV2_FORMAT_4096x2160p_3000:			result = "NTV2_FORMAT_4096x2160p_3000";	break;
+		case NTV2_FORMAT_4096x2160psf_2997:			result = "NTV2_FORMAT_4096x2160psf_2997";	break;
+		case NTV2_FORMAT_4096x2160psf_3000:			result = "NTV2_FORMAT_4096x2160psf_3000";	break;
+		case NTV2_FORMAT_4096x2160p_4795:			result = "NTV2_FORMAT_4096x2160p_4795";	break;
+		case NTV2_FORMAT_4096x2160p_4800:			result = "NTV2_FORMAT_4096x2160p_4800";	break;
+		case NTV2_FORMAT_4096x2160p_5000:			result = "NTV2_FORMAT_4096x2160p_5000";	break;
+		case NTV2_FORMAT_4096x2160p_5994:			result = "NTV2_FORMAT_4096x2160p_5994";	break;
+		case NTV2_FORMAT_4096x2160p_6000:			result = "NTV2_FORMAT_4096x2160p_6000";	break;
+		case NTV2_FORMAT_4096x2160p_11988:			result = "NTV2_FORMAT_4096x2160p_11988";	break;
+		case NTV2_FORMAT_4096x2160p_12000:			result = "NTV2_FORMAT_4096x2160p_12000";	break;
+		case NTV2_FORMAT_END_HIGH_DEF_FORMATS:		result = "";								break;
+		case NTV2_FORMAT_END_STANDARD_DEF_FORMATS:	result = "";								break;
+		case NTV2_FORMAT_END_2K_DEF_FORMATS:		result = "";								break;
+		case NTV2_FORMAT_END_HIGH_DEF_FORMATS2:		result = "";								break;
+		case NTV2_FORMAT_END_4K_TSI_DEF_FORMATS:	result = "";								break;
+		case NTV2_FORMAT_UNKNOWN:					result = "";								break;
 #if !defined (_DEBUG)
-		default:
+		default:									result = "";								break;
 #endif
-		case NTV2_FORMAT_UNKNOWN:					result = "NTV2_FORMAT_UNKNOWN";				break;
 	}
-	
+
 	return (result);
 
 }	//	NTV2VideoFormatString
@@ -592,7 +535,7 @@ const char * ntv2RegStrings[] =
 	"kRegXenaxFlashDIN",							//  60
 	"kRegXenaxFlashDOUT",							//  61
 	"kRegReserved62",								//  62
-	"kRegReserved63",								//  63
+	"kRegCPLDVersion",								//  63
 	"kRegRP188InOut2DBB",							//  64
 	"kRegRP188InOut2Bits0_31",						//  65
 	"kRegRP188InOut2Bits32_63",						//  66
@@ -1123,6 +1066,58 @@ const char * NTV2RegisterNameString (const ULWord inRegNum)
 }
 
 
+const char * NTV2InterruptEnumString (const unsigned inInterruptEnum)
+{
+	static const char *	sNullString = "";
+	static const char * sInterruptEnumStrings[] = {	"eOutput1",					//	0
+													"eInterruptMask",			//	1
+													"eInput1",					//	2
+													"eInput2",					//	3
+													"eAudio",					//	4
+													"eAudioInWrap",				//	5
+													"eAudioOutWrap",			//	6
+													"eDMA1",					//	7
+													"eDMA2",					//	8
+													"eDMA3",					//	9
+													"eDMA4",					//	10
+													"eChangeEvent",				//	11
+													"eGetIntCount",				//	12
+													"eWrapRate",				//	13
+													"eUart1Tx",					//	14
+													"eUart1Rx",					//	15
+													"eAuxVerticalInterrupt",	//	16
+													"ePushButtonChange",		//	17
+													"eLowPower",				//	18
+													"eDisplayFIFO",				//	19
+													"eSATAChange",				//	20
+													"eTemp1High",				//	21
+													"eTemp2High",				//	22
+													"ePowerButtonChange",		//	23
+													"eInput3",					//	24
+													"eInput4",					//	25
+													"eUart2Tx",					//	26
+													"eUart2Rx",					//	27
+													"eHDMIRxV2HotplugDetect",	//	28
+													"eInput5",					//	29
+													"eInput6",					//	30
+													"eInput7",					//	31
+													"eInput8",					//	32
+													"eInterruptMask2",			//	33
+													"eOutput2",					//	34
+													"eOutput3",					//	35
+													"eOutput4",					//	36
+													"eOutput5",					//	37
+													"eOutput6",					//	38
+													"eOutput7",					//	39
+													"eOutput8"	};				//	40
+#if !defined(NTV2_BUILDING_DRIVER)
+	NTV2_ASSERT(sizeof(sInterruptEnumStrings) / sizeof(void*) == (unsigned)eNumInterruptTypes);
+#endif
+	if (inInterruptEnum < (unsigned)eNumInterruptTypes)
+		return sInterruptEnumStrings[inInterruptEnum];
+	return sNullString;
+}	//	NTV2InterruptEnumString
+
 #ifdef MSWindows
 
 #include <stdio.h>
@@ -1131,22 +1126,22 @@ const char * NTV2RegisterNameString (const ULWord inRegNum)
 
 void __cdecl odprintf(const char *format, ...)
 {
-//#ifdef _DEBUG
-char	buf[4096], *p = buf;
-va_list	args;
+	//#ifdef _DEBUG
+	char	buf[4096], *p = buf;
+	va_list	args;
 
-        va_start(args, format);
-        p += _vsnprintf_s(buf, sizeof buf - 1, format, args);
-        va_end(args);
+	va_start(args, format);
+	p += _vsnprintf_s(buf, sizeof buf - 1, format, args);
+	va_end(args);
 
-        while ( p > buf  &&  isspace(p[-1]) )
-                *--p = '\0';
+	while ( p > buf  &&  isspace(p[-1]) )
+		*--p = '\0';
 
-        *p++ = '\r';
-        *p++ = '\n';
-        *p   = '\0';
+	*p++ = '\r';
+	*p++ = '\n';
+	*p   = '\0';
 
-        ::OutputDebugStringA(buf);
+	::OutputDebugStringA(buf);
 //#endif
 }
 #endif

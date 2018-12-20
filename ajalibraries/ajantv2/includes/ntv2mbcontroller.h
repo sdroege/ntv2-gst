@@ -20,15 +20,21 @@ enum eMBCmd
     MB_CMD_FETCH_SFP_INFO         = 11
 };
 
+enum eNTV2PacketInterval
+{
+    PACKET_INTERVAL_125uS,
+    PACKET_INTERVAL_1mS
+};
+
 enum eSFP
 {
-    SFP_TOP,
-    SFP_BOTTOM,
+    SFP_1,
+    SFP_2,
     SFP_MAX_NUM_SFPS,
     SFP_INVALID		= SFP_MAX_NUM_SFPS
 };
 
-#define	NTV2_IS_VALID_SFP(__sfp__)		(((__sfp__) >= SFP_TOP)  &&  ((__sfp__) < SFP_INVALID))
+#define	NTV2_IS_VALID_SFP(__sfp__)		(((__sfp__) >= SFP_1)  &&  ((__sfp__) < SFP_INVALID))
 
 enum eArpState
 {
@@ -56,13 +62,30 @@ typedef struct
     uint8_t data[64];
 } SFPMSAData;
 
-struct sLinkStatus
+struct SFPStatus
 {
-    bool SFP_present;
-    bool SFP_rx_los;    // loss of signal
-    bool SFP_tx_fault;
-    bool linkUp;
+    bool SFP_present;           // true indicates SFP plugged in
+    bool SFP_rxLoss;            // true indicates loss of signal
+    bool SFP_txFault;           // true indicates tx fault
+    bool SFP_linkUp;            // true indicates link is up
 };
+
+typedef enum
+{
+    PTP_NO_PTP,
+    PTP_ERROR,
+    PTP_NOT_LOCKED,
+    PTP_LOCKING,
+    PTP_LOCKED
+} PTPLockStatus;
+
+struct PTPStatus
+{
+    uint8_t PTP_gmId[8];		// GrandMasterID
+    uint8_t PTP_masterId[8];	// MasterID
+    PTPLockStatus PTP_LockedState;	// locked state
+};
+
 
 // IGMP Control Block
 #define IGMPCB_REG_STATE       0
@@ -100,20 +123,19 @@ public:
 
 protected:
     // all these methods block until response received or timeout
-    bool SetMBNetworkConfiguration (eSFP port, std::string ipaddr, std::string netmask,std::string gateway);
-    bool DisableNetworkConfiguration (eSFP port);
-    bool GetRemoteMAC(std::string remote_IPAddress, eSFP port, NTV2Channel channel, NTV2Stream stream, std::string & MACaddress);
+    bool SetMBNetworkConfiguration(eSFP port, std::string ipaddr, std::string netmask,std::string gateway);
+    bool DisableNetworkInterface(eSFP port);
+    bool GetRemoteMAC(std::string remote_IPAddress, eSFP port, NTV2Stream stream, std::string & MACaddress);
     bool SetIGMPVersion(uint32_t version);
-    bool FetchGrandMasterInfo(std::string & grandmasterInfo);
 
-    void SetIGMPGroup(eSFP port, NTV2Channel channel, NTV2Stream stream, uint32_t mcast_addr, uint32_t src_addr, bool enable);
-    void UnsetIGMPGroup(eSFP port, NTV2Channel channel, NTV2Stream stream);
-    void EnableIGMPGroup(eSFP port, NTV2Channel channel, NTV2Stream stream, bool enable);
+    void SetIGMPGroup(eSFP port, NTV2Stream stream, uint32_t mcast_addr, uint32_t src_addr, bool enable);
+    void UnsetIGMPGroup(eSFP port, NTV2Stream stream);
+    void EnableIGMPGroup(eSFP port, NTV2Stream stream, bool enable);
 
-    bool SetTxLinkState(NTV2Channel channel, bool linkAEnable,   bool linkBEnable);
-    bool GetTxLinkState(NTV2Channel channel, bool & linkAEnable, bool & linkBEnable);
-    bool SetRxLinkState(NTV2Channel channel, bool linkAEnable,   bool linkBEnable);
-    bool GetRxLinkState(NTV2Channel channel, bool & linkAEnable, bool & linkBEnable);
+    bool SetTxLinkState(NTV2Channel channel, bool sfp1Enable,   bool sfp2Enable);
+    bool GetTxLinkState(NTV2Channel channel, bool & sfp1Enable, bool & sfp2Enable);
+    bool SetRxLinkState(NTV2Channel channel, bool sfp1Enable,   bool sfp2Enable);
+    bool GetRxLinkState(NTV2Channel channel, bool & sfp1Enable, bool & sfp2Enable);
 
     bool SetDualLinkMode(bool enable);
     bool GetDualLinkMode(bool & enable);
@@ -121,9 +143,9 @@ protected:
     bool SetRxMatch(NTV2Channel channel, eSFP link, uint8_t match);
     bool GetRxMatch(NTV2Channel channel, eSFP link, uint8_t & match);
 
-    bool SetLinkActive(eSFP Link);
-    bool SetLinkInactive(eSFP Link);
-    bool GetLinkActive(eSFP link);
+    bool SetSFPActive(eSFP sfp);
+    bool SetSFPInactive(eSFP sfp);
+    bool GetSFPActive(eSFP sfp);
 
     bool SetTxFormat(NTV2Channel chan, NTV2VideoFormat fmt);
     bool GetTxFormat(NTV2Channel chan, NTV2VideoFormat & fmt);
@@ -136,14 +158,14 @@ protected:
 
 
 private:
-    eArpState GetRemoteMACFromArpTable(std::string remote_IPAddress, eSFP port, NTV2Channel channel, NTV2Stream stream, std::string & MACaddress);
+    eArpState GetRemoteMACFromArpTable(std::string remote_IPAddress, eSFP port, NTV2Stream stream, std::string & MACaddress);
     bool SendArpRequest(std::string remote_IPAddress, eSFP port);
 
     void splitResponse(const std::string response, std::vector<std::string> & results);
     bool getDecimal(const std::string & resp, const std::string & parm, uint32_t & result);
     bool getHex(const std::string & resp, const std::string & parm, uint32_t &result);
     bool getString(const std::string & resp, const std::string & parm, std::string & result);
-    uint32_t getIGMPCBOffset(eSFP port, NTV2Channel channel, NTV2Stream stream);
+    uint32_t getIGMPCBOffset(eSFP port, NTV2Stream stream);
 
 private:
 };

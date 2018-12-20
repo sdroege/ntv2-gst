@@ -1,6 +1,6 @@
 /**
 	@file		common.h
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Private include file for all ajabase sources.
 **/
 
@@ -21,7 +21,7 @@ namespace aja
 static const std::string WHITESPACE(" \t\n\r");
 
 /**
- *	Replace a substring within a string with a new string
+ *	Replaces all occurrences of a substring within a string with a new string
  *
  *  @param[in,out]  str  The string to modify
  *  @param[in]      from The substring to look for
@@ -71,7 +71,7 @@ AJA_EXPORT long stol(const std::string& str, std::size_t* idx=0, int base = 10);
  *                       If this is 0, the base is determined by the format (like strtol).
  *	@return         The long long value of the input str
  */
-AJA_EXPORT long long stoll(const std::string& str, std::size_t* idx=0, int base = 10);
+//AJA_EXPORT long long stoll(const std::string& str, std::size_t* idx=0, int base = 10);
 
 /**
  *	Convert string to unsigned long
@@ -97,7 +97,7 @@ AJA_EXPORT unsigned long stoul(const std::string& str, std::size_t* idx=0, int b
  *                       If this is 0, the base is determined by the format (like strtol).
  *	@return         The unsigned long long value of the input str
  */
-AJA_EXPORT unsigned long long stoull(const std::string& str, std::size_t* idx=0, int base = 10);
+//AJA_EXPORT unsigned long long stoull(const std::string& str, std::size_t* idx=0, int base = 10);
 
 /**
  *	Convert string to float
@@ -141,10 +141,10 @@ AJA_EXPORT long double stold(const std::string& str, std::size_t* idx=0);
 AJA_EXPORT std::string to_string(bool val);
 AJA_EXPORT std::string to_string(int val);
 AJA_EXPORT std::string to_string(long val);
-AJA_EXPORT std::string to_string(long long val);
+//AJA_EXPORT std::string to_string(long long val);
 AJA_EXPORT std::string to_string(unsigned val);
 AJA_EXPORT std::string to_string(unsigned long val);
-AJA_EXPORT std::string to_string(unsigned long long val);
+//AJA_EXPORT std::string to_string(unsigned long long val);
 AJA_EXPORT std::string to_string(float val);
 AJA_EXPORT std::string to_string(double val);
 AJA_EXPORT std::string to_string(long double val);
@@ -178,22 +178,31 @@ AJA_EXPORT bool wstring_to_string(const std::wstring& wstr, std::string& str);
 AJA_EXPORT bool string_to_cstring(const std::string &str, char *c_str, size_t c_str_size);
 
 /**
- *	Splits a string into substrings at a character delimeter
+ *	Splits a string into substrings at a character delimiter
  *
  *  @param[in]   str   The string to split into parts
- *  @param[in]   delim The character delimeter to split the string at
+ *  @param[in]   delim The character delimiter to split the string at
  *  @param[out]  elems A vector of strings that contains all the substrings
  */
 AJA_EXPORT void split(const std::string& str, const char delim, std::vector<std::string>& elems);
 
 /**
- *	Splits a string into substrings at a character delimeter
+ *	Splits a string into substrings at a character delimiter
  *
  *  @param[in]  str   The string to split into parts
- *  @param[in]  delim The character delimeter to split the string at
+ *  @param[in]  delim The character delimiter to split the string at
  *	@return		A vector of strings that contains all the substrings
  */
 AJA_EXPORT std::vector<std::string> split(const std::string& str, const char delim);
+
+/**
+ *	Splits a string into substrings at a string delimiter
+ *
+ *  @param[in]  inStr   The string to split into parts
+ *  @param[in]  inDelim The delimiter string to split the string at
+ *	@return		A vector of strings that contains all the substrings
+ */
+AJA_EXPORT std::vector<std::string> split (const std::string & inStr, const std::string inDelim);
 
 /**
  *	Converts the passed string to lowercase

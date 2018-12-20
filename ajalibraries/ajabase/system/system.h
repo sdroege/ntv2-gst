@@ -1,6 +1,6 @@
 /**
     @file		system.h
-    @copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+    @copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
     @brief		System specific functions
 **/
 
@@ -14,7 +14,8 @@
 	#if !defined(_WIN32_WINNT)
         #define _WIN32_WINNT 0x0600
 	#endif
-    #include <Windows.h>
+	#include <WinSock2.h>	//	NOTE:	This must be included BEFORE <Windows.h> to avoid "macro redefinition" errors.
+    #include <Windows.h>	//			http://www.zachburlingame.com/2011/05/resolving-redefinition-errors-betwen-ws2def-h-and-winsock-h/
 	#include <stdio.h>
 	#include <tchar.h>
 	#include <winioctl.h>
@@ -44,5 +45,10 @@
 
 #endif
 
+// Common to all
+namespace aja
+{
+    AJA_EXPORT int reveal_file_in_file_manager(const std::string& filePath);
+}
 
 #endif

@@ -1,6 +1,6 @@
 /**
 	@file		linux/eventimpl.cpp
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Implements the AJAEventImpl class on the Linux platform.
 **/
 
@@ -13,7 +13,7 @@
 using std::string;
 
 // event implementation class (linux)
-AJAEventImpl::AJAEventImpl(bool manualReset, const string& name)
+AJAEventImpl::AJAEventImpl(bool manualReset, const std::string& name)
 	: mManualReset(manualReset)
 {
     AJA_UNUSED(name);

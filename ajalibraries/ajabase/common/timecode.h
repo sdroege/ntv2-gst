@@ -1,6 +1,6 @@
 /**
 	@file		timecode.h
-	@copyright	Copyright (C) 2010-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2010-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJATimeCode class.
 **/
 
@@ -132,23 +132,38 @@ public:
 	/**
 	 *	Set timecode via RP188 bytes.
 	 *
-	 *	@param[in]	dbb
-	 *	@param[in]	low
- 	 *	@param[in]	high
- 	 *	@param[in]	timeBase                   Specifies the time base to use.
+	 *	@param[in]	inDBB		Specifies the DBB bits of the RP188 struct.
+	 *	@param[in]	inLo		Specifies the lo-order 32-bit word of the RP188 struct.
+ 	 *	@param[in]	inHi		Specifies the hi-order 32-bit word of the RP188 struct.
+ 	 *	@param[in]	inTimeBase	Specifies the time base to use.
 	 */
-	void                SetRP188(uint32_t dbb, uint32_t low, uint32_t high, const AJATimeBase& timeBase);
+	void                SetRP188 (const uint32_t inDBB, const uint32_t inLo, const uint32_t inHi, const AJATimeBase & inTimeBase);
 	
 	/**
-	 *	Get RP188 bytes from a frame number, timebase, and drop frame.
+	 *	Get RP188 register values using the given timebase, and drop frame.
 	 *
 	 *	@param[in]	pDbb		If non-NULL, points to the variable to receive the DBB component.
 	 *	@param[in]	pLow		If non-NULL, points to the variable to receive the low byte component.
  	 *	@param[in]	pHigh		If non-NULL, points to the variable to receive the high byte component.
  	 *	@param[in]	timeBase	Specifies the AJATimeBase to use.
  	 *	@param[in]	bDrop		Specify true if forcing drop-frame;  otherwise false.
+ 	 *	@bug		Unimplemented.
+ 	 *	@todo		Needs to be implemented.
 	 */
 	void                QueryRP188(uint32_t *pDbb, uint32_t *pLow, uint32_t *pHigh, const AJATimeBase& timeBase, bool bDrop);
+	
+	/**
+	 *	Get RP188 register values using the given timebase, and drop frame.
+	 *
+	 *	@param[out]	outDBB		Receives the DBB component.
+	 *	@param[out]	outLo		Receives the low byte component.
+ 	 *	@param[out]	outHi		Receives the high byte component.
+ 	 *	@param[in]	timeBase	Specifies the AJATimeBase to use.
+ 	 *	@param[in]	bDrop		Specify true if forcing drop-frame;  otherwise false.
+ 	 *	@bug		Unimplemented.
+ 	 *	@todo		Needs to be implemented.
+	 */
+	void                QueryRP188(uint32_t & outDBB, uint32_t & outLo, uint32_t & outHi, const AJATimeBase & timeBase, const bool bDrop);
 	
 	/**
 	 *	Set HFR divide-by-two flag.
@@ -171,11 +186,11 @@ public:
 	/**
 	 *	Query if rp188 data is drop frame or not
 	 *
-	 *	@param[in]	dbb
-	 *	@param[in]	low
- 	 *	@param[in]	high
+	 *	@param[in]	inDBB	Specifies the DBB bits of the RP188 struct.
+	 *	@param[in]	inLo	Specifies the lo-order 32-bit word of the RP188 struct.
+ 	 *	@param[in]	inHi	Specifies the hi-order 32-bit word of the RP188 struct.
 	 */
-	static bool			QueryIsRP188DropFrame(uint32_t dbb,uint32_t low,uint32_t high);
+	static bool			QueryIsRP188DropFrame (const uint32_t inDBB, const uint32_t inLo, const uint32_t inHi);
 	
 	AJATimeCode&		operator=(const AJATimeCode  &val);
 	AJATimeCode&		operator+=(const AJATimeCode &val);

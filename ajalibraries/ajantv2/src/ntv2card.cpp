@@ -1,7 +1,7 @@
 /**
 	@file		ntv2card.cpp
 	@brief		Partially implements the CNTV2Card class. Other implementation files are 'ntv2audio.cpp', 'ntv2dma.cpp', and 'ntv2register.cpp'.
-	@copyright	(C) 2004-2017 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2devicefeatures.h"
@@ -24,18 +24,15 @@ CNTV2Card::CNTV2Card ()
 	#endif	//	defined (NTV2_DEPRECATE)
 }
 
-// Constructor that Opens Board
-CNTV2Card::CNTV2Card (const UWord boardNumber, const bool displayErrorMessage, const UWord ulBoardType, const char *hostname)
+CNTV2Card::CNTV2Card (const UWord inDeviceIndex, const string &	inHostName)
 {
 	_boardOpened = false;
-	const NTV2DeviceType	eUseBoardType	(static_cast <NTV2DeviceType> (ulBoardType));
-
-	if (Open (boardNumber, displayErrorMessage, eUseBoardType, hostname))
+	if (Open(inDeviceIndex, inHostName))
 	{
-		if (IsBufferSizeSetBySW ())
+		if (IsBufferSizeSetBySW())
 		{
 			NTV2Framesize fbSize;
-			GetFrameBufferSize (NTV2_CHANNEL1, &fbSize);
+			GetFrameBufferSize (NTV2_CHANNEL1, fbSize);
 			SetFrameBufferSize (fbSize);
 		}
 		else
@@ -43,55 +40,64 @@ CNTV2Card::CNTV2Card (const UWord boardNumber, const bool displayErrorMessage, c
 			NTV2FrameGeometry fg;
 			NTV2FrameBufferFormat format;
 
-			GetFrameGeometry (&fg);
-			GetFrameBufferFormat (NTV2_CHANNEL1, &format);
+			GetFrameGeometry (fg);
+			GetFrameBufferFormat (NTV2_CHANNEL1, format);
 
 			_ulFrameBufferSize = ::NTV2DeviceGetFrameBufferSize (GetDeviceID (), fg, format);
 			_ulNumFrameBuffers = ::NTV2DeviceGetNumberFrameBuffers (GetDeviceID (), fg, format);
 		}
 	}
 
-    #if defined (NTV2_DEPRECATE)
-        //InitNTV2ColorCorrection ();
-		InitNTV2TestPattern ();
-	#endif	//	defined (NTV2_DEPRECATE)
- }	//	constructor
+    #if defined(NTV2_DEPRECATE)
+		InitNTV2TestPattern();
+	#endif	//	defined(NTV2_DEPRECATE)
+}
 
+#if !defined(NTV2_DEPRECATE_14_3)
+CNTV2Card::CNTV2Card (const UWord boardNumber, const bool displayErrorMessage, const UWord ulBoardType, const char *hostname)
+{
+	(void) displayErrorMessage;
+	(void) ulBoardType;
+	_boardOpened = false;
+	if (Open(boardNumber, string(hostname ? hostname : "")))
+	{
+		if (IsBufferSizeSetBySW())
+		{
+			NTV2Framesize fbSize;
+			GetFrameBufferSize (NTV2_CHANNEL1, fbSize);
+			SetFrameBufferSize (fbSize);
+		}
+		else
+		{
+			NTV2FrameGeometry fg;
+			NTV2FrameBufferFormat format;
+
+			GetFrameGeometry (fg);
+			GetFrameBufferFormat (NTV2_CHANNEL1, format);
+
+			_ulFrameBufferSize = ::NTV2DeviceGetFrameBufferSize (GetDeviceID (), fg, format);
+			_ulNumFrameBuffers = ::NTV2DeviceGetNumberFrameBuffers (GetDeviceID (), fg, format);
+		}
+	}
+    #if defined(NTV2_DEPRECATE)
+		InitNTV2TestPattern();
+	#endif	//	defined(NTV2_DEPRECATE)
+}	//	constructor
+#endif	//	!defined(NTV2_DEPRECATE_14_3)
 
 // Destructor
 CNTV2Card::~CNTV2Card ()
 {
-#if 0
-	#if defined (NTV2_DEPRECATE)
-		FreeNTV2ColorCorrection ();
-	#endif	//	defined (NTV2_DEPRECATE)
-#endif
 	if (IsOpen ())
 		Close ();
 
 }	//	destructor
 
 
-NTV2DeviceID CNTV2Card::GetDeviceID (void)
-{
-	ULWord	value	(0);
-	if (_boardOpened && ReadRegister (kRegBoardID, &value))
-	{
-		const NTV2DeviceID	currentValue (static_cast <NTV2DeviceID> (value));
-		if (currentValue != _boardID)
-			cerr	<< "## WARNING:  GetDeviceID:  0x" << hex << this << dec << ":  NTV2DeviceID " << ::NTV2DeviceIDToString (currentValue)
-					<< " read from register " << kRegBoardID << " doesn't match _boardID " << ::NTV2DeviceIDToString (_boardID) << endl;
-		return currentValue;
-	}
-	else
-		return DEVICE_ID_NOTFOUND;
-}
-
-
 Word CNTV2Card::GetDeviceVersion (void)
 {
 	ULWord	status	(0);
-	return ReadRegister (kRegStatus, &status) ? (status & 0xF) : -1;
+	return ReadRegister (kRegStatus, status) ? (status & 0xF) : -1;
 }
 
 
@@ -129,7 +135,7 @@ string CNTV2Card::GetFPGAVersionString (const NTV2XilinxFPGA inFPGA)
 Word CNTV2Card::GetPCIFPGAVersion (void)
 {
 	ULWord	status	(0);
-	return ReadRegister (48, &status) ? ((status >> 8) & 0xFF) : -1;
+	return ReadRegister (48, status) ? ((status >> 8) & 0xFF) : -1;
 }
 
 
@@ -145,74 +151,16 @@ string CNTV2Card::GetPCIFPGAVersionString (void)
 string CNTV2Card::GetDriverVersionString (void)
 {
 	stringstream	oss;
-
-	#if defined (MSWindows)
-		// Bits 3-0		minor version
-		// Bits 7-4		major version
-		// Bits 11-8	point version
-		// Bit	12		reserved
-		// Bit	13		64 bit flag
-		// Bit  14		beta flag
-		// Bit  15		debug flag
-		// Bits	31-16	build version
-		ULWord			versionInfo	(0);
-		GetDriverVersion (&versionInfo);
-
-		const ULWord	ulMajor	((versionInfo >>  4) & 0xf);
-		const ULWord	ulMinor	((versionInfo >>  0) & 0xf);
-		const ULWord	ulPoint	((versionInfo >>  8) & 0xf);
-		const ULWord	ulBuild	((versionInfo >> 16) & 0xffff);
-
-		if ((ulMajor < 6) ||
-			((ulMajor == 6) && (ulMinor < 5)) ||
-			((ulMajor == 6) && (ulMinor == 5) && (ulBuild == 0)))
-		{
-			oss	<< dec << ulMajor
-				<< "." << dec << ulMinor
-				<< ((versionInfo & (BIT_14)) ? " beta " : ".") << dec << ulPoint
-				<< ((versionInfo & (BIT_13)) ? " 64bit" : "")
-				<< ((versionInfo & (BIT_15)) ? " debug" : "");
-		}
-		else
-			oss << dec << ulMajor
-				<< "." << dec << ulMinor
-				<< "." << dec << ulPoint
-				<< ((versionInfo & (BIT_14)) ? " beta " : " build ") << dec << ulBuild
-				<< ((versionInfo & (BIT_13)) ? " 64bit" : "")
-				<< ((versionInfo & (BIT_15)) ? " debug" : "");
-
-	#elif defined (AJALinux)
-
-		// Bit  15     Debug
-		// Bit  14     Beta Version flag (Bits 13-8 interpreted as "beta x"
-		// Bits 13-8   sub-minor Version (or beta version #)
-		// Bits 7-4    Major Version  - new hardware types to support, etc.
-		// Bits 3-0    Minor Version  
-		ULWord			versionInfo	(0);
-		GetDriverVersion (&versionInfo);
-
-		oss	<< dec << ((versionInfo >> 4) & 0xF) << "." << dec << (versionInfo & 0xF)	//	Major and Minor version
-			<< "." << dec << ((versionInfo >> 8) & 0x3F);								//	Point version
-
-		if (versionInfo & 0xFFFF000)
-			oss << "." << dec << ((versionInfo >> 16) & 0xFFFF);						//	Build Version, if present
-
-		if (versionInfo & (BIT_14))
-			oss << " Beta";																//	Beta Version
-
-		if (versionInfo & BIT_15)
-			oss << " Debug";															//	Debug Version
-
-	#elif defined (AJAMac)
-
-		NumVersion	version	=	{0, 0, 0, 0};
-		CNTV2MacDriverInterface::GetDriverVersion (&version);
-		oss	<< uint32_t (version.majorRev) << "." << uint32_t (version.minorAndBugRev) << "." << uint32_t (version.stage)
-			<< ", Interface " << uint32_t (AJA_MAC_DRIVER_INTERFACE_VERSION);
-
-	#else
-	#endif
-
+	static const string	sDriverBuildTypes [] = {"", "b", "a", "d"};
+	UWord	versions[4]	= {0, 0, 0, 0};
+	ULWord	versBits(0);
+	ReadRegister (kVRegDriverVersion, versBits);
+	const string & dabr (sDriverBuildTypes[versBits >> 30]);	//	Bits 31:30 == build type
+	GetDriverVersionComponents (versions[0], versions[1], versions[2], versions[3]);
+	if (dabr.empty())
+		oss << DEC(versions[0]) << "." << DEC(versions[1]) << "." << DEC(versions[2]) << "." << DEC(versions[3]);
+	else
+		oss << DEC(versions[0]) << "." << DEC(versions[1]) << "." << DEC(versions[2]) << dabr << DEC(versions[3]);
 	return oss.str ();
 
 }	//	GetDriverVersionString
@@ -220,47 +168,30 @@ string CNTV2Card::GetDriverVersionString (void)
 
 bool CNTV2Card::GetDriverVersionComponents (UWord & outMajor, UWord & outMinor, UWord & outPoint, UWord & outBuild)
 {
-	bool	result		(false);
-
 	outMajor = outMinor = outPoint = outBuild = 0;
+	ULWord	driverVersionULWord	(0);
+	if (!ReadRegister (kVRegDriverVersion, driverVersionULWord))
+		return false;
 
-	#if defined (MSWindows)
-		ULWord	versionInfo	(0);
-		result = GetDriverVersion (&versionInfo);
-		outMajor = (versionInfo >>  4) & 0xF;
-		outMinor = (versionInfo >>  0) & 0xF;
-		outPoint = (versionInfo >>  8) & 0xF;
-		outBuild = (versionInfo >> 16) & 0xFFFF;
-	#elif defined (AJALinux)
-		ULWord	versionInfo	(0);
-		result = GetDriverVersion (&versionInfo);
-		outMajor = (versionInfo >>  4) & 0xF;
-		outMinor = (versionInfo >>  0) & 0xF;
-		outPoint = (versionInfo >>  8) & 0x3F;
-		outBuild = (versionInfo >> 16) & 0xFFFF;
-	#elif defined (AJAMac)
-		NumVersion	version	= {0, 0, 0, 0};
-		CNTV2MacDriverInterface::GetDriverVersion (&version);
-		outMajor = version.majorRev;
-		outMinor = version.minorAndBugRev;
-		outPoint = version.stage;
-		result = true;
-	#endif
-	return result;
+	outMajor = UWord(NTV2DriverVersionDecode_Major(driverVersionULWord));
+	outMinor = UWord(NTV2DriverVersionDecode_Minor(driverVersionULWord));
+	outPoint = UWord(NTV2DriverVersionDecode_Point(driverVersionULWord));
+	outBuild = UWord(NTV2DriverVersionDecode_Build(driverVersionULWord));
+	return true;
 }
 
 
 ULWord CNTV2Card::GetSerialNumberLow (void)
 {
 	ULWord	serialNum	(0);
-	return ReadRegister (54, &serialNum) ? serialNum : 0;	//	Read EEPROM shadow of Serial Number
+	return ReadRegister (54, serialNum) ? serialNum : 0;	//	Read EEPROM shadow of Serial Number
 }
 
 
 ULWord CNTV2Card::GetSerialNumberHigh (void)
 {
 	ULWord	serialNum	(0);
-	return ReadRegister (55, &serialNum) ? serialNum : 0;	//	Read EEPROM shadow of Serial Number
+	return ReadRegister (55, serialNum) ? serialNum : 0;	//	Read EEPROM shadow of Serial Number
 }
 
 
@@ -382,10 +313,31 @@ bool CNTV2Card::GetInstalledBitfileInfo (ULWord & outNumBytes, std::string & out
 }
 
 
+bool CNTV2Card::IsFailSafeBitfileLoaded (bool & outIsSafeBoot)
+{
+	outIsSafeBoot = false;
+	if (!::NTV2DeviceCanReportFailSafeLoaded(_boardID))
+		return false;
+	return CNTV2DriverInterface::ReadRegister(kRegCPLDVersion, outIsSafeBoot, BIT(4), 4);
+}
+
+
+bool CNTV2Card::CanWarmBootFPGA (bool & outCanWarmBoot)
+{
+	outCanWarmBoot = false;	//	Definitely can't
+	ULWord	version(0);
+	if (!ReadRegister(kRegCPLDVersion, version, BIT(0)|BIT(1)))
+		return false;	//	Fail
+	if (version == 3)
+		outCanWarmBoot = true;	//	Definitely can
+	return true;
+}
+
+
 bool CNTV2Card::GetInput1Autotimed (void)
 {
 	ULWord	status	(0);
-	ReadRegister (kRegInputStatus, &status);
+	ReadRegister (kRegInputStatus, status);
 	return !(status & BIT_3);
 }
 
@@ -393,7 +345,7 @@ bool CNTV2Card::GetInput1Autotimed (void)
 bool CNTV2Card::GetInput2Autotimed (void)
 {
 	ULWord	status	(0);
-	ReadRegister (kRegInputStatus, &status);
+	ReadRegister (kRegInputStatus, status);
 	return !(status & BIT_11);
 }
 
@@ -401,7 +353,7 @@ bool CNTV2Card::GetInput2Autotimed (void)
 bool CNTV2Card::GetAnalogInputAutotimed (void)
 {
 	ULWord	value	(0);
-	ReadRegister (kRegAnalogInputStatus, &value, kRegMaskInputStatusLock, kRegShiftInputStatusLock);
+	ReadRegister (kRegAnalogInputStatus, value, kRegMaskInputStatusLock, kRegShiftInputStatusLock);
 	return value == 1;
 }
 
@@ -409,7 +361,7 @@ bool CNTV2Card::GetAnalogInputAutotimed (void)
 bool CNTV2Card::GetHDMIInputAutotimed (void)
 {
 	ULWord	value	(0);
-	ReadRegister (kRegHDMIInputStatus, &value, kRegMaskInputStatusLock, kRegShiftInputStatusLock);
+	ReadRegister (kRegHDMIInputStatus, value, kRegMaskInputStatusLock, kRegShiftInputStatusLock);
 	return value == 1;
 }
 
@@ -436,7 +388,7 @@ NTV2BreakoutType CNTV2Card::GetBreakoutHardware (void)
 	NTV2BreakoutType	result		(NTV2_BreakoutNone);
 	ULWord				audioCtlReg	(0);	//	The Audio Control Register tells us what's connected
 
-	if (IsOpen ()  &&  ReadRegister (kRegAud1Control, &audioCtlReg))
+	if (IsOpen ()  &&  ReadRegister (kRegAud1Control, audioCtlReg))
 	{
 		const bool	bPhonyKBox	(false);	//	For debugging
 
@@ -447,20 +399,22 @@ NTV2BreakoutType CNTV2Card::GetBreakoutHardware (void)
 			case DEVICE_ID_IO4K:
 			case DEVICE_ID_KONA4:
 			case DEVICE_ID_KONA4UFC:
+			case DEVICE_ID_KONA5:
+            case DEVICE_ID_KONA5_12G:
 				//	Do we have a K3G-Box?
 				if ((audioCtlReg & kK2RegMaskKBoxDetect) || bPhonyKBox)
 					result = NTV2_K3GBox;
 				else
 					result = NTV2_BreakoutCableBNC;
 				break;
-			case DEVICE_ID_LHE_PLUS:
+			case DEVICE_ID_KONALHEPLUS:
 				//	Do we have a KL-Box?
 				if ((audioCtlReg & kK2RegMaskKBoxDetect) || bPhonyKBox)
 					result = NTV2_KLBox;
 				else
 					result = NTV2_BreakoutCableXLR;		// no BNC breakout cable available
 				break;
-			case DEVICE_ID_LHI:
+			case DEVICE_ID_KONALHI:
 				//	Do we have a KLHi-Box?
 				if ((audioCtlReg & kK2RegMaskKBoxDetect) || bPhonyKBox)
 					result = NTV2_KLHiBox;
@@ -568,16 +522,33 @@ bool CNTV2Card::DeviceCanDoInputSource (const NTV2InputSource inInputSource)
 bool CNTV2Card::DeviceCanDoAudioMixer ()
 {
 	ULWord isMixerSupported = 0;
-	ReadRegister(kRegGlobalControl2, &isMixerSupported, BIT(18), 18);
+	ReadRegister(kRegGlobalControl2, isMixerSupported, BIT(18), 18);
 	if(isMixerSupported == 1)
 		return true;
 	return false;
 }
 
+bool CNTV2Card::DeviceCanDoHDMIQuadRasterConversion ()
+{
+	NTV2DeviceID deviceID = GetDeviceID();
+
+	if ((NTV2DeviceGetNumHDMIVideoInputs(deviceID) == 0) &&
+			(NTV2DeviceGetNumHDMIVideoOutputs(deviceID) == 0))
+		return false;
+
+	if (deviceID == DEVICE_ID_KONAHDMI)
+		return false;
+
+	if (DeviceCanDoAudioMixer())
+		return false;
+
+	return true;
+}
+
 bool CNTV2Card::DeviceIsDNxIV ()
 {
 	ULWord isMicSupported = 0;
-	ReadRegister(kRegGlobalControl2, &isMicSupported, BIT(19), 19);
+	ReadRegister(kRegGlobalControl2, isMicSupported, BIT(19), 19);
 	if(isMicSupported == 1)
 		return true;
 	return false;
@@ -586,7 +557,7 @@ bool CNTV2Card::DeviceIsDNxIV ()
 bool CNTV2Card::DeviceHasMicInput ()
 {
 	ULWord isMicSupported = 0;
-	ReadRegister(kRegGlobalControl2, &isMicSupported, BIT(19), 19);
+	ReadRegister(kRegGlobalControl2, isMicSupported, BIT(19), 19);
 	if(isMicSupported == 1)
 		return true;
 	return false;
@@ -600,7 +571,7 @@ bool CNTV2Card::GetBoolParam (const NTV2BoolParamID inParamID, bool & outValue)
 	outValue = false;
 	if (GetRegInfoForBoolParam (inParamID, regInfo))
 	{
-		if (!ReadRegister (regInfo.registerNumber, &regValue, regInfo.registerMask, regInfo.registerShift))
+		if (!ReadRegister (regInfo.registerNumber, regValue, regInfo.registerMask, regInfo.registerShift))
 			return false;
 		outValue = static_cast <bool> (regValue != 0);
 		return true;
@@ -703,7 +674,7 @@ bool CNTV2Card::GetNumericParam (const NTV2NumericParamID inParamID, uint32_t & 
 	outValue = false;
 	if (GetRegInfoForNumericParam (inParamID, regInfo))
 	{
-		if (!ReadRegister (regInfo.registerNumber, &regValue, regInfo.registerMask, regInfo.registerShift))
+		if (!ReadRegister (regInfo.registerNumber, regValue, regInfo.registerMask, regInfo.registerShift))
 			return false;
 		outValue = static_cast <bool> (regValue != 0);
 		return true;
@@ -828,124 +799,6 @@ ostream &	operator << (ostream & inOutStr, const NTV2DIDSet & inDIDs)
 }
 
 
-//										SDI Spigot:		   1	   2	   3	   4	   5	   6	   7	   8
-static const ULWord	sAncExtCtrlRegNums[]		=	{	4096,	4160,	4224,	4288,	4352,	4416,	4480,	4544,	0};
-static const ULWord	sAncInsCtrlRegNums[]		=	{	4609,	4673,	4737,	4801,	4865,	4929,	4993,	5057,	0};
-static const ULWord	sFirstIgnoreDIDRegNums[]	=	{	4108,	4172,	4236,	4300,	4364,	4428,	4492,	4556,	0};
-static const ULWord	sLastIgnoreDIDRegNums[]		=	{	4112,	4176,	4240,	4304,	4368,	4432,	4496,	4560,	0};
-static const ULWord	kNumIgnoreDIDRegisters			(sLastIgnoreDIDRegNums[0] - sFirstIgnoreDIDRegNums[0] + 1);
-static const ULWord	kNumDIDsPerRegister				(4);
-static const ULWord	kMaxNumIgnoreDIDs				(kNumDIDsPerRegister * kNumIgnoreDIDRegisters);
-
-
-bool CNTV2Card::GetAncExtractorRunState (const UWord inSDIInput, bool & outIsRunning)
-{
-	outIsRunning = false;
-	if (!::NTV2DeviceCanDoCapture(_boardID))
-		return false;
-	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
-		return false;
-	if (inSDIInput >= ::NTV2DeviceGetNumVideoInputs(_boardID))
-		return false;
-
-	ULWord	value(0);
-	if (!ReadRegister(sAncExtCtrlRegNums[inSDIInput], &value))
-		return false;
-	outIsRunning = (value & BIT(28)) ? false : true;
-	return true;
-}
-
-bool CNTV2Card::GetAncInserterRunState (const UWord inSDIOutput, bool & outIsRunning)
-{
-	outIsRunning = false;
-	if (!::NTV2DeviceCanDoPlayback(_boardID))
-		return false;
-	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
-		return false;
-	if (inSDIOutput >= ::NTV2DeviceGetNumVideoOutputs(_boardID))
-		return false;
-
-	ULWord	value(0);
-	if (!ReadRegister(sAncInsCtrlRegNums[inSDIOutput], &value))
-		return false;
-	outIsRunning = (value & BIT(28)) ? false : true;
-	return true;
-}
-
-
-bool CNTV2Card::GetAncExtractorFilterDIDs (const UWord inSDIInput, NTV2DIDSet & outDIDs)
-{
-	outDIDs.clear();
-	if (!::NTV2DeviceCanDoCapture(_boardID))
-		return false;
-	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
-		return false;
-	if (inSDIInput >= ::NTV2DeviceGetNumVideoInputs(_boardID))
-		return false;
-
-	const ULWord	firstIgnoreRegNum	(sFirstIgnoreDIDRegNums [inSDIInput]);
-	for (ULWord regNdx(0);  regNdx < kNumIgnoreDIDRegisters;  regNdx++)
-	{
-		ULWord	regValue	(0);
-		ReadRegister (firstIgnoreRegNum + regNdx,  &regValue);
-		for (unsigned regByte(0);  regByte < 4;  regByte++)
-		{
-			const NTV2DID	theDID	((regValue >> (regByte*8)) & 0x000000FF);
-			if (theDID)
-				outDIDs.insert(theDID);
-		}
-	}
-	return true;
-}
-
-
-bool CNTV2Card::SetAncExtractorFilterDIDs (const UWord inSDIInput, const NTV2DIDSet & inDIDs)
-{
-	if (!::NTV2DeviceCanDoCapture(_boardID))
-		return false;
-	if (!::NTV2DeviceCanDoCustomAnc(_boardID))
-		return false;
-	if (inSDIInput >= ::NTV2DeviceGetNumVideoInputs(_boardID))
-		return false;
-
-	const ULWord		firstIgnoreRegNum	(sFirstIgnoreDIDRegNums [inSDIInput]);
-	NTV2DIDSetConstIter iter				(inDIDs.begin());
-
-	for (ULWord regNdx(0);  regNdx < kNumIgnoreDIDRegisters;  regNdx++)
-	{
-		ULWord	regValue	(0);
-		for (unsigned regByte(0);  regByte < 4;  regByte++)
-		{
-			const NTV2DID	theDID	(iter != inDIDs.end()  ?  *iter++  :  0);
-			regValue |= (ULWord(theDID) << (regByte*8));
-		}
-		WriteRegister (firstIgnoreRegNum + regNdx,  regValue);
-	}
-	return true;
-}
-
-
-UWord CNTV2Card::GetMaxNumAncExtractorFilterDIDs (void)
-{
-	return UWord(kMaxNumIgnoreDIDs);
-}
-
-
-NTV2DIDSet CNTV2Card::GetDefaultAncExtractorDIDs (void)
-{
-	//												SMPTE299 HD Audio Grp 1-4	SMPTE299 HD Audio Ctrl Grp 1-4
-	static const NTV2DID	sDefaultDIDs[]	=	{	0xE7,0xE6,0xE5,0xE4,		0xE3,0xE2,0xE1,0xE0,
-	//												SMPTE299 HD Audio Grp 5-8	SMPTE299 HD Audio Ctrl Grp 5-8
-													0xA7,0xA6,0xA5,0xA4,		0xA3,0xA2,0xA1,0xA0,
-													0x00};
-	NTV2DIDSet	result;
-	for (unsigned ndx(0);  sDefaultDIDs[ndx];  ndx++)
-		result.insert(sDefaultDIDs[ndx]);
-
-	return result;
-}
-
-
 #if !defined (NTV2_DEPRECATE)
 	bool CNTV2Card::GetBitFileInformation (ULWord &	outNumBytes, string & outDateStr, string & outTimeStr, const NTV2XilinxFPGA inFPGA)
 	{
@@ -978,7 +831,7 @@ NTV2DIDSet CNTV2Card::GetDefaultAncExtractorDIDs (void)
 
 	NTV2BoardType CNTV2Card::GetBoardType (void) const
 	{
-		return _boardType;
+		return DEVICETYPE_NTV2;
 	}
 
 	NTV2BoardSubType CNTV2Card::GetBoardSubType (void)
@@ -1005,3 +858,6 @@ NTV2DIDSet CNTV2Card::GetDefaultAncExtractorDIDs (void)
 	}	///< @deprecated	Obsolete. Convert the result of GetDeviceID() into a hexa string instead.
 
 #endif	//	!defined (NTV2_DEPRECATE)
+
+
+NTV2_POINTER CNTV2Card::NULL_POINTER (AJA_NULL, 0);

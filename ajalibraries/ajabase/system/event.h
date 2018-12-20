@@ -1,6 +1,6 @@
 /**
 	@file		event.h
-	@copyright	Copyright (C) 2009-2017 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJAEvent class.
 **/
 
@@ -31,7 +31,7 @@ public:
 	 *
 	 *	@param[in]	manualReset		true if event must be reset by caller.
 	 *								false if event automatically reset.
-	 *	@param[in]	pName			Name of a shared lock object.
+	 *	@param[in]	name			Name of a shared lock object.
 	 */
 	AJAEvent(bool manualReset = true, const std::string& name = "");
 	virtual ~AJAEvent();
@@ -118,21 +118,21 @@ private:
 };
 
 	/**
-	*	Wait for a list of events to be signaled.
-	*	@relates AJAEvent
-	*
-	*	The wait can terminate when one or all of the events in the list is signaled.
-	*
-	*	@param[in]	pList					An array of events (AJAEventPtr).
-	*	@param[in]	numEvents				Number of events in the event array.
-	*	@param[in]	all						true to wait for all events to be signaled.
-	*	@param[in]	timeout					Wait timeout in milliseconds (0xffffffff infinite).
-	*	@return		AJA_STATUS_SUCCESS		events signaled
-	*				AJA_STATUS_TIMEOUT		event wait timeout
-	*				AJA_STATUS_OPEN			event not initialized
-	*				AJA_STATUS_RANGE		numEvents out of range
-	*				AJA_STATUS_FAIL			event error
-	*/
+	 *	Wait for a list of events to be signaled.
+	 *	@relates AJAEvent
+	 *
+	 *	The wait can terminate when one or all of the events in the list is signaled.
+	 *
+	 *	@param[in]	pList					An array of events (AJAEventPtr).
+	 *	@param[in]	numEvents				Number of events in the event array.
+	 *	@param[in]	all						true to wait for all events to be signaled.
+	 *	@param[in]	timeout					Wait timeout in milliseconds (0xffffffff infinite).
+	 *	@return		AJA_STATUS_SUCCESS		events signaled
+	 *				AJA_STATUS_TIMEOUT		event wait timeout
+	 *				AJA_STATUS_OPEN			event not initialized
+	 *				AJA_STATUS_RANGE		numEvents out of range
+	 *				AJA_STATUS_FAIL			event error
+	 */
 	AJA_EXPORT AJAStatus AJAWaitForEvents(	AJAEvent* pList, 
 											uint32_t numEvents, 
 											bool all = true, 
