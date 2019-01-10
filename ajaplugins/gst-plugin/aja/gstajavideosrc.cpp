@@ -1102,7 +1102,6 @@ extract_cc_from_vbi (GstAjaVideoSrc * src, GstBuffer ** buffer,
         GST_MEMDUMP_OBJECT (src, "CDP", gstanc.data, gstanc.data_count);
         gst_buffer_add_video_caption_meta (*buffer,
             GST_VIDEO_CAPTION_TYPE_CEA708_CDP,
-            src->input->mode->width, src->input->mode->height,
             gstanc.data, gstanc.data_count);
         found = TRUE;
         src->last_cc_vbi_line = i;
