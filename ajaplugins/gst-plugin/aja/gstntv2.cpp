@@ -1236,8 +1236,17 @@ NTV2GstAV::ACInputWorker (void)
     // For quad mode, we will get the format of a single input
     NTV2VideoFormat effectiveVideoFormat = mVideoFormat;
     switch (mVideoFormat) {
+      case NTV2_FORMAT_4x1920x1080p_2398:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2398;
+        break;
+      case NTV2_FORMAT_4x1920x1080p_2400:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2400;
+        break;
       case NTV2_FORMAT_4x1920x1080p_2500:
         effectiveVideoFormat = NTV2_FORMAT_1080p_2500;
+        break;
+      case NTV2_FORMAT_4x1920x1080p_2997:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2997;
         break;
       case NTV2_FORMAT_4x1920x1080p_3000:
         effectiveVideoFormat = NTV2_FORMAT_1080p_3000;
@@ -1251,11 +1260,26 @@ NTV2GstAV::ACInputWorker (void)
       case NTV2_FORMAT_4x1920x1080p_6000:
         effectiveVideoFormat = NTV2_FORMAT_1080p_6000_A;
         break;
+      case NTV2_FORMAT_4x2048x1080p_2398:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2K_2398;
+        break;
+      case NTV2_FORMAT_4x2048x1080p_2400:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2K_2400;
+        break;
       case NTV2_FORMAT_4x2048x1080p_2500:
         effectiveVideoFormat = NTV2_FORMAT_1080p_2K_2500;
         break;
+      case NTV2_FORMAT_4x2048x1080p_2997:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2K_2997;
+        break;
       case NTV2_FORMAT_4x2048x1080p_3000:
         effectiveVideoFormat = NTV2_FORMAT_1080p_2K_3000;
+        break;
+      case NTV2_FORMAT_4x2048x1080p_4795:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2K_4795_A;
+        break;
+      case NTV2_FORMAT_4x2048x1080p_4800:
+        effectiveVideoFormat = NTV2_FORMAT_1080p_2K_4800_A;
         break;
       case NTV2_FORMAT_4x2048x1080p_5000:
         effectiveVideoFormat = NTV2_FORMAT_1080p_2K_5000_A;
