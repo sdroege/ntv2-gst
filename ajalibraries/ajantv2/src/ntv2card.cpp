@@ -1,7 +1,7 @@
 /**
 	@file		ntv2card.cpp
 	@brief		Partially implements the CNTV2Card class. Other implementation files are 'ntv2audio.cpp', 'ntv2dma.cpp', and 'ntv2register.cpp'.
-	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2devicefeatures.h"
@@ -278,7 +278,7 @@ bool CNTV2Card::GetSerialNumberString (string & outSerialNumberString)
 		return false;
 	}
 
-	const ULWord	deviceID	(GetDeviceID());
+	const NTV2DeviceID deviceID(GetDeviceID());
 	if (deviceID == DEVICE_ID_IO4KPLUS)							//	Io4K+/DNxIV?
 		outSerialNumberString = "5" + outSerialNumberString;	//		prepend with "5"
     else if ((deviceID == DEVICE_ID_IOIP_2022) || (deviceID == DEVICE_ID_IOIP_2110))	//	IoIP/DNxIP?
@@ -328,7 +328,7 @@ bool CNTV2Card::CanWarmBootFPGA (bool & outCanWarmBoot)
 	ULWord	version(0);
 	if (!ReadRegister(kRegCPLDVersion, version, BIT(0)|BIT(1)))
 		return false;	//	Fail
-	if (version == 3)
+	if (version != 3)
 		outCanWarmBoot = true;	//	Definitely can
 	return true;
 }

@@ -1,7 +1,7 @@
 /**
 	@file		ancillarylist.cpp
 	@brief		Implementation of the AJAAncillaryList class.
-	@copyright	(C) 2010-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2010-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ancillarylist.h"
@@ -893,6 +893,9 @@ AJAStatus AJAAncillaryList::GetSDITransmitData (NTV2_POINTER & F1Buffer, NTV2_PO
 	uint8_t *	pF1AncData	(reinterpret_cast<uint8_t*>(F1Buffer.GetHostPointer()));
 	uint8_t *	pF2AncData	(reinterpret_cast<uint8_t*>(F2Buffer.GetHostPointer()));
 
+	//	I need to be in ascending line order...
+	SortListByLocation();
+
 	//	Generate transmit data for each of my packets...
 	for (AJAAncDataListConstIter it(m_ancList.begin());  it != m_ancList.end();  ++it)
 	{
@@ -955,6 +958,9 @@ AJAStatus AJAAncillaryList::GetVANCTransmitData (NTV2_POINTER & inFrameBuffer,  
 		return AJA_STATUS_SUCCESS;
 	}
 
+	//	I need to be in ascending line order...
+	SortListByLocation();
+
 	//	BRUTE-FORCE METHOD -- NOT VERY EFFICIENT
 	const bool	isSD	(inFormatDesc.IsSDFormat());
 	AJAAncillaryList	failures, successes;
@@ -1014,6 +1020,8 @@ AJAStatus AJAAncillaryList::GetVANCTransmitData (NTV2_POINTER & inFrameBuffer,  
 				{
 					if (isSD)
 					{	//	For SD, just pack the u16 components into the buffer...
+						while (u16PktComponents.size() < 12)	//	YUVComponentsTo10BitYUVPackedBuffer fails if packing fewer than 12 words
+							u16PktComponents.push_back(0x040);	//	SMPTE black
 						muxedOK = ::YUVComponentsTo10BitYUVPackedBuffer (u16PktComponents, inFrameBuffer, inFormatDesc, fbLineOffset);
 					}
 					else
@@ -1033,7 +1041,11 @@ AJAStatus AJAAncillaryList::GetVANCTransmitData (NTV2_POINTER & inFrameBuffer,  
 
 						//	Repack the patched YUV16 line back into the FB...
 						if (muxedOK)
+						{
+							while (YUV16Line.size() < 12)	//	YUVComponentsTo10BitYUVPackedBuffer fails if packing fewer than 12 words
+								YUV16Line.push_back(0x040);	//	SMPTE black
 							muxedOK = ::YUVComponentsTo10BitYUVPackedBuffer (YUV16Line, inFrameBuffer, inFormatDesc, fbLineOffset);
+						}
 					}	//	else HD
 				}	//	else v210
 			}	//	if GenerateTransmitData OK
@@ -1115,6 +1127,9 @@ AJAStatus AJAAncillaryList::GetIPTransmitData (NTV2_POINTER & F1Buffer, NTV2_POI
 	U32F1s.reserve(maxPktLengthWords);
 	if (!inIsProgressive)
 		U32F2s.reserve(maxPktLengthWords);
+
+	//	I need to be in ascending line order...
+	SortListByLocation();
 
 	//	Generate transmit data for each of my packets...
 	for (uint32_t pktNdx(0);  pktNdx < CountAncillaryData();  pktNdx++)

@@ -1,7 +1,7 @@
 /**
 	@file		ntv2card.h
 	@brief		Declares the CNTV2Card class and the NTV2VideoFormatSet.
-	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2CARD_H
@@ -2116,6 +2116,7 @@ public:
 		@return		True if successful;  otherwise false.
 		@note		This may differ from the revision number of the installed firmware if, after
 					erasing or reflashing, the device was not power-cycled to force its FPGA to reload.
+		@see		CNTV2Card::GetRunningFirmwareDate, CNTV2Card::GetRunningFirmwareTime, \ref devicefirmware.
 	**/
 	AJA_VIRTUAL bool	GetRunningFirmwareRevision (UWord & outRevision);
 
@@ -2130,6 +2131,7 @@ public:
 		@return		True if successful;  otherwise false.
 		@note		This date may differ from the build date of the installed firmware if, after erasing
 					or reflashing, the device was never power-cycled to force its FPGA to reload.
+		@see		CNTV2Card::GetRunningFirmwareTime, CNTV2Card::GetRunningFirmwareRevision, \ref devicefirmware.
 	**/
 	AJA_VIRTUAL bool	GetRunningFirmwareDate (UWord & outYear, UWord & outMonth, UWord & outDay);
 
@@ -2144,6 +2146,7 @@ public:
 		@return		True if successful;  otherwise false.
 		@note		This date may differ from the build date of the installed firmware if, after erasing
 					or reflashing, the device was never power-cycled to force its FPGA to reload.
+		@see		CNTV2Card::GetRunningFirmwareDate, CNTV2Card::GetRunningFirmwareRevision, \ref devicefirmware.
 	**/
 	AJA_VIRTUAL bool	GetRunningFirmwareTime (UWord & outHours, UWord & outMinutes, UWord & outSeconds);
 
@@ -2159,6 +2162,7 @@ public:
 		@return		True if successful;  otherwise false.
 		@note		This date/time may differ from the build date/time of the installed firmware if, after erasing
 					or reflashing, the device was never power-cycled to force its FPGA to reload.
+		@see		CNTV2Card::GetRunningFirmwareTime, CNTV2Card::GetRunningFirmwareRevision, \ref devicefirmware.
 	**/
 	AJA_VIRTUAL bool	GetRunningFirmwareDate (std::string & outDate, std::string & outTime);
 #if !defined(NTV2_DEPRECATE_14_2)
@@ -3555,22 +3559,42 @@ public:
 	/**
 		@brief		Selects the color space converter operation method.
 		@param[in]	inCSCMethod		Specifies the method by which the color space converter will transform its input into its output.
-		@param[in]	inChannel		Specifies the CSC of interest.
+		@param[in]	inChannel		Specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
 		@return		True if the call was successful; otherwise false. 
-		@note		When selecting NTV2_CSC_Method_Enhanced_4K as the method, the channel must be NTV2_CHANNEL1 or NTV2_CHANNEL5.
+		@note		When selecting ::NTV2_CSC_Method_Enhanced_4K as the method, the channel must be ::NTV2_CHANNEL1 or ::NTV2_CHANNEL5.
 					This will group four CSCs together to process the 4K image. To leave 4K, take CSC 1 (or CSC 5) out of 4K mode. 
+		@see		CNTV2Card::GetColorSpaceMethod, \ref vidop-csc and \ref widget_csc
 	**/
 	AJA_VIRTUAL bool		SetColorSpaceMethod (const NTV2ColorSpaceMethod inCSCMethod, const NTV2Channel inChannel);
 
 	/**
 		@brief		Answers with the current operating mode of the given color space converter.
-		@param[out]	outMethod		Receives the CSC's current operating mode.
-		@param[in]	inChannel		Specifies the CSC of interest.
+		@param[out]	outMethod	Receives the CSC's current operating method.
+		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetColorSpaceMethod, \ref vidop-csc and \ref widget_csc
 	**/
 	AJA_VIRTUAL bool	GetColorSpaceMethod (NTV2ColorSpaceMethod & outMethod, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
+	/**
+		@brief		Sets the matrix type to be used for the given CSC, typically ::NTV2_Rec601Matrix or ::NTV2_Rec709Matrix.
+		@param[in]	inType		Specifies the matrix type to be used.
+		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetColorSpaceMatrixSelect, \ref vidop-csc and \ref widget_csc
+	**/
 	AJA_VIRTUAL bool	SetColorSpaceMatrixSelect (const NTV2ColorSpaceMatrixType inType, const NTV2Channel inChannel = NTV2_CHANNEL1);
+
+	/**
+		@brief		Answers with the current matrix type being used for the given CSC.
+		@param[out]	outType		Receives the matrix type being used, typically ::NTV2_Rec601Matrix or ::NTV2_Rec709Matrix.
+		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetColorSpaceMatrixSelect, \ref vidop-csc and \ref widget_csc
+	**/
 	AJA_VIRTUAL bool	GetColorSpaceMatrixSelect (NTV2ColorSpaceMatrixType & outType, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	AJA_VIRTUAL bool	DownloadLUTToHW (const NTV2DoubleArray & inRedLUT, const NTV2DoubleArray & inGreenLUT, const NTV2DoubleArray & inBlueLUT, const NTV2Channel inChannel, const int inBank);
@@ -3608,11 +3632,12 @@ public:
 
 	/**
 		@brief		Sets the RGB range for the given CSC.
-		@param[in]	inRange		Specifies the new RGB range (NTV2_CSC_RGB_RANGE_FULL or NTV2_CSC_RGB_RANGE_SMPTE).
+		@param[in]	inRange		Specifies the new RGB range (::NTV2_CSC_RGB_RANGE_FULL or ::NTV2_CSC_RGB_RANGE_SMPTE).
 		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
 								Call ::NTV2DeviceGetNumCSCs to determine the number of available CSCs on the device.
-								Defaults to CSC 0 (NTV2_CHANNEL1).
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetColorSpaceRGBBlackRange, \ref vidop-csc and \ref widget_csc
 	**/
 	AJA_VIRTUAL bool	SetColorSpaceRGBBlackRange (const NTV2_CSC_RGB_Range inRange,  const NTV2Channel inChannel = NTV2_CHANNEL1);
 
@@ -3621,24 +3646,61 @@ public:
 		@param[out]	outRange	Receives the RGB range (NTV2_CSC_RGB_RANGE_FULL, NTV2_CSC_RGB_RANGE_SMPTE, or NTV2_CSC_RGB_RANGE_INVALID upon failure).
 		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
 								Call ::NTV2DeviceGetNumCSCs to determine the number of available CSCs on the device.
-								Defaults to CSC 0 (NTV2_CHANNEL1).
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetColorSpaceRGBBlackRange, \ref vidop-csc and \ref widget_csc
 	**/
 	AJA_VIRTUAL bool	GetColorSpaceRGBBlackRange (NTV2_CSC_RGB_Range & outRange,  const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	AJA_VIRTUAL bool	SetColorSpaceUseCustomCoefficient (const ULWord inUseCustomCoefficient, const NTV2Channel inChannel = NTV2_CHANNEL1);
 	AJA_VIRTUAL bool	GetColorSpaceUseCustomCoefficient (ULWord & outUseCustomCoefficient, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
-	AJA_VIRTUAL bool	SetColorSpaceMakeAlphaFromKey (const ULWord inMakeAlphaFromKey, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	/**
+		@brief		Specifies whether or not the given CSC will produce alpha channel data from its key input.
+		@param[in]	inMakeAlphaFromKey		Specify true to have the CSC generate alpha channel data from a YCbCr video signal
+											applied to its Key Input;  otherwise specify false to have it generate an "opaque" value.
+		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
+								Call ::NTV2DeviceGetNumCSCs to determine the number of available CSCs on the device.
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetColorSpaceMakeAlphaFromKey, \ref vidop-csc and \ref widget_csc
+	**/
+	AJA_VIRTUAL bool	SetColorSpaceMakeAlphaFromKey (const bool inMakeAlphaFromKey, const NTV2Channel inChannel = NTV2_CHANNEL1);
+
+	/**
+		@brief		Answers whether or not the given CSC is set to produce alpha channel data from its key input.
+		@param[out]	outMakeAlphaFromKey		Receives true if the CSC is generating alpha channel data from the YCbCr video signal
+											being applied to its Key Input;  otherwise receives false.
+		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
+								Call ::NTV2DeviceGetNumCSCs to determine the number of available CSCs on the device.
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetColorSpaceMakeAlphaFromKey, \ref vidop-csc and \ref widget_csc
+	**/
 	AJA_VIRTUAL bool	GetColorSpaceMakeAlphaFromKey (ULWord & outMakeAlphaFromKey, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
+	/**
+		@brief		Answers whether or not the video signal present at the CSC’s Key Input is in sync with the video signal present
+					at its Video Input.
+		@param[out]	outVideoKeySyncFail		Receives true if the video signal present at the CSC’s Key Input is NOT sync'd to the
+											video signal present at its Video Input;  otherwise receives false.
+		@param[in]	inChannel	Optionally specifies the CSC of interest, a zero-based index value expressed as an ::NTV2Channel.
+								Call ::NTV2DeviceGetNumCSCs to determine the number of available CSCs on the device.
+								Defaults to ::NTV2_CHANNEL1 (CSC1).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetColorSpaceMakeAlphaFromKey, CNTV2Card::SetColorSpaceMakeAlphaFromKey, \ref vidop-csc and \ref widget_csc
+		@note		The "outVideoKeySyncFail" result is valid and trustworthy when all of the following are true:
+					-	the Video Input is connected to a YCbCr signal source crosspoint;
+					-	the CSC's "Make Alpha From Key" setting is enabled;
+					-	the Key Input is connected to a YCbCr signal source crosspoint.
+	**/
 	AJA_VIRTUAL bool	GetColorSpaceVideoKeySyncFail (bool & outVideoKeySyncFail, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
-	AJA_VIRTUAL bool	SetColorSpaceCustomCoefficients (const ColorSpaceConverterCustomCoefficients & inCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
-	AJA_VIRTUAL bool	GetColorSpaceCustomCoefficients (ColorSpaceConverterCustomCoefficients & outCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	AJA_VIRTUAL bool	SetColorSpaceCustomCoefficients (const NTV2CSCCustomCoeffs & inCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	AJA_VIRTUAL bool	GetColorSpaceCustomCoefficients (NTV2CSCCustomCoeffs & outCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
-	AJA_VIRTUAL bool	SetColorSpaceCustomCoefficients12Bit (const ColorSpaceConverterCustomCoefficients & inCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
-	AJA_VIRTUAL bool	GetColorSpaceCustomCoefficients12Bit (ColorSpaceConverterCustomCoefficients & outCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	AJA_VIRTUAL bool	SetColorSpaceCustomCoefficients12Bit (const NTV2CSCCustomCoeffs & inCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	AJA_VIRTUAL bool	GetColorSpaceCustomCoefficients12Bit (NTV2CSCCustomCoeffs & outCustomCoefficients, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	AJA_VIRTUAL bool	SetLUTControlSelect (const NTV2LUTControlSelect inLUTSelect);
 	AJA_VIRTUAL bool	GetLUTControlSelect (NTV2LUTControlSelect & outLUTSelect);
@@ -3981,6 +4043,7 @@ public:
 		@param[out]	outOutputXpt	Receives the output (signal source) the given input is connected to (if connected),
 									or NTV2_XptBlack if not connected.
 		@return		True if successful;  otherwise false.
+		@see		ntv2signalrouting, CNTV2Card::GetConnectedInput, CNTV2Card::IsConnected
 	**/
 	AJA_VIRTUAL bool	GetConnectedOutput (const NTV2InputCrosspointID inInputXpt, NTV2OutputCrosspointID & outOutputXpt);
 
@@ -3990,6 +4053,7 @@ public:
 		@param[out]	outInputXpt		Receives the input (signal sink) the given output is connected to (if connected),
 									or NTV2_XptBlack if not connected.
 		@return		True if successful;  otherwise false.
+		@see		ntv2signalrouting, CNTV2Card::GetConnectedOutput, CNTV2Card::IsConnected
 	**/
 	AJA_VIRTUAL bool	GetConnectedInput (const NTV2OutputCrosspointID inOutputXpt, NTV2InputCrosspointID & outInputXpt);
 
@@ -4002,6 +4066,7 @@ public:
 									before writing the crosspoint register;  otherwise writes the crosspoint register
 									regardless. Defaults to false.
 		@return		True if successful;  otherwise false.
+		@see		ntv2signalrouting, CNTV2Card::Disconnect, CNTV2Card::IsConnected
 	**/
 	AJA_VIRTUAL bool	Connect (const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt, const bool inValidate = false);
 
@@ -4009,6 +4074,7 @@ public:
 		@brief		Disconnects the given widget signal input (sink) from whatever output (source) it may be connected.
 		@param[in]	inInputXpt		Specifies the input (signal sink) to be disconnected.
 		@return		True if successful;  otherwise false.
+		@see		ntv2signalrouting, CNTV2Card::Connect
 	**/
 	AJA_VIRTUAL bool	Disconnect (const NTV2InputCrosspointID inInputXpt);
 
@@ -4018,6 +4084,7 @@ public:
 		@param[out]	outIsConnected	Receives true if the input is connected to any other output (other than NTV2_XptBlack).
 		@return		True if successful;  otherwise false.
 		@note		If the input is connected to NTV2_XptBlack, "outIsConnected" will be "false".
+		@see		ntv2signalrouting, CNTV2Card::IsConnectedTo
 	**/
 	AJA_VIRTUAL bool	IsConnected (const NTV2InputCrosspointID inInputXpt, bool & outIsConnected);
 
@@ -4027,6 +4094,7 @@ public:
 		@param[in]	inOutputXpt		Specifies the output (signal source) of interest. It's okay to specify NTV2_XptBlack.
 		@param[out]	outIsConnected	Receives true if the input is connected to the specified output.
 		@return		True if successful;  otherwise false.
+		@see		ntv2signalrouting, CNTV2Card::IsConnected
 	**/
 	AJA_VIRTUAL bool	IsConnectedTo (const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt, bool & outIsConnected);
 
@@ -4039,6 +4107,7 @@ public:
 		@return		True if successful;  otherwise false.
 		@bug		This function is not currently implemented.
 		@todo		This needs to be implemented.
+		@see		ntv2signalrouting, CNTV2Card::Connect
 	**/
 	AJA_VIRTUAL bool	CanConnect (const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt, bool & outCanConnect);
 
@@ -4059,6 +4128,7 @@ public:
 					are built and then applied to the device in this function call.
 					This function iterates over each connection that's specified in the given routing table and updates
 					the appropriate register in the device.
+		@see		ntv2signalrouting, CNTV2SignalRouter
 	**/
 	AJA_VIRTUAL bool	ApplySignalRoute (const CNTV2SignalRouter & inRouter, const bool inReplace = false);
 
@@ -4067,6 +4137,7 @@ public:
 		@return		True if successful; otherwise false.
 		@details	This function writes zeroes into all crosspoint selection registers, effectively
 					clearing any existing routing configuration on the device.
+		@see		ntv2signalrouting
 	**/
 	AJA_VIRTUAL bool	ClearRouting (void);
 
@@ -4074,6 +4145,7 @@ public:
 		@brief		Answers with the current signal routing between any and all widgets on the AJA device.
 		@param[out]	outRouting	Receives the current signal routing.
 		@return		True if successful; otherwise false.
+		@see		ntv2signalrouting, CNTV2SignalRouter, CNTV2Card::GetRoutingForChannel, CNTV2Card::ApplySignalRoute
 	**/
 	AJA_VIRTUAL bool	GetRouting (CNTV2SignalRouter & outRouting);
 
@@ -4082,6 +4154,7 @@ public:
 		@param[in]	inChannel	Specifies the NTV2Channel of interest.
 		@param[out]	outRouting	Receives the current signal routing for the given channel.
 		@return		True if successful; otherwise false.
+		@see		ntv2signalrouting, CNTV2SignalRouter, CNTV2Card::GetRouting, CNTV2Card::ApplySignalRoute
 	**/
 	AJA_VIRTUAL bool	GetRoutingForChannel (const NTV2Channel inChannel, CNTV2SignalRouter & outRouting);
 
@@ -4274,6 +4347,12 @@ public:
 
 	AJA_VIRTUAL bool		SetHDMIOutProtocol (const NTV2HDMIProtocol inNewValue);
 	AJA_VIRTUAL bool		GetHDMIOutProtocol (NTV2HDMIProtocol & outValue);
+
+	AJA_VIRTUAL bool		SetHDMIOutForceConfig (const bool inNewValue);
+	AJA_VIRTUAL bool		GetHDMIOutForceConfig (bool & outValue);
+
+	AJA_VIRTUAL bool		SetHDMIOutPrefer420 (const bool inNewValue);
+	AJA_VIRTUAL bool		GetHDMIOutPrefer420 (bool & outValue);
 
 	AJA_VIRTUAL bool		GetHDMIOutDownstreamBitDepth (NTV2HDMIBitDepth & outValue);
 
@@ -4745,7 +4824,7 @@ public:
 				the SDI relays into bypass or send the signals through the device.
 		@return	True if successful; otherwise false.
 		@param[out]		outValue	Receives the current state of the watchdog
-									timer, either NTV2_BYPASS or NTV2_NORMAL.
+									timer, either NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE.
 		@note	The watchdog timer will not change the state of the relays
 				if they are under manual control.
 	**/
@@ -4755,7 +4834,7 @@ public:
 		@brief	Answers if the bypass relays between connectors 1 and 2 are currently
 				in bypass or routing the signals through the device.
 		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the current state of the relays (NTV2_BYPASS or NTV2_NORMAL).
+		@param[out]		outValue	Receives the current state of the relays (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
 	**/
 	AJA_VIRTUAL bool	GetSDIRelayPosition12 (NTV2RelayState & outValue);
 
@@ -4763,7 +4842,7 @@ public:
 		@brief	Answers if the bypass relays between connectors 3 and 4 are currently
 				in bypass or routing the signals through the device.
 		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the current state of the relays (NTV2_BYPASS or NTV2_NORMAL).
+		@param[out]		outValue	Receives the current state of the relays (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
 	**/
 	AJA_VIRTUAL bool	GetSDIRelayPosition34 (NTV2RelayState & outValue);
 
@@ -4771,7 +4850,7 @@ public:
 		@brief	Answers if the bypass relays between connectors 1 and 2 would be in
 				bypass or would route signals through the device, if under manual control.
 		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the relay state (NTV2_BYPASS or NTV2_NORMAL).
+		@param[out]		outValue	Receives the relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
 		@note	Manual control will not change the state of the relays if
 				the watchdog timer for the relays is enabled.
 	**/
@@ -4781,20 +4860,20 @@ public:
 		@brief	Sets the state of the relays between connectors 1 and 2 to
 				bypass or through the device, if under manual control.
 		@return	True if successful; otherwise false.
-		@param[in]	inValue		Specifies the desired relay state (NTV2_BYPASS or NTV2_NORMAL).
+		@param[in]	inValue		Specifies the desired relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
 		@note	Manual control will not change the state of the relays if
 				the watchdog timer for the relays is enabled. Because this
 				call modifies the control register, it sends a kick
 				sequence, which has the side effect of restarting the
 				timeout counter.
 	**/
-	AJA_VIRTUAL bool	SetSDIRelayManualControl12 (NTV2RelayState inValue);
+	AJA_VIRTUAL bool	SetSDIRelayManualControl12 (const NTV2RelayState inValue);
 
 	/**
 		@brief	Answers if the bypass relays between connectors 3 and 4 would be
 				in bypass or would route through the device, if under manual control.
 		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the relay state (NTV2_BYPASS or NTV2_NORMAL).
+		@param[out]		outValue	Receives the relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
 		@note	Manual control will not change the state of the relays if
 				the watchdog timer for the relays is enabled.
 	**/
@@ -4804,14 +4883,14 @@ public:
 		@brief	Sets the state of the relays between connectors 3 and 4 to
 				bypass or through the device, if under manual control.
 		@return	True if successful; otherwise false.
-		@param[in]	inValue		Specifies the relay state (NTV2_BYPASS or NTV2_NORMAL).
+		@param[in]	inValue		Specifies the relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
 		@note	Manual control will not change the state of the relays if
 				the watchdog timer for the relays is enabled. Because this
 				call modifies the control register, it sends a kick
 				sequence, which has the side effect of restarting the
 				timeout counter.
 	**/
-	AJA_VIRTUAL bool	SetSDIRelayManualControl34 (NTV2RelayState inValue);
+	AJA_VIRTUAL bool	SetSDIRelayManualControl34 (const NTV2RelayState inValue);
 
 	/**
 		@brief	Answers true if the relays between connectors 1 and 2 are under
@@ -4833,7 +4912,7 @@ public:
 				a kick sequence, which has the side effect of restarting
 				the timeout counter.
 	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogEnable12 (bool inValue);
+	AJA_VIRTUAL bool	SetSDIWatchdogEnable12 (const bool inValue);
 
 	/**
 		@brief	Answers true if the relays between connectors 3 and 4 are under
@@ -4856,7 +4935,7 @@ public:
 				a kick sequence, which has the side effect of restarting
 				the timeout counter.
 	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogEnable34 (bool inValue);
+	AJA_VIRTUAL bool	SetSDIWatchdogEnable34 (const bool inValue);
 
 	/**
 		@brief	Answers with the amount of time that must elapse before the watchdog
@@ -4878,7 +4957,7 @@ public:
 				to zero, which will then start counting up until this value
 				is reached, triggering the watchdog timer if it's enabled.
 	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogTimeout (ULWord inValue);
+	AJA_VIRTUAL bool	SetSDIWatchdogTimeout (const ULWord inValue);
 
 	/**
 		@brief	Restarts the countdown timer to prevent the watchdog timer from
@@ -4892,14 +4971,14 @@ public:
 		@return	True if successful; otherwise false.
 		@param[out]		outState	Receives the state of the control registers.
 	**/
-	AJA_VIRTUAL bool	GetSDIWatchdogState(NTV2SDIWatchdogState & outState);
+	AJA_VIRTUAL bool	GetSDIWatchdogState (NTV2SDIWatchdogState & outState);
 
 	/**
 		@brief	Sets all of the control registers to a given state.
 		@return	True if successful; otherwise false.
 		@param[in]	inState		Specifies the new control register state.
 	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogState(const NTV2SDIWatchdogState & inState);
+	AJA_VIRTUAL bool	SetSDIWatchdogState (const NTV2SDIWatchdogState & inState);
 	///@}
 
 	/**
@@ -5221,6 +5300,8 @@ public:
 									Defaults to using the ::NTV2Standard of the ::NTV2Channel being used.
 		@note		Use this function only with \ref aboutpingpong or other capture/playout methods that don't
 					use \ref aboutautocirculate.
+		@see		CNTV2Card::AncExtractSetEnable, CNTV2Card::AncExtractSetWriteParams,
+					CNTV2Card::AncExtractSetFilterDIDs, \ref anccapture
 	**/
 	AJA_VIRTUAL bool	AncExtractInit (const UWord inSDIInput, const NTV2Channel inChannel = NTV2_CHANNEL_INVALID,
 										const NTV2Standard inStandard = NTV2_STANDARD_INVALID);
@@ -5233,6 +5314,7 @@ public:
 		@param[in]	inIsEnabled		Specify true to enable the Anc extractor;  otherwise false to disable it.
 		@note		Use this function only with \ref aboutpingpong or other capture/playout methods that don't
 					use \ref aboutautocirculate.
+		@see		CNTV2Card::AncExtractIsEnabled, \ref anccapture
 	**/
     AJA_VIRTUAL bool	AncExtractSetEnable (const UWord inSDIInput, const bool inIsEnabled);
 
@@ -5242,6 +5324,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inSDIInput		Specifies the SDI input of interest as a zero-based index value (e.g., 0 == SDIIn1).
 		@param[out]	outIsEnabled	Receives 'true' if the Anc extractor is enabled (running);  otherwise false.
+		@see		CNTV2Card::AncExtractSetEnable, \ref anccapture
 	**/
 	AJA_VIRTUAL bool	AncExtractIsEnabled (const UWord inSDIInput, bool & outIsEnabled);
 
@@ -5259,6 +5342,7 @@ public:
 									in device SDRAM. Defaults to using the ::NTV2Framesize of the ::NTV2Channel being used.
 		@note		Use this function only with \ref aboutpingpong or other capture/playout methods that don't
 					use \ref aboutautocirculate.
+		@see		CNTV2Card::AncExtractSetField2WriteParams, \ref anccapture
 	**/
     AJA_VIRTUAL bool	AncExtractSetWriteParams (const UWord inSDIInput, const ULWord inFrameNumber,
 													const NTV2Channel inChannel = NTV2_CHANNEL_INVALID,
@@ -5278,6 +5362,7 @@ public:
 									in device SDRAM. Defaults to using the ::NTV2Framesize of the ::NTV2Channel being used.
 		@note		Use this function only with \ref aboutpingpong or other capture/playout methods that don't
 					use \ref aboutautocirculate.
+		@see		CNTV2Card::AncExtractSetWriteParams, \ref anccapture
 	**/
     AJA_VIRTUAL bool	AncExtractSetField2WriteParams (const UWord inSDIInput, const ULWord inFrameNumber,
 														const NTV2Channel inChannel = NTV2_CHANNEL_INVALID,
@@ -5289,6 +5374,7 @@ public:
 		@param[in]	inSDIInput		Specifies the SDI input of interest (e.g., 0=SDIIn1, 1=SDIIn2, etc.).
 		@param[out]	outDIDs			Receives the ::NTV2DIDSet that contain the DIDs that are currently being
 									filtered (excluded).
+		@see		CNTV2Card::AncExtractSetFilterDIDs, \ref anccapture
 	**/
 	AJA_VIRTUAL bool	AncExtractGetFilterDIDs (const UWord inSDIInput, NTV2DIDSet & outDIDs);
 
@@ -5300,6 +5386,7 @@ public:
 		@param[in]	inDIDs			Specifies the DIDs to be filtered (excluded). Specify an empty set to
 									disable all packet filtering.
 		@note		DIDs having the value 0 (zero) are ignored.
+		@see		CNTV2Card::AncExtractGetFilterDIDs, \ref anccapture
 	**/
 	AJA_VIRTUAL bool	AncExtractSetFilterDIDs (const UWord inSDIInput, const NTV2DIDSet & inDIDs);
 
@@ -5317,11 +5404,13 @@ public:
 
 	/**
 		@return		The maximum number of distinct DIDs that the device Anc extractor filter can accommodate.
+		@see		CNTV2Card::AncExtractSetFilterDIDs, CNTV2Card::AncExtractGetDefaultDIDs, \ref anccapture
 	**/
 	static UWord		AncExtractGetMaxNumFilterDIDs (void);
 
 	/**
 		@return		The default DIDs that the device Anc extractor filter is started with.
+		@see		CNTV2Card::AncExtractSetFilterDIDs, CNTV2Card::AncExtractGetMaxNumFilterDIDs, \ref anccapture
 	**/
 	static NTV2DIDSet	AncExtractGetDefaultDIDs (void);
 
@@ -5656,6 +5745,9 @@ public:
     /**
         @brief		Enables or disables HDMI HDR Dolby Vision.
         @param[in]	inEnable		If true, sets the device to output HDMI HDR Dolby Vision; otherwise sets the device to not output HDMI HDR Dolby Vision.
+        @note		This function only affects Dolby HDR signaling. The client application is responsible for transferring Dolby-encoded pixel data from the
+					host to the device frame buffer(s) for HDMI transmission.
+		@see		CNTV2Card::GetHDMIHDRDolbyVisionEnabled
         @return		True if successful; otherwise false.
     **/
     AJA_VIRTUAL bool EnableHDMIHDRDolbyVision (const bool inEnable);
@@ -6008,6 +6100,7 @@ protected:
 	AJA_VIRTUAL bool			IS_OUTPUT_SPIGOT_INVALID (const UWord inOutputSpigot) const;
 	AJA_VIRTUAL bool			IS_INPUT_SPIGOT_INVALID (const UWord inInputSpigot) const;
 	AJA_VIRTUAL bool			S2110AddTimecodesToAncBuffers (const NTV2Channel inChannel, AUTOCIRCULATE_TRANSFER & inOutXferInfo);
+	AJA_VIRTUAL bool			SetWarmBootFirmwareReload(bool enable);
 
 private:
 	// frame buffer sizing helpers

@@ -1,14 +1,13 @@
 /**
 	@file		ntv2driverinterface.h
 	@brief		Declares the CNTV2DriverInterface base class.
-	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2DRIVERINTERFACE_H
 #define NTV2DRIVERINTERFACE_H
 
 #include "ajaexport.h"
-
 #include "ajatypes.h"
 #include "ntv2enums.h"
 #include "ntv2videodefines.h"
@@ -16,6 +15,9 @@
 #include "ntv2nubtypes.h"
 #include "ntv2publicinterface.h"
 #include "ntv2devicefeatures.h"
+#if defined(NTV2_WRITEREG_PROFILING)	//	Register Write Profiling
+	#include "ajabase/system/lock.h"
+#endif	//	NTV2_WRITEREG_PROFILING		Register Write Profiling
 #include <string>
 
 #if defined(AJALinux ) || defined(AJAMac)
@@ -249,7 +251,7 @@ public:
 	virtual bool		IsMBSystemValid (void);
 	virtual bool		IsMBSystemReady (void);
 #if !defined(NTV2_DEPRECATE_15_0)
-	virtual inline bool	IsKonaIPDevice (void)			{return ::NTV2DeviceCanDoIP(GetDeviceID());}	///< @deprecated	Call CNTV2Card::IsIPDevice instead.
+	virtual inline bool	IsKonaIPDevice (void)			{return IsIPDevice();}	///< @deprecated	Call CNTV2Card::IsIPDevice instead.
 #endif //	!defined(NTV2_DEPRECATE_12_7)
 	virtual inline bool	IsIPDevice (void)				{return ::NTV2DeviceCanDoIP(GetDeviceID());}	///< @return	True if I am an IP device (instead of SDI or HDMI).
 
@@ -297,6 +299,27 @@ public:
 #endif
 
     virtual inline bool						HevcSendMessage (HevcMessageHeader * /*pMessage*/)		{ return false; }
+
+#if defined(NTV2_WRITEREG_PROFILING)	//	Register Write Profiling
+	/**
+		@name	WriteRegister Profiling
+	**/
+	///@{
+public:
+	virtual bool				GetRecordedRegisterWrites (NTV2RegisterWrites & outRegWrites) const;	///< @brief	Answers with the recorded register writes.
+	virtual bool				StartRecordRegisterWrites (const bool inSkipActualWrites = false);	///< @brief	Starts recording all WriteRegister calls.
+	virtual bool				IsRecordingRegisterWrites (void) const;		///< @return	True if WriteRegister calls are currently being recorded (and not paused);  otherwise false.
+	virtual bool				StopRecordRegisterWrites (void);			///< @brief		Stops recording all WriteRegister calls.
+	virtual bool				PauseRecordRegisterWrites (void);			///< @brief		Pauses recording WriteRegister calls.
+	virtual bool				ResumeRecordRegisterWrites (void);			///< @brief		Resumes recording WriteRegister calls (after a prior call to PauseRecordRegisterWrites).
+	virtual ULWord				GetNumRecordedRegisterWrites (void) const;	///< @return	The number of recorded WriteRegister calls.
+protected:
+	NTV2RegisterWrites			mRegWrites;			///< @brief	Stores WriteRegister data
+	mutable AJALock				mRegWritesLock;		///< @brief	Guard mutex for mRegWrites
+	bool						mRecordRegWrites;	///< @brief	True if recording; otherwise false when not recording
+	bool						mSkipRegWrites;		///< @brief	True if actual register writes are skipped while recording
+	///@}
+#endif	//	NTV2_WRITEREG_PROFILING		//	Register Write Profiling
 
 protected:
 #if !defined(NTV2_DEPRECATE_12_7)

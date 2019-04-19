@@ -1,6 +1,6 @@
 /**
 	@file		ajatypes.h
-	@copyright	Copyright (C) 2004-2018 AJA Video Systems, Inc.  Proprietary and Confidential information.
+	@copyright	Copyright (C) 2004-2019 AJA Video Systems, Inc.  Proprietary and Confidential information.
 	@brief		Declares the most fundamental data types used by NTV2. Since Windows NT was the first principal
 				development platform, many typedefs are Windows-centric.
 **/
@@ -23,9 +23,50 @@
 #define NTV2_DEPRECATE_14_2		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.2
 //#define NTV2_DEPRECATE_14_3		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.3
 //#define NTV2_DEPRECATE_15_0		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.0
+//#define NTV2_DEPRECATE_15_1		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.1
 
 #define NTV2_NUB_CLIENT_SUPPORT		//	If defined, includes nub client support;  otherwise, excludes it
 #define	AJA_VIRTUAL		virtual		//	Force use of virtual functions in CNTV2Card, etc.
+#define NTV2_WRITEREG_PROFILING		//	If defined, enables register write profiling
+
+#if defined(__CPLUSPLUS__) || defined(__cplusplus)
+	#if defined(AJAMac)
+		//	On MacOS...
+		//		... when building for CLANG_CXX_LIBRARY=libc++		...then 'nullptr' is defined.
+		//		... when building for CLANG_CXX_LIBRARY=libstdc++	...then 'nullptr' is NOT defined.
+		//		TBD FIX FIX FIX     How to tell when building for libc++ versus libstdc++ ?!?!?!?!
+		#define AJA_NULL	NULL
+	#elif defined(AJALinux)
+		//	On Linux...
+		//		... when building libajacc, using 'nullptr' fails.
+		//		TBD FIX FIX FIX
+		#define AJA_NULL	NULL
+	#elif defined(MSWindows)
+		#if defined(_MSC_VER) && _MSC_VER >= 1700		//	VS2012 or later:
+			#define AJA_NULL	nullptr
+		#else
+			#define AJA_NULL	NULL
+		#endif
+	#else
+		#define AJA_NULL	NULL
+	#endif
+#else
+	#define AJA_NULL		NULL
+#endif
+
+#if defined(__clang__)
+	#ifndef __has_cpp_attribute
+		#define __has_cpp_attribute(__x__)	0
+	#endif
+
+	#if __has_cpp_attribute(clang::fallthrough)
+		#define AJA_FALL_THRU	[[clang::fallthrough]]
+	#else
+		#define AJA_FALL_THRU
+	#endif
+#else
+	#define AJA_FALL_THRU
+#endif
 
 
 #if defined (NTV2_USE_STDINT)
@@ -74,7 +115,6 @@
 	typedef unsigned char			UByte;
 	typedef char					SByte;
 #endif
-#define AJA_NULL (reinterpret_cast<void*>(0))
 
 // Platform dependent
 									//////////////////////////////////////////////////////////////////
@@ -87,7 +127,7 @@
 		#define WIN32_LEAN_AND_MEAN
 		#endif
 
-		#include <windows.h>
+		#include <Windows.h>
 	#endif
 	#include <Basetsd.h>
 	typedef unsigned char Boolean;
@@ -123,7 +163,7 @@
 	typedef int						Fixed_;
 	typedef int						AJASocket;
 
-	#define AJATargetBigEndian  TARGET_RT_BIG_ENDIAN
+	#define AJATargetBigEndian  0
 	#define	AJAFUNC		__func__
 
 	#define MAX_PATH 4096
@@ -155,32 +195,102 @@
 		#endif /* LINUX_VERSION_CODE */
 	#endif /* __KERNEL__ */
 
-	typedef long				HANDLE;
-	// this is what is is in Windows:
-	// typedef void *				HANDLE;
-	typedef unsigned long long	ULWord64;
-	typedef unsigned long long	Pointer64;
-	typedef unsigned long long	__int64;
-	typedef signed long long	LWord64;
-	typedef void * 				PVOID;
-	typedef void * 				LPVOID;
-	typedef LWord				Fixed_;
-	typedef bool				BOOL_;
-	#ifndef FS1
-		typedef bool			BOOL;
-	#endif
-	typedef UWord				UWord_;
-	typedef unsigned int        DWORD; /* 32 bits on 32 or 64 bit CPUS */
+    #if defined (MODULE)
+        #define NTV2_BUILDING_DRIVER
+    #endif
 
-	typedef int					AJASocket;
+    #if !defined (NTV2_BUILDING_DRIVER)
+        #include <stdint.h>
+        typedef int64_t				HANDLE;
+        typedef uint64_t            ULWord64;
+        typedef uint64_t            Pointer64;
+        typedef int64_t             LWord64;
+        typedef void * 				PVOID;
+        typedef void * 				LPVOID;
+        typedef int32_t				Fixed_;
+        typedef bool				BOOL_;
+        typedef bool			    BOOL;
+        typedef UWord				UWord_;
+        typedef uint32_t            DWORD; /* 32 bits on 32 or 64 bit CPUS */
+
+        typedef int32_t				AJASocket;
+    #else
+        typedef long				HANDLE;
+        // this is what is is in Windows:
+        // typedef void *				HANDLE;
+        typedef unsigned long long	ULWord64;
+        typedef unsigned long long	Pointer64;
+        typedef signed long long	LWord64;
+        typedef void * 				PVOID;
+        typedef void * 				LPVOID;
+        typedef LWord				Fixed_;
+        typedef bool				BOOL_;
+        typedef bool			    BOOL;
+        typedef UWord				UWord_;
+        typedef unsigned int        DWORD; /* 32 bits on 32 or 64 bit CPUS */
+
+        typedef int					AJASocket;
+    #endif
 
 	#define AJATargetBigEndian  0
 	#define	AJAFUNC		__func__
 
-	#if defined (MODULE)
-		#define NTV2_BUILDING_DRIVER
-	#else
-		#include <stdint.h>
+	#if !defined (NTV2_BUILDING_DRIVER)
+		#if defined (NTV2_DEPRECATE)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED
+		#endif
+
+		#if defined (NTV2_DEPRECATE_12_5)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_12_5		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_12_5
+		#endif
+
+		#if defined (NTV2_DEPRECATE_12_6)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_12_6		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_12_6
+		#endif
+
+		#if defined (NTV2_DEPRECATE_12_7)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_12_7		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_12_7
+		#endif
+
+		#if defined (NTV2_DEPRECATE_13_0)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_13_0		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_13_0
+		#endif
+
+		#if defined (NTV2_DEPRECATE_13_1)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_13_1		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_13_1
+		#endif
+
+		#if defined (NTV2_DEPRECATE_14_0)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_14_0		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_14_0
+		#endif
+
+		#if defined (NTV2_DEPRECATE_14_1)
+			//	The gcc compiler used for Linux NTV2 builds doesn't like __declspec(deprecated)
+			#define	NTV2_DEPRECATED_14_1		//	Disable deprecate warnings (for now)
+		#else
+			#define	NTV2_DEPRECATED_14_1
+		#endif
 	#endif
 
 	#if !defined (NTV2_DEPRECATE)
@@ -244,6 +354,9 @@
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_0)
 		#define NTV2_DEPRECATE_15_0		//	(future ready)
+	#endif
+	#if !defined(NTV2_DEPRECATE_15_1)
+		#define NTV2_DEPRECATE_15_1		//	(future ready)
 	#endif
 #endif
 
@@ -427,4 +540,61 @@ typedef struct NTV2FrameDimensions
 	#define BIT_30 (1u<<30)
 	#define BIT_31 (1u<<31)
 #endif	//	1
+
+#if 0
+// Check at compile time if all the defined types are the correct size
+// must support C++11 for this to work
+static_assert(sizeof(bool) == 1,      "bool: size is not correct");
+static_assert(sizeof(int8_t) == 1,    "int8_t: size is not correct");
+static_assert(sizeof(int16_t) == 2,   "int16_t: size is not correct");
+static_assert(sizeof(int32_t) == 4,   "int32_t: size is not correct");
+static_assert(sizeof(int64_t) == 8,   "int64_t: size is not correct");
+static_assert(sizeof(uint8_t) == 1,   "uint8_t: size is not correct");
+static_assert(sizeof(uint16_t) == 2,  "uint16_t: size is not correct");
+static_assert(sizeof(uint32_t) == 4,  "uint32_t: size is not correct");
+static_assert(sizeof(uint64_t) == 8,  "uint64_t: size is not correct");
+
+static_assert(sizeof(LWord) == 4,     "LWord: size is not correct");
+static_assert(sizeof(ULWord) == 4,    "ULWord: size is not correct");
+static_assert(sizeof(PULWord) == 8,   "PULWord: size is not correct");
+static_assert(sizeof(Word) == 2,      "Word: size is not correct");
+static_assert(sizeof(UWord) == 2,     "UWord: size is not correct");
+static_assert(sizeof(UByte) == 1,     "UByte: size is not correct");
+static_assert(sizeof(SByte) == 1,     "SByte: size is not correct");
+
+static_assert(sizeof(ULWord64) == 8,  "ULWord64: size is not correct");
+static_assert(sizeof(Pointer64) == 8, "Pointer64: size is not correct");
+static_assert(sizeof(LWord64) == 8,   "LWord64: size is not correct");
+static_assert(sizeof(PVOID) == 8,     "PVOID: size is not correct");
+static_assert(sizeof(Fixed_) == 4,    "Fixed_: size is not correct");
+
+// ideally these whould be the same across the platforms but historically they have not been
+#if defined(MSWindows)
+static_assert(sizeof(HANDLE) == 8,    "HANDLE: size is not correct");
+static_assert(sizeof(BOOL) == 4,      "BOOL: size is not correct");
+static_assert(sizeof(BOOL_) == 1,     "BOOL_: size is not correct");
+static_assert(sizeof(AJASocket) == 8, "AJASocket: size is not correct");
+static_assert(sizeof(UWord_) == 2,    "UWord_: size is not correct");
+static_assert(sizeof(LPVOID) == 8,    "LPVOID: size is not correct");
+static_assert(sizeof(DWORD) == 4,     "DWORD: size is not correct");
+#elif defined(AJAMac)
+static_assert(sizeof(HANDLE) == 2,    "HANDLE: size is not correct");
+//static_assert(sizeof(BOOL) == 1,      "BOOL: size is not correct");
+static_assert(sizeof(BOOL_) == 4,     "BOOL_: size is not correct");
+static_assert(sizeof(AJASocket) == 4, "AJASocket: size is not correct");
+static_assert(sizeof(UWord_) == 4,    "UWord_: size is not correct");
+//static_assert(sizeof(LPVOID) == 8,    "LPVOID: size is not correct");
+//static_assert(sizeof(DWORD) == 4,     "DWORD: size is not correct");
+#elif defined(AJALinux)
+static_assert(sizeof(HANDLE) == 8,    "HANDLE: size is not correct");
+static_assert(sizeof(BOOL) == 1,      "BOOL: size is not correct");
+static_assert(sizeof(BOOL_) == 1,     "BOOL_: size is not correct");
+static_assert(sizeof(AJASocket) == 4, "AJASocket: size is not correct");
+static_assert(sizeof(UWord_) == 2,    "UWord_: size is not correct");
+static_assert(sizeof(LPVOID) == 8,    "LPVOID: size is not correct");
+static_assert(sizeof(DWORD) == 4,     "DWORD: size is not correct");
+#endif
+
+#endif
+
 #endif	//	AJATYPES_H

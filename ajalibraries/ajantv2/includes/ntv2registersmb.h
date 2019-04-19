@@ -1,7 +1,7 @@
 /**
     @file		ntv2registersmb.h
     @brief		Defines the Sarek board's registers.
-    @copyright	(C) 2014-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+    @copyright	(C) 2014-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef REGISTERS_MB_H
@@ -431,6 +431,10 @@
 #define kRegPll_swptp_SetSecsLo					0x33		// R/W
 #define kRegPll_swptp_SetNanoSecs				0x34		// R/W
 #define kRegPll_swptp_JamNow					0x35		// R/W
+#define kRegPll_swptp_Jam90KHzRTP_TS			0x36		// R/W
+#define kRegPll_swptp_Jam48KHzRTP_TS			0x37		// R/W
+#define	kRegPll_swptp_ClockDate					0x3e		// R
+#define	kRegPll_swptp_ClockVersion				0x3f		// R
 
 // redefinition of registers used for SWPTP
 #define kRegPll_swptp_Domain					0x04		// R/W
@@ -475,6 +479,7 @@
 #define kRegCS_sdi_vpid_a           6
 #define kRegCS_sdi_vpid_b           7
 #define kRegCS_audio_ctl            8
+#define kRegCS_fec_ctl				9
 #define kRegCS_firmware_id          32
 #define kRegCS_revisions            33
 #define kRegCS_compile_date         34
@@ -487,5 +492,6 @@
 #define kRegCS_av_diff_48khz            0x29
 #define kRegCS_vfifo_av_diff_48khz      0x2a
 #define kRegCS_vfifo_level              0x2b
+#define kRegCS_sfp_status				0x2c
 
 #endif // REGISTERS_MB_H

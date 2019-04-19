@@ -1,12 +1,11 @@
 /**
 	@file		testpatterngen.h
-	@copyright	Copyright (C) 2010-2018 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2010-2019 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJATestPatternGen class.
 **/
 
 #ifndef AJA_TESTPATTERN_GEN
 #define AJA_TESTPATTERN_GEN
-
 #if !defined(NTV2_DEPRECATE_15_0)
 #include "types.h"
 #include "videotypes.h"

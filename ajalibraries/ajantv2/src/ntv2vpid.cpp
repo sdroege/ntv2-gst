@@ -1,7 +1,7 @@
 /**
 	@file		ntv2vpid.cpp
 	@brief		Implements the CNTV2VPID class. See the SMPTE 352 standard for details.
-	@copyright	(C) 2012-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2012-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2vpid.h"
@@ -123,6 +123,8 @@ class VPIDTableInitializer
 			stTable4096pSID[VPIDPictureRate_2500] = NTV2_FORMAT_4x2048x1080p_2500;
 			stTable4096pSID[VPIDPictureRate_2997] = NTV2_FORMAT_4x2048x1080p_2997;
 			stTable4096pSID[VPIDPictureRate_3000] = NTV2_FORMAT_4x2048x1080p_3000;
+			stTable4096pSID[VPIDPictureRate_4795] = NTV2_FORMAT_4x2048x1080p_4795;
+			stTable4096pSID[VPIDPictureRate_4800] = NTV2_FORMAT_4x2048x1080p_4800;
 			stTable4096pSID[VPIDPictureRate_5000] = NTV2_FORMAT_4x2048x1080p_5000;
 			stTable4096pSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x2048x1080p_5994;
 			stTable4096pSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x2048x1080p_6000;
@@ -141,6 +143,8 @@ class VPIDTableInitializer
             stTable4096pTSI[VPIDPictureRate_2500] = NTV2_FORMAT_4096x2160p_2500;
             stTable4096pTSI[VPIDPictureRate_2997] = NTV2_FORMAT_4096x2160p_2997;
             stTable4096pTSI[VPIDPictureRate_3000] = NTV2_FORMAT_4096x2160p_3000;
+            stTable4096pTSI[VPIDPictureRate_4795] = NTV2_FORMAT_4096x2160p_4795;
+            stTable4096pTSI[VPIDPictureRate_4800] = NTV2_FORMAT_4096x2160p_4800;
             stTable4096pTSI[VPIDPictureRate_5000] = NTV2_FORMAT_4096x2160p_5000;
             stTable4096pTSI[VPIDPictureRate_5994] = NTV2_FORMAT_4096x2160p_5994;
             stTable4096pTSI[VPIDPictureRate_6000] = NTV2_FORMAT_4096x2160p_6000;

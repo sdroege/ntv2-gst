@@ -1,7 +1,7 @@
 /**
 	@file		ntv2formatdescriptor.cpp
 	@brief		Implementation of the NTV2FormatDescriptor class.
-	@copyright	(C) 2016-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 #include "ntv2formatdescriptor.h"
 #include "ntv2utils.h"
@@ -1102,6 +1102,23 @@ ostream & NTV2FormatDescriptor::PrintSMPTELineNumber (ostream & inOutStream, con
 			inOutStream << "L" << DEC(smpteLine);	//	(inLineOffset/divisor + smpteLine);
 	}
 	return inOutStream;
+}
+
+
+NTV2SegmentedXferInfo & NTV2FormatDescriptor::GetSegmentedXferInfo (NTV2SegmentedXferInfo & inSegmentInfo, const bool inIsSource) const
+{
+	if (IsValid())
+	{	//	Full visible raster
+		inSegmentInfo.setElementLength(1).setSegmentCount(GetRasterHeight(true)).setSegmentLength(GetBytesPerRow());
+		if (inIsSource)
+			return inSegmentInfo.setSourceOffset(GetBytesPerRow() * GetFirstActiveLine())
+								.setSourcePitch(GetBytesPerRow());
+		else
+			return inSegmentInfo.setDestOffset(GetBytesPerRow() * GetFirstActiveLine())
+								.setDestPitch(GetBytesPerRow());
+	}
+	inSegmentInfo = NTV2SegmentedXferInfo();
+	return inSegmentInfo;	
 }
 
 

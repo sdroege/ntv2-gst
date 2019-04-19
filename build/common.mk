@@ -5,7 +5,14 @@
 #
 
 CXX ?= g++
-CPP = $(CXX)
+CPP := $(CXX)
+
+ifeq ($(AJA_USE_CCACHE),1)
+	CXX := ccache $(CXX)
+	CPP := ccache $(CPP)
+	CC := ccache $(CC)
+endif
+
 
 CPPFLAGS += -DAJALinux -DAJA_LINUX -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 			-pedantic -Wall -Wno-long-long  -Wwrite-strings -c -pipe -fPIC $(DBG)
@@ -71,21 +78,13 @@ LIBOBJS += $(patsubst %.c,%.o,$(AJA_LIB_C_SRCS))
 endif
 endif
 
-%.d: %.cpp
-	$(CPP) -M $(CPPFLAGS) $(INCLUDES) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
-
 %.o: %.cpp
 	$(CPP) $(CPPFLAGS) $(INCLUDES) -o $@ $<
-
-%.d: %.c
-	$(CC) -M $(CFLAGS) $(INCLUDES) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	@$(CPP) -MM $(CPPFLAGS) $(INCLUDES) -MF $*.d $<
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
+	@$(CC) -MM $(CFLAGS) $(INCLUDES) -MF $*.d $<
 
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
 all: $(LIB_AJANTV2) $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4)
@@ -147,25 +146,29 @@ endif
 realclean: clean cleandeps
 
 clean:
-	rm -f *.o *.d *~  errors.txt
-	rm -f $(AJA_APP)
+	@echo "clean: removing .o and .d files"
+	@rm -f *.o *.d *~ errors.txt
+ifdef AJA_APP
+	@[ -f $(AJA_APP) ] && rm -f $(AJA_APP) && echo "clean: removed $(AJA_APP)" || true
+endif
 ifdef AJA_APP2
-	rm -f $(AJA_APP2)
+	@[ -f $(AJA_APP2) ] && rm -f $(AJA_APP2) || true
 endif
 ifdef AJA_APP3
-	rm -f $(AJA_APP3)
+	@[ -f $(AJA_APP3) ] && rm -f $(AJA_APP3) || true
 endif
 ifdef AJA_APP4
-	rm -f $(AJA_APP4)
+	@[ -f $(AJA_APP4) ] && rm -f $(AJA_APP4) || true
 endif
 ifdef AJA_LIB_PATH
-	rm -f $(AJA_LIB_PATH)
+	@[ -f $(AJA_LIB_PATH) ] && rm -f $(AJA_LIB_PATH) || true
 endif
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
-	rm -f $(LIB_AJANTV2)
-	rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.o
-	rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.d
+	@[ -f $(LIB_AJANTV2) ] && rm -f $(LIB_AJANTV2) || true
+	@rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.o
+	@rm -f $(A_LIB_NTV2_PATH)/build/$(OBJDIR)/*.d
 endif
 
 cleandeps:
-	rm -f *.d
+	@echo "cleandeps: removing .d files"
+	@rm -f *.d

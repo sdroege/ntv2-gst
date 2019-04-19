@@ -1,7 +1,7 @@
 /**
 	@file		ntv2registerexpert.cpp
 	@brief		Implements the CNTV2RegisterExpert class.
-	@copyright	(C) 2016-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
  **/
 #include "ntv2registerexpert.h"
 #include "ntv2devicefeatures.h"
@@ -10,13 +10,25 @@
 #include "ntv2endian.h"
 #include "ntv2vpid.h"
 #include "ajabase/common/common.h"
+#include "ajabase/system/lock.h"
+#include "ajabase/common/ajarefptr.h"
 #include <algorithm>
 #include <sstream>
+#include <iterator>
 #include <iomanip>
 #include <map>
 
 
 using namespace std;
+
+#define	LOGGING_MAPPINGS	(AJADebug::IsActive(AJA_DebugUnit_Enumeration))
+#define	HEX16(__x__)		"0x" << hex << setw(16) << setfill('0') << uint64_t(__x__)  << dec
+#define INSTP(_p_)			HEX16(uint64_t(_p_))
+#define	REiFAIL(__x__)		AJA_sERROR  (AJA_DebugUnit_Enumeration, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	REiWARN(__x__)		AJA_sWARNING(AJA_DebugUnit_Enumeration, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	REiNOTE(__x__)		AJA_sNOTICE	(AJA_DebugUnit_Enumeration, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	REiINFO(__x__)		AJA_sINFO	(AJA_DebugUnit_Enumeration, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	REiDBG(__x__)		AJA_sDEBUG	(AJA_DebugUnit_Enumeration, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
 
 
 #if defined (NTV2_DEPRECATE)
@@ -25,75 +37,155 @@ using namespace std;
 	#define	AJA_LOCAL_STATIC
 #endif	//	!defined (NTV2_DEPRECATE)
 
-#define	DefineRegDecoder(__rn__,__dec__)															\
-	mRegNumToDecoderMap.insert (RegNumToDecoderPair ((__rn__), &(__dec__)))
-
-#define	DefineRegClass(__rn__,__str__)																\
-	do																								\
-	{																								\
-		if (!(__str__).empty())																		\
-			mRegClassToRegNumMap.insert (StringToRegNumPair ((__str__), (__rn__)));					\
-	} while (false)
-
-#define DefineRegReadWrite(__rn__,__rorw__)					\
-	do														\
-	{														\
-		if ((__rorw__) == READONLY)							\
-		{													\
-			NTV2_ASSERT (!IsRegisterWriteOnly(__rn__));		\
-			DefineRegClass ((__rn__), kRegClass_ReadOnly);	\
-		}													\
-		if ((__rorw__) == WRITEONLY)						\
-		{													\
-			NTV2_ASSERT (!IsRegisterReadOnly(__rn__));		\
-			DefineRegClass ((__rn__), kRegClass_WriteOnly);	\
-		}													\
-	} while (false)
-
-#define	DefineRegister(__rnum__,__rname__,__decoder__,__rorw__,__c1__, __c2__, __c3__)		\
-	do														\
-	{														\
-		DefineRegName ((__rnum__), (__rname__));			\
-		DefineRegDecoder ((__rnum__), (__decoder__));		\
-		DefineRegReadWrite ((__rnum__), (__rorw__));		\
-		DefineRegClass ((__rnum__), (__c1__));				\
-		DefineRegClass ((__rnum__), (__c2__));				\
-		DefineRegClass ((__rnum__), (__c3__));				\
-	} while (false)
-
-#define	DefineXptReg(__rn__,__xpt0__,__xpt1__,__xpt2__,__xpt3__)	\
-	do																															\
-	{																															\
-		DefineRegister ((__rn__),	"",	mDecodeXptGroupReg,	READWRITE,	kRegClass_Routing,	kRegClass_NULL,	kRegClass_NULL);	\
-		const NTV2InputCrosspointID	indexes	[4]	= {(__xpt0__), (__xpt1__), (__xpt2__), (__xpt3__)};								\
-		for (int ndx(0);  ndx < 4;  ndx++)																						\
-		{																														\
-			if (indexes[ndx] == NTV2_INPUT_CROSSPOINT_INVALID)																	\
-				continue;																										\
-			const XptRegNumAndMaskIndex regNumAndNdx ((__rn__), ndx);															\
-			if (mXptRegNumMaskIndex2InputXptMap.find (regNumAndNdx) == mXptRegNumMaskIndex2InputXptMap.end())					\
-				mXptRegNumMaskIndex2InputXptMap [regNumAndNdx] = indexes[ndx];													\
-			if (mInputXpt2XptRegNumMaskIndexMap.find (indexes[ndx]) == mInputXpt2XptRegNumMaskIndexMap.end())					\
-				mInputXpt2XptRegNumMaskIndexMap[indexes[ndx]] = regNumAndNdx;													\
-		}																														\
-	} while (false)
 
 static const string	gChlClasses[8]	=	{	kRegClass_Channel1,	kRegClass_Channel2,	kRegClass_Channel3,	kRegClass_Channel4,
 											kRegClass_Channel5,	kRegClass_Channel6,	kRegClass_Channel7,	kRegClass_Channel8	};
 static const string sSpace(" ");
 static const string sNull;
 
-//	@todo	Need to handle multi-register sparse bits.
-//			Search for MULTIREG_SPARSE_BITS -- it's where we need to improve how we present related information that's stored in more than one register.
+class RegisterExpert;
+typedef AJARefPtr<RegisterExpert>	RegisterExpertPtr;
+static uint32_t						gInstanceTally(0);
+static uint32_t						gLivingInstances(0);
 
+/**
+	I'm the the root source of register information. I provide answers to the public-facing CNTV2RegisterExpert class.
+	There's only one instance of me.
+	TODO:	Need to handle multi-register sparse bits.
+			Search for MULTIREG_SPARSE_BITS -- it's where we need to improve how we present related information that's
+			stored in more than one register.
+**/
 class RegisterExpert
 {
 public:
-	explicit RegisterExpert ()
+	static RegisterExpertPtr	GetInstance(const bool inCreateIfNecessary = true);
+	static bool					DisposeInstance(void);
+
+private:
+	RegisterExpert()
 	{
+		AJAAutoLock	lock(&mGuardMutex);
+		AJAAtomic::Increment(&gInstanceTally);
+		AJAAtomic::Increment(&gLivingInstances);
+		//	Name "Classic" registers using NTV2RegisterNameString...
 		for (ULWord regNum (0);  regNum < kRegNumRegisters;  regNum++)
-			DefineRegName (regNum,	::NTV2RegisterNameString (regNum));
-		
+			DefineRegName (regNum,	::NTV2RegisterNameString(regNum));
+		//	Now the rest...
+		SetupBasicRegs();		//	Basic registers
+		SetupVPIDRegs();		//	VPIDs
+		SetupAncInsExt();		//	Anc Ins/Ext
+		SetupXptSelect();		//	Xpt Select
+		SetupDMARegs();			//	DMA
+		SetupTimecodeRegs();	//	Timecode
+		SetupAudioRegs();		//	Audio
+		SetupMixerKeyerRegs();	//	Mixer/Keyer
+		SetupHDMIRegs();		//	HDMI
+		SetupSDIErrorRegs();	//	SDIError
+		SetupCSCRegs();			//	CSCs
+		SetupVRegs();			//	Virtuals
+		REiNOTE(DEC(gLivingInstances) << " extant, " << DEC(gInstanceTally) << " total");
+		if (LOGGING_MAPPINGS)
+		{
+			REiDBG("RegsToStrsMap=" << mRegNumToStringMap.size()
+					<< " RegsToDecodersMap=" << mRegNumToDecoderMap.size()
+					<< " ClassToRegsMMap=" << mRegClassToRegNumMMap.size()
+					<< " StrToRegsMMap=" << mStringToRegNumMMap.size()
+					<< " InpXptsToXptRegInfoMap=" << mInputXpt2XptRegNumMaskIndexMap.size()
+					<< " XptRegInfoToInpXptsMap=" << mXptRegNumMaskIndex2InputXptMap.size()
+					<< " RegClasses=" << mAllRegClasses.size());
+		}
+	}	//	constructor
+public:
+	~RegisterExpert()
+	{
+		AJAAtomic::Decrement(&gLivingInstances);
+		REiNOTE(DEC(gLivingInstances) << " extant, " << DEC(gInstanceTally) << " total");
+	}	//	destructor
+
+private:
+	//	This class implements a functor that returns a string that contains a human-readable decoding
+	//	of a register value, given its number and the ID of the device it came from.
+	struct Decoder
+	{
+		//	The default reg decoder functor returns an empty string.
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			(void) inRegValue;
+			(void) inDeviceID;
+			return string();
+		}
+		virtual	~Decoder()	{}
+	} mDefaultRegDecoder;
+
+    void DefineRegName(const uint32_t regNumber, const string & regName)
+    {
+        if (!regName.empty())
+        {
+			AJAAutoLock	lock(&mGuardMutex);
+            if (mRegNumToStringMap.find(regNumber) == mRegNumToStringMap.end())
+            {
+                mRegNumToStringMap.insert (RegNumToStringPair(regNumber, regName));
+                string lowerCaseRegName(regName);
+                mStringToRegNumMMap.insert (StringToRegNumPair(aja::lower(lowerCaseRegName), regNumber));
+            }
+        }
+    }
+	inline void	DefineRegDecoder(const uint32_t inRegNum, const Decoder & dec)
+	{
+		AJAAutoLock	lock(&mGuardMutex);
+		mRegNumToDecoderMap.insert (RegNumToDecoderPair(inRegNum, &dec));
+	}
+	inline void	DefineRegClass (const uint32_t inRegNum, const string & className)
+	{
+		if (!className.empty())
+		{
+			AJAAutoLock	lock(&mGuardMutex);
+			mRegClassToRegNumMMap.insert(StringToRegNumPair(className, inRegNum));
+		}
+	}
+	void DefineRegReadWrite(const uint32_t inRegNum, const int rdWrt)
+	{
+		AJAAutoLock	lock(&mGuardMutex);
+		if (rdWrt == READONLY)
+		{
+			NTV2_ASSERT (!IsRegisterWriteOnly(inRegNum));
+			DefineRegClass (inRegNum, kRegClass_ReadOnly);
+		}
+		if (rdWrt == WRITEONLY)
+		{
+			NTV2_ASSERT (!IsRegisterReadOnly(inRegNum));
+			DefineRegClass (inRegNum, kRegClass_WriteOnly);
+		}
+	}
+	void DefineRegister(const uint32_t inRegNum, const string & regName, const Decoder & dec, const int rdWrt, const string & className1, const string & className2, const string & className3)
+	{
+		DefineRegName (inRegNum, regName);
+		DefineRegDecoder (inRegNum, dec);
+		DefineRegReadWrite (inRegNum, rdWrt);
+		DefineRegClass (inRegNum, className1);
+		DefineRegClass (inRegNum, className2);
+		DefineRegClass (inRegNum, className3);
+	}
+	void DefineXptReg(const uint32_t inRegNum, const NTV2InputXptID xpt0, const NTV2InputXptID xpt1, const NTV2InputXptID xpt2, const NTV2InputXptID xpt3)
+	{
+		DefineRegister (inRegNum, sNull,	mDecodeXptGroupReg,	READWRITE,	kRegClass_Routing,	kRegClass_NULL,	kRegClass_NULL);
+		const NTV2InputCrosspointID	indexes	[4]	= {xpt0, xpt1, xpt2, xpt3};
+		for (int ndx(0);  ndx < 4;  ndx++)
+		{
+			if (indexes[ndx] == NTV2_INPUT_CROSSPOINT_INVALID)
+				continue;
+			const XptRegNumAndMaskIndex regNumAndNdx(inRegNum, ndx);
+			if (mXptRegNumMaskIndex2InputXptMap.find(regNumAndNdx) == mXptRegNumMaskIndex2InputXptMap.end())
+				mXptRegNumMaskIndex2InputXptMap [regNumAndNdx] = indexes[ndx];
+			if (mInputXpt2XptRegNumMaskIndexMap.find(indexes[ndx]) == mInputXpt2XptRegNumMaskIndexMap.end())
+				mInputXpt2XptRegNumMaskIndexMap[indexes[ndx]] = regNumAndNdx;
+		}
+	}
+
+	void SetupBasicRegs(void)
+	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister (kRegGlobalControl,		"",	mDecodeGlobalControlReg,	READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister (kRegGlobalControl2,		"",	mDecodeGlobalControl2,		READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister (kRegGlobalControlCh2,	"",	mDecodeGlobalControlChanRegs,READWRITE,	kRegClass_NULL,		kRegClass_Channel2,	kRegClass_NULL);
@@ -148,25 +240,37 @@ public:
 
 		DefineRegister (kRegBitfileDate,		"",	mDecodeBitfileDateTime,		READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 		DefineRegister (kRegBitfileTime,		"",	mDecodeBitfileDateTime,		READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
-		DefineRegister (kRegCPLDVersion,		"",	mDecodeCPLDVersion,			READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
+		DefineRegister (kRegCPLDVersion,		"",	mDecodeCPLDVersion,			READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 
 		DefineRegister (kRegStatus,				"",	mDecodeStatusReg,			READWRITE,	kRegClass_DMA,		kRegClass_Channel1,	kRegClass_Channel2);
 			DefineRegClass (kRegStatus, kRegClass_Timecode);
 		DefineRegister (kRegStatus2,			"",	mDecodeStatus2Reg,			READWRITE,	kRegClass_DMA,		kRegClass_Channel3,	kRegClass_Channel4);
 		DefineRegClass (kRegStatus2, kRegClass_Channel5);	DefineRegClass (kRegStatus2, kRegClass_Channel6);	DefineRegClass (kRegStatus2, kRegClass_Channel7);	DefineRegClass (kRegStatus2, kRegClass_Channel8);
-		DefineRegister (kRegInputStatus,		"",	mDecodeInputStatusReg,		READWRITE,	kRegClass_Input,	kRegClass_Channel1,	kRegClass_Channel2);	DefineRegClass (kRegInputStatus, kRegClass_Audio);
+		DefineRegister (kRegInputStatus,		"",	mDecodeInputStatusReg,		READONLY,	kRegClass_Input,	kRegClass_Channel1,	kRegClass_Channel2);	DefineRegClass (kRegInputStatus, kRegClass_Audio);
 		DefineRegister (kRegSDIInput3GStatus,	"",	mDecodeSDIInputStatusReg,	READWRITE,	kRegClass_Input,	kRegClass_Channel1,	kRegClass_Channel2);
 		DefineRegister (kRegSDIInput3GStatus2,	"",	mDecodeSDIInputStatusReg,	READWRITE,	kRegClass_Input,	kRegClass_Channel3,	kRegClass_Channel4);
 		DefineRegister (kRegSDI5678Input3GStatus,"",mDecodeSDIInputStatusReg,	READWRITE,	kRegClass_Input,	kRegClass_Channel5,	kRegClass_Channel6);
 			DefineRegClass (kRegSDI5678Input3GStatus, kRegClass_Channel7);
 			DefineRegClass (kRegSDI5678Input3GStatus, kRegClass_Channel8);
+		DefineRegister (kRegInputStatus2,		"",	mDecodeSDIInputStatus2Reg,	READONLY,	kRegClass_Input,	kRegClass_Channel3,	kRegClass_Channel4);	//	288
+		DefineRegister (kRegInput56Status,		"",	mDecodeSDIInputStatus2Reg,	READONLY,	kRegClass_Input,	kRegClass_Channel5,	kRegClass_Channel6);	//	458
+		DefineRegister (kRegInput78Status,		"",	mDecodeSDIInputStatus2Reg,	READONLY,	kRegClass_Input,	kRegClass_Channel7,	kRegClass_Channel8);	//	459
+
 		DefineRegister (kRegFS1ReferenceSelect,	"", mDecodeFS1RefSelectReg,		READWRITE,	kRegClass_Input,	kRegClass_Timecode, kRegClass_NULL);
 		DefineRegister (kRegSysmonVccIntDieTemp,"",	mDecodeSysmonVccIntDieTemp,	READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 		DefineRegister (kRegSDITransmitControl,	"",	mDecodeSDITransmitCtrl,		READWRITE,	kRegClass_Channel1,	kRegClass_Channel2,	kRegClass_Channel3);	DefineRegClass (kRegSDITransmitControl, kRegClass_Channel4);
 			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel5);	DefineRegClass (kRegSDITransmitControl, kRegClass_Channel6);
 			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel7);	DefineRegClass (kRegSDITransmitControl, kRegClass_Channel8);
-
 		DefineRegister (kRegCh1InputFrame,		"",	mDefaultRegDecoder,			READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
+
+		DefineRegister (kRegSDIWatchdogControlStatus,"", mDecodeRelayCtrlStat,	READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
+		DefineRegister (kRegSDIWatchdogTimeout,	"",	mDecodeWatchdogTimeout,		READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
+		DefineRegister (kRegSDIWatchdogKick1,	"",	mDecodeWatchdogKick,		READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
+		DefineRegister (kRegSDIWatchdogKick2,	"",	mDecodeWatchdogKick,		READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
+	}
+	void SetupVPIDRegs(void)
+	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister (kRegSDIIn1VPIDA,		"",	mVPIDInpRegDecoder,			READONLY,	kRegClass_VPID,		kRegClass_Input,	kRegClass_Channel1);
 		DefineRegister (kRegSDIIn1VPIDB,		"",	mVPIDInpRegDecoder,			READONLY,	kRegClass_VPID,		kRegClass_Input,	kRegClass_Channel1);
 		DefineRegister (kRegSDIOut1VPIDA,		"",	mVPIDOutRegDecoder,			READWRITE,	kRegClass_VPID,		kRegClass_Output,	kRegClass_Channel1);
@@ -199,36 +303,10 @@ public:
 		DefineRegister (kRegSDIIn8VPIDB,		"",	mVPIDInpRegDecoder,			READONLY,	kRegClass_VPID,		kRegClass_Input,	kRegClass_Channel8);
 		DefineRegister (kRegSDIOut8VPIDA,		"",	mVPIDOutRegDecoder,			READWRITE,	kRegClass_VPID,		kRegClass_Output,	kRegClass_Channel8);
 		DefineRegister (kRegSDIOut8VPIDB,		"",	mVPIDOutRegDecoder,			READWRITE,	kRegClass_VPID,		kRegClass_Output,	kRegClass_Channel8);
-
-		SetupAncInsExt();		//	Anc Ins/Ext
-		SetupXptSelect();		//	Xpt Select
-		SetupDMARegs();			//	DMA
-		SetupTimecodeRegs();	//	Timecode
-		SetupAudioRegs();		//	Audio
-		SetupMixerKeyerRegs();	//	Mixer/Keyer
-		SetupHDMIRegs();		//	HDMI
-		SetupSDIErrorRegs();	//	SDIError
-		SetupCSCRegs();			//	CSCs
-		SetupVRegs();			//	Virtuals
-		
-		//Print (cout);	//	For debugging
-	}	//	constructor
-	
-private:
-    void DefineRegName(uint32_t regNumber, const string& regName)
-    {
-        if (!regName.empty())
-        {
-            if (mRegNumToStringMap.find ((regNumber)) == mRegNumToStringMap.end())
-            {
-                mRegNumToStringMap.insert (RegNumToStringPair ((regNumber), regName));
-                mStringToRegNumMap.insert (StringToRegNumPair (ToLower (regName), (regNumber)));
-            }
-        }
-    }
-
+	}
 	void SetupTimecodeRegs(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister	(kRegRP188InOut1DBB,			"",	mRP188InOutDBBRegDecoder,	READWRITE,	kRegClass_Timecode,	kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister	(kRegRP188InOut1Bits0_31,		"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Timecode,	kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister	(kRegRP188InOut1Bits32_63,		"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Timecode,	kRegClass_Channel1,	kRegClass_NULL);
@@ -294,6 +372,7 @@ private:
 	
 	void SetupAudioRegs(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister (kRegAud1Control,		"",	mDecodeAudControlReg,		READWRITE,	kRegClass_Audio,	kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister (kRegAud2Control,		"",	mDecodeAudControlReg,		READWRITE,	kRegClass_Audio,	kRegClass_Channel2,	kRegClass_NULL);
 		DefineRegister (kRegAud3Control,		"",	mDecodeAudControlReg,		READWRITE,	kRegClass_Audio,	kRegClass_Channel3,	kRegClass_NULL);
@@ -368,6 +447,7 @@ private:
 	
 	void SetupDMARegs(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister	(kRegDMA1HostAddr,		"",	mDefaultRegDecoder,			READWRITE,	kRegClass_DMA,	kRegClass_NULL,	kRegClass_NULL);
 		DefineRegister	(kRegDMA1HostAddrHigh,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_DMA,	kRegClass_NULL,	kRegClass_NULL);
 		DefineRegister	(kRegDMA1LocalAddr,		"",	mDefaultRegDecoder,			READWRITE,	kRegClass_DMA,	kRegClass_NULL,	kRegClass_NULL);
@@ -398,6 +478,7 @@ private:
 	
 	void SetupXptSelect(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		//				RegNum					0								1								2								3
 		DefineXptReg	(kRegXptSelectGroup1,	NTV2_XptLUT1Input,				NTV2_XptCSC1VidInput,			NTV2_XptConversionModInput,		NTV2_XptCompressionModInput);
 		DefineXptReg	(kRegXptSelectGroup2,	NTV2_XptFrameBuffer1Input,		NTV2_XptFrameSync1Input,		NTV2_XptFrameSync2Input,		NTV2_XptDualLinkOut1Input);
@@ -465,6 +546,8 @@ private:
 		NTV2_ASSERT(sizeof(AncExtRegNames[0]) == sizeof(AncExtRegNames[1]));
 		NTV2_ASSERT(size_t(regAncExt_LAST) == sizeof(AncExtRegNames)/sizeof(AncExtRegNames[0]));
 		NTV2_ASSERT(size_t(regAncIns_LAST) == sizeof(AncInsRegNames)/sizeof(string));
+
+		AJAAutoLock	lock(&mGuardMutex);
 		for (ULWord offsetNdx (0);  offsetNdx < 8;  offsetNdx++)
 		{
 			for (ULWord reg(regAncExtControl);  reg < regAncExt_LAST;  reg++)
@@ -522,6 +605,7 @@ private:
 
 	void SetupHDMIRegs(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister (kRegHDMIOutControl,							"",	mDecodeHDMIOutputControl,	READWRITE,	kRegClass_HDMI,		kRegClass_Output,	kRegClass_Channel1);
 		DefineRegister (kRegHDMIInputStatus,						"",	mDecodeHDMIInputStatus,		READWRITE,	kRegClass_HDMI,		kRegClass_Input,	kRegClass_Channel1);
 		DefineRegister (kRegHDMIInputControl,						"",	mDecodeHDMIInputControl,	READWRITE,	kRegClass_HDMI,		kRegClass_Input,	kRegClass_Channel1);
@@ -674,6 +758,8 @@ private:
 		static const ULWord	baseNum[]	=	{kRegRXSDI1Status,	kRegRXSDI2Status,	kRegRXSDI3Status,	kRegRXSDI4Status,	kRegRXSDI5Status,	kRegRXSDI6Status,	kRegRXSDI7Status,	kRegRXSDI8Status};
 		static const string	suffixes []	=	{"Status",	"CRCErrorCount",	"FrameCountLow",	"FrameCountHigh",	"FrameRefCountLow",	"FrameRefCountHigh"};
 		static const int	perms []	=	{READWRITE,	READWRITE,			READWRITE,			READWRITE,			READONLY,			READONLY};
+
+		AJAAutoLock	lock(&mGuardMutex);
 		for (ULWord chan (0);  chan < 8;  chan++)
 			for (UWord ndx(0);  ndx < 6;  ndx++)
 			{
@@ -695,6 +781,8 @@ private:
 	void SetupCSCRegs(void)
 	{
 		static const string	sChan[8] = {kRegClass_Channel1, kRegClass_Channel2, kRegClass_Channel3, kRegClass_Channel4, kRegClass_Channel5, kRegClass_Channel6, kRegClass_Channel7, kRegClass_Channel8};
+
+		AJAAutoLock	lock(&mGuardMutex);
 		for (unsigned num(0);  num < 8;  num++)
 		{
 			ostringstream ossRegName;  ossRegName << "kRegEnhancedCSC" << (num+1);
@@ -734,13 +822,17 @@ private:
 		for (unsigned chan(0);  chan < 8;  chan++)
 		{
 			const string & chanClass (sChan[chan]);
-			for (unsigned num(0);  num < 5;  num++)
-				DefineRegister (sECSCRegs[chan][num],		"",		mDefaultRegDecoder,	READWRITE,	kRegClass_Color,	chanClass,		kRegClass_NULL);
+			DefineRegister (sECSCRegs[chan][0],	"",	mCSCoeff1234Decoder,	READWRITE,	kRegClass_Color,	chanClass,		kRegClass_NULL);
+			DefineRegister (sECSCRegs[chan][1],	"",	mCSCoeff1234Decoder,	READWRITE,	kRegClass_Color,	chanClass,		kRegClass_NULL);
+			DefineRegister (sECSCRegs[chan][2],	"",	mCSCoeff567890Decoder,	READWRITE,	kRegClass_Color,	chanClass,		kRegClass_NULL);
+			DefineRegister (sECSCRegs[chan][3],	"",	mCSCoeff567890Decoder,	READWRITE,	kRegClass_Color,	chanClass,		kRegClass_NULL);
+			DefineRegister (sECSCRegs[chan][4],	"",	mCSCoeff567890Decoder,	READWRITE,	kRegClass_Color,	chanClass,		kRegClass_NULL);
 		}
 	}	//	SetupCSCRegs
 
 	void SetupMixerKeyerRegs(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		//	VidProc/Mixer/Keyer
 		DefineRegister	(kRegVidProc1Control,	"",	mVidProcControlRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Channel2);
 		DefineRegister	(kRegVidProc2Control,	"",	mVidProcControlRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel3,	kRegClass_Channel4);
@@ -759,6 +851,7 @@ private:
 
 	void SetupVRegs(void)
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegName	(kVRegDriverVersion,					"kVRegDriverVersion");
 		DefineRegName	(kVRegRelativeVideoPlaybackDelay,		"kVRegRelativeVideoPlaybackDelay");
 		DefineRegName	(kVRegAudioRecordPinDelay,				"kVRegAudioRecordPinDelay");
@@ -1129,7 +1222,7 @@ private:
 		DefineRegName	(kVRegAnalogAudioIOConfiguration,		"kVRegAnalogAudioIOConfiguration");
 		DefineRegName	(kVRegLastAJA,							"kVRegLastAJA");
 		DefineRegName	(kVRegFirstOEM,							"kVRegFirstOEM");
-		
+
 		for (ULWord ndx (0);  ndx < 1024;  ndx++)
 		{
 			ostringstream	oss;
@@ -1141,13 +1234,14 @@ private:
 				if (mRegNumToStringMap.find (regNum) == mRegNumToStringMap.end())
 				{
 					mRegNumToStringMap.insert (RegNumToStringPair (regNum, regName));
-					mStringToRegNumMap.insert (StringToRegNumPair (ToLower (regName), regNum));
+					mStringToRegNumMMap.insert (StringToRegNumPair (ToLower (regName), regNum));
 				}
 			DefineRegDecoder (regNum, mDefaultRegDecoder);
 			DefineRegReadWrite (regNum, READWRITE);
 			DefineRegClass (regNum, kRegClass_Virtual);
 		}
 	}	//	SetupVRegs
+
 public:
 	static ostream & PrintLabelValuePairs (ostream & oss, const AJALabelValuePairs & inLabelValuePairs)
 	{
@@ -1171,6 +1265,7 @@ public:
 
 	string RegNameToString (const uint32_t inRegNum) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		RegNumToStringMap::const_iterator	iter	(mRegNumToStringMap.find (inRegNum));
 		if (iter != mRegNumToStringMap.end())
 			return iter->second;
@@ -1181,6 +1276,7 @@ public:
 	
 	string RegValueToString (const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		RegNumToDecoderMap::const_iterator	iter	(mRegNumToDecoderMap.find (inRegNum));
 		ostringstream	oss;
 		if (iter != mRegNumToDecoderMap.end()  &&  iter->second)
@@ -1193,7 +1289,8 @@ public:
 	
 	bool	IsRegInClass (const uint32_t inRegNum, const string & inClassName) const
 	{
-		for (RegClassToRegNumConstIter	it	(mRegClassToRegNumMap.find (inClassName));  it != mRegClassToRegNumMap.end() && it->first == inClassName;  ++it)
+		AJAAutoLock	lock(&mGuardMutex);
+		for (RegClassToRegNumConstIter	it	(mRegClassToRegNumMMap.find (inClassName));  it != mRegClassToRegNumMMap.end() && it->first == inClassName;  ++it)
 			if (it->second == inRegNum)
 				return true;
 		return false;
@@ -1204,8 +1301,9 @@ public:
 	
 	NTV2StringSet	GetAllRegisterClasses (void) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		if (mAllRegClasses.empty())
-			for (RegClassToRegNumConstIter	it	(mRegClassToRegNumMap.begin ());  it != mRegClassToRegNumMap.end();  ++it)
+			for (RegClassToRegNumConstIter	it	(mRegClassToRegNumMMap.begin ());  it != mRegClassToRegNumMMap.end();  ++it)
 				if (mAllRegClasses.find (it->first) == mAllRegClasses.end())
 					mAllRegClasses.insert (it->first);
 		return mAllRegClasses;
@@ -1213,6 +1311,7 @@ public:
 	
 	NTV2StringSet	GetRegisterClasses (const uint32_t inRegNum) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		NTV2StringSet	result;
 		NTV2StringSet	allClasses	(GetAllRegisterClasses());
 		for (NTV2StringSetConstIter	it	(allClasses.begin ());  it != allClasses.end();  ++it)
@@ -1223,8 +1322,9 @@ public:
 	
 	NTV2RegNumSet	GetRegistersForClass (const string & inClassName) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		NTV2RegNumSet	result;
-		for (RegClassToRegNumConstIter	it	(mRegClassToRegNumMap.find (inClassName));  it != mRegClassToRegNumMap.end() && it->first == inClassName;  ++it)
+		for (RegClassToRegNumConstIter	it	(mRegClassToRegNumMMap.find (inClassName));  it != mRegClassToRegNumMMap.end() && it->first == inClassName;  ++it)
 			if (result.find (it->second) == result.end())
 				result.insert (it->second);
 		return result;
@@ -1240,6 +1340,7 @@ public:
 		for (uint32_t regNum (0);  regNum <= maxRegNum;  regNum++)
 			result.insert(regNum);
 
+		AJAAutoLock	lock(&mGuardMutex);
 		if (::NTV2DeviceCanDoCustomAnc(inDeviceID))
 		{
 			const NTV2RegNumSet	ancRegs			(GetRegistersForClass(kRegClass_Anc));
@@ -1315,27 +1416,30 @@ public:
 	NTV2RegNumSet	GetRegistersWithName (const string & inName, const int inMatchStyle = EXACTMATCH) const
 	{
 		NTV2RegNumSet	result;
-		const string	nameStr		(ToLower (inName));
-		const size_t	nameStrLen	(nameStr.length());
+		string			nameStr(inName);
+		const size_t	nameStrLen(aja::lower(nameStr).length());
 		StringToRegNumConstIter it;
+		AJAAutoLock	lock(&mGuardMutex);
 		if (inMatchStyle == EXACTMATCH)
 		{
-			it = mStringToRegNumMap.find (nameStr);
-			if (it != mStringToRegNumMap.end())
-				result.insert (it->second);
+			it = mStringToRegNumMMap.find(nameStr);
+			if (it != mStringToRegNumMMap.end())
+				result.insert(it->second);
 			return result;
 		}
 		//	Inexact match...
-		for (it = mStringToRegNumMap.begin();  it != mStringToRegNumMap.end();  ++it)
+		for (it = mStringToRegNumMMap.begin();  it != mStringToRegNumMMap.end();  ++it)
 		{
-			const size_t	pos	(it->first.find (nameStr));
+			const size_t pos(it->first.find(nameStr));
 			if (pos == string::npos)
 				continue;
 			switch (inMatchStyle)
 			{
-				case CONTAINS:		result.insert (it->second);					break;
-				case STARTSWITH:	if (pos == 0)	result.insert (it->second);	break;
-				case ENDSWITH:		if (pos + nameStrLen == it->first.length())	result.insert (it->second);	break;
+				case CONTAINS:		result.insert(it->second);					break;
+				case STARTSWITH:	if (pos == 0)
+										result.insert(it->second);				break;
+				case ENDSWITH:		if (pos+nameStrLen == it->first.length())
+										result.insert(it->second);				break;
 				default:			break;
 			}
 		}
@@ -1344,6 +1448,7 @@ public:
 	
 	bool		GetXptRegNumAndMaskIndex (const NTV2InputCrosspointID inInputXpt, uint32_t & outXptRegNum, uint32_t & outMaskIndex) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		outXptRegNum = 0xFFFFFFFF;
 		outMaskIndex = 0xFFFFFFFF;
 		InputXpt2XptRegNumMaskIndexMapConstIter	iter	(mInputXpt2XptRegNumMaskIndexMap.find (inInputXpt));
@@ -1356,6 +1461,7 @@ public:
 	
 	NTV2InputCrosspointID	GetInputCrosspointID (const uint32_t inXptRegNum, const uint32_t inMaskIndex) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		const XptRegNumAndMaskIndex				key		(inXptRegNum, inMaskIndex);
 		XptRegNumMaskIndex2InputXptMapConstIter	iter	(mXptRegNumMaskIndex2InputXptMap.find (key));
 		if (iter != mXptRegNumMaskIndex2InputXptMap.end())
@@ -1365,6 +1471,7 @@ public:
 	
 	ostream &	Print (ostream & inOutStream) const
 	{
+		AJAAutoLock	lock(&mGuardMutex);
 		static const string		sLineBreak	(96, '=');
 		static const uint32_t	sMasks[4]	=	{0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
 		
@@ -1376,12 +1483,12 @@ public:
 		for (RegNumToDecoderMap::const_iterator it (mRegNumToDecoderMap.begin());  it != mRegNumToDecoderMap.end();  ++it)
 			inOutStream	<< "reg " << setw(5) << it->first << "(" << HEX0N(it->first,8) << dec << ")  =>  " << (it->second == &mDefaultRegDecoder ? "(default decoder)" : "Custom Decoder") << endl;
 		
-		inOutStream	<< endl << sLineBreak << endl << "RegisterExpert:  Dump of RegClassToRegNumMap:  " << mRegClassToRegNumMap.size() << " mappings:" << endl << sLineBreak << endl;
-		for (RegClassToRegNumMap::const_iterator it (mRegClassToRegNumMap.begin());  it != mRegClassToRegNumMap.end();  ++it)
+		inOutStream	<< endl << sLineBreak << endl << "RegisterExpert:  Dump of RegClassToRegNumMMap:  " << mRegClassToRegNumMMap.size() << " mappings:" << endl << sLineBreak << endl;
+		for (RegClassToRegNumMMap::const_iterator it (mRegClassToRegNumMMap.begin());  it != mRegClassToRegNumMMap.end();  ++it)
 			inOutStream	<< setw(32) << it->first << "  =>  reg " << setw(5) << it->second << "(" << HEX0N(it->second,8) << dec << ") " << RegNameToString(it->second) << endl;
 		
-		inOutStream	<< endl << sLineBreak << endl << "RegisterExpert:  Dump of StringToRegNumMap:  " << mStringToRegNumMap.size() << " mappings:" << endl << sLineBreak << endl;
-		for (StringToRegNumMap::const_iterator it (mStringToRegNumMap.begin());  it != mStringToRegNumMap.end();  ++it)
+		inOutStream	<< endl << sLineBreak << endl << "RegisterExpert:  Dump of StringToRegNumMMap:  " << mStringToRegNumMMap.size() << " mappings:" << endl << sLineBreak << endl;
+		for (StringToRegNumMMap::const_iterator it (mStringToRegNumMMap.begin());  it != mStringToRegNumMMap.end();  ++it)
 			inOutStream	<< setw(32) << it->first << "  =>  reg " << setw(5) << it->second << "(" << HEX0N(it->second,8) << dec << ") " << RegNameToString(it->second) << endl;
 		
 		inOutStream	<< endl << sLineBreak << endl << "RegisterExpert:  Dump of InputXpt2XptRegNumMaskIndexMap:  " << mInputXpt2XptRegNumMaskIndexMap.size() << " mappings:" << endl << sLineBreak << endl;
@@ -1408,21 +1515,6 @@ private:
 		std::transform (result.begin (), result.end (), result.begin (), ::tolower);
 		return result;
 	}
-	
-	//	This class implements a functor that returns a string that contains a human-readable decoding
-	//	of a register value, given its number and the ID of the device it came from.
-	struct Decoder
-	{
-		//	The default reg decoder functor returns an empty string.
-		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
-		{
-			(void) inRegNum;
-			(void) inRegValue;
-			(void) inDeviceID;
-			return string();
-		}
-		virtual	~Decoder()	{}
-	} mDefaultRegDecoder;
 
 	struct DecodeGlobalControlReg : public Decoder
 	{
@@ -1465,7 +1557,7 @@ private:
 			(void) inDeviceID;
 			static const ULWord	playCaptModes[]	= {	kRegMaskAud1PlayCapMode,kRegMaskAud2PlayCapMode,kRegMaskAud3PlayCapMode,kRegMaskAud4PlayCapMode,
 													kRegMaskAud5PlayCapMode,kRegMaskAud6PlayCapMode,kRegMaskAud7PlayCapMode,kRegMaskAud8PlayCapMode};
-			static const ULWord	rp188Modes[]	= {	0, 0, kRegMaskRP188ModeCh3,kRegMaskRP188ModeCh4,kRegMaskRP188ModeCh5,kRegMaskRP188ModeCh6,kRegMaskRP188ModeCh7,kRegMaskRP188ModeCh8};
+			static const ULWord	rp188Modes[]	= {	0, 0, kRegMaskRP188ModeCh3,kRegMaskRP188ModeCh4,kRegMaskRP188ModeCh5,ULWord(kRegMaskRP188ModeCh6),kRegMaskRP188ModeCh7,kRegMaskRP188ModeCh8};
 			static const ULWord	k425Masks[]		= {	kRegMask425FB12, kRegMask425FB34, kRegMask425FB56, kRegMask425FB78};
 			static const ULWord	BLinkModes[]	= {	kRegMaskSmpte372Enable4, kRegMaskSmpte372Enable6, kRegMaskSmpte372Enable8};
 			ostringstream	oss;
@@ -1617,6 +1709,75 @@ private:
 		}
 		virtual	~DecodeSDITransmitCtrl()	{}
 	}	mDecodeSDITransmitCtrl;
+	
+	struct DecodeRelayCtrlStat : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			ostringstream	oss;
+			if (::NTV2DeviceHasSDIRelays(inDeviceID))
+			{
+				oss	<< "SDI1-SDI2 Relay Control: "	<< ThruDeviceOrBypassed(inRegValue & kRegMaskSDIRelayControl12)		<< endl
+					<< "SDI3-SDI4 Relay Control: "	<< ThruDeviceOrBypassed(inRegValue & kRegMaskSDIRelayControl34)		<< endl
+					<< "SDI1-SDI2 Relay Watchdog: "	<< EnabDisab(inRegValue & kRegMaskSDIWatchdogEnable12)				<< endl
+					<< "SDI3-SDI4 Relay Watchdog: "	<< EnabDisab(inRegValue & kRegMaskSDIWatchdogEnable34)				<< endl
+					<< "SDI1-SDI2 Relay Position: "	<< ThruDeviceOrBypassed(inRegValue & kRegMaskSDIRelayPosition12)	<< endl
+					<< "SDI3-SDI4 Relay Position: "	<< ThruDeviceOrBypassed(inRegValue & kRegMaskSDIRelayPosition34)	<< endl
+					<< "Watchdog Timer Status: "	<< ThruDeviceOrBypassed(inRegValue & kRegMaskSDIWatchdogStatus);
+			}
+			else
+				oss	<< "(SDI bypass relays not supported)";
+			return oss.str();
+		}
+		virtual	~DecodeRelayCtrlStat()	{}
+	}	mDecodeRelayCtrlStat;
+	
+	struct DecodeWatchdogTimeout : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			ostringstream	oss;
+			if (::NTV2DeviceHasSDIRelays(inDeviceID))
+			{
+				const uint32_t	ticks8nanos	(inRegValue);	//	number of 8-nanosecond ticks
+				const double	microsecs	(double(ticks8nanos) * 8.0 / 1000.0);
+				const double	millisecs	(microsecs / 1000.0);
+				oss << "Watchdog Timeout [8-ns ticks]: " << xHEX0N(ticks8nanos,8) << " (" << DEC(ticks8nanos) << ")" << endl
+					<< "Watchdog Timeout [usec]: " << microsecs << endl
+					<< "Watchdog Timeout [msec]: " << millisecs;
+			}
+			else
+				oss	<< "(SDI bypass relays not supported)";
+			return oss.str();
+		}
+		virtual	~DecodeWatchdogTimeout()	{}
+	}	mDecodeWatchdogTimeout;
+	
+	struct DecodeWatchdogKick : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			ostringstream	oss;
+			if (::NTV2DeviceHasSDIRelays(inDeviceID))
+			{
+				const uint32_t	whichReg(inRegNum - kRegSDIWatchdogKick1);
+				NTV2_ASSERT(whichReg < 2);
+				const uint32_t expectedValue(whichReg ? 0x01234567 : 0xA5A55A5A);
+				oss << xHEX0N(inRegValue,8);
+				if (inRegValue == expectedValue)
+					oss << " (Normal)";
+				else
+					oss << " (Not expected, should be " << xHEX0N(expectedValue,8) << ")";
+			}
+			else
+				oss	<< "(SDI bypass relays not supported)";
+			return oss.str();
+		}
+		virtual	~DecodeWatchdogKick()	{}
+	}	mDecodeWatchdogKick;
 
 	struct DecodeInputVPID: public Decoder
 	{
@@ -1687,8 +1848,8 @@ private:
 		{
 			(void) inRegNum;
 			(void) inDeviceID;
-			const bool		is16x9	((inRegValue & (1 << 31)) != 0);
-			const bool		isMono	((inRegValue & (1 << 30)) != 0);
+			const bool		is16x9	((inRegValue & BIT(31)) != 0);
+			const bool		isMono	((inRegValue & BIT(30)) != 0);
 			ostringstream	oss;
 			oss << "Aspect Ratio: " << (is16x9 ? "16x9" : "4x3") << endl
 				<< "Depth: " << (isMono ? "Monochrome" : "Color");
@@ -1821,7 +1982,7 @@ private:
 				<< "Input 1 Scan Mode: "	<< ((BIT(7) & inRegValue) ? "Progressive" : "Interlaced") << endl
 				<< "Input 2 Frame Rate: " << ::NTV2FrameRateToString(fRate2, true) << endl
 				<< "Input 2 Geometry: ";
-			if (BIT(30) & inRegValue)
+			if (BIT(31) & inRegValue)
 				switch (((BIT(12)|BIT(13)|BIT(14)) & inRegValue) >> 12)
 			{
 				case 0:		oss << "2K x 1080";		break;
@@ -1912,6 +2073,62 @@ private:
 		}
 		virtual	~DecodeSDIInputStatusReg()	{}
 	}	mDecodeSDIInputStatusReg;
+
+	struct DecodeSDIInputStatus2Reg : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inDeviceID;
+			const string sOdd	(inRegNum == kRegInputStatus2 ? "Input 3" : (inRegNum == kRegInput56Status ? "Input 5" : "Input 7"));
+			const string sEven	(inRegNum == kRegInputStatus2 ? "Input 4" : (inRegNum == kRegInput56Status ? "Input 6" : "Input 8"));
+			const NTV2FrameRate	fRate1	(NTV2FrameRate( (inRegValue & (BIT( 0)|BIT( 1)|BIT( 2) ))        | ((inRegValue & BIT(28)) >> (28-3)) ));
+			const NTV2FrameRate	fRate2	(NTV2FrameRate(((inRegValue & (BIT( 8)|BIT( 9)|BIT(10) )) >>  8) | ((inRegValue & BIT(29)) >> (29-3)) ));
+			ostringstream	oss;
+			oss	<< sOdd << " Scan Mode: "	<< ((BIT(7) & inRegValue) ? "Progressive" : "Interlaced") << endl
+				<< sOdd << " Frame Rate: " << ::NTV2FrameRateToString(fRate1, true) << endl
+				<< sOdd << " Geometry: ";
+			if (BIT(30) & inRegValue) switch (((BIT(4)|BIT(5)|BIT(6)) & inRegValue) >> 4)
+			{
+				case 0:				oss << "2K x 1080";		break;
+				case 1:				oss << "2K x 1556";		break;
+				default:			oss << "Invalid HI";	break;
+			}
+			else switch (((BIT(4)|BIT(5)|BIT(6)) & inRegValue) >> 4)
+			{
+				case 0:				oss << "Unknown";		break;
+				case 1:				oss << "525";			break;
+				case 2:				oss << "625";			break;
+				case 3:				oss << "750";			break;
+				case 4:				oss << "1125";			break;
+				case 5:				oss << "1250";			break;
+				case 6:	case 7:		oss << "Reserved";		break;
+				default:			oss << "Invalid LO";	break;
+			}
+			oss	<< endl
+				<< sEven << " Scan Mode: "	<< ((BIT(15) & inRegValue) ? "Progressive" : "Interlaced") << endl
+				<< sEven << " Frame Rate: " << ::NTV2FrameRateToString(fRate2, true) << endl
+				<< sEven << " Geometry: ";
+			if (BIT(31) & inRegValue) switch (((BIT(12)|BIT(13)|BIT(14)) & inRegValue) >> 12)
+			{
+				case 0:				oss << "2K x 1080";		break;
+				case 1:				oss << "2K x 1556";		break;
+				default:			oss << "Invalid HI";	break;
+			}
+			else switch (((BIT(12)|BIT(13)|BIT(14)) & inRegValue) >> 12)
+			{
+				case 0:				oss << "Unknown";		break;
+				case 1:				oss << "525";			break;
+				case 2:				oss << "625";			break;
+				case 3:				oss << "750";			break;
+				case 4:				oss << "1125";			break;
+				case 5:				oss << "1250";			break;
+				case 6:	case 7:		oss << "Reserved";		break;
+				default:			oss << "Invalid LO";	break;
+			}
+			return oss.str();
+		}
+		virtual	~DecodeSDIInputStatus2Reg()	{}
+	}	mDecodeSDIInputStatus2Reg;
 
 	struct DecodeFS1RefSelectReg : public Decoder
 	{
@@ -2261,13 +2478,13 @@ private:
 			const bool		overrun		((inRegValue & BIT(28)) ? true : false);
 			switch (which)
 			{
-				case 6:		oss	<<	"Total bytes: ";		break;
+				case 6:		oss	<< "Total bytes: ";			break;
 				case 7:		oss	<< "Total F1 bytes: ";		break;
 				case 8:		oss	<< "Total F2 bytes: ";		break;
-				default:	return "Invalid register type";	break;
+				default:	oss << "Invalid register type";	break;
 			}
-			oss	<< byteTotal	<< endl
-			<< "Overrun: "	<< YesNo(overrun);
+			oss	<< DEC(byteTotal)	<< endl
+				<< "Overrun: "	<< YesNo(overrun);
 			return oss.str();
 		}
 		virtual	~DecodeAncExtStatusReg()	{}
@@ -2464,9 +2681,9 @@ private:
 			(void) inRegNum;
 			ostringstream	oss;
 			const ULWord	hdmiVers(::NTV2DeviceGetHDMIVersion (inDeviceID));
-			const uint32_t	vidStd	(hdmiVers == 2 ? (inRegValue & kRegMaskHDMIInV2VideoStd) >> kRegShiftHDMIInputStatusV2Std : (inRegValue & kRegMaskHDMIInStandard) >> kRegShiftInputStatusStd);
+			const uint32_t	vidStd	(hdmiVers >= 2 ? (inRegValue & kRegMaskHDMIInV2VideoStd) >> kRegShiftHDMIInputStatusV2Std : (inRegValue & kRegMaskHDMIInStandard) >> kRegShiftInputStatusStd);
 			const uint32_t	rate	((inRegValue & kRegMaskHDMIInFPS) >> kRegShiftInputStatusFPS);
-			static const string	sStds[32] = {"1080i", "720p", "480i", "576i", "1080p", "SXGA", "6", "7", "3840p", "4096p"};
+			static const string	sStds[32] = {"1080i", "720p", "480i", "576i", "1080p", "SXGA", "2K1080p", "2K1080i", "3840p", "4096p"};
 			static const string	sRates[32] = {"invalid", "60.00", "59.94", "30.00", "29.97", "25.00", "24.00", "23.98"};
 			oss	<< "HDMI Input: " << (inRegValue & BIT(0) ? "Locked" : "Unlocked")			<< endl
 				<< "HDMI Input: " << (inRegValue & BIT(1) ? "Stable" : "Unstable")			<< endl
@@ -2474,10 +2691,9 @@ private:
 				<< "Bitdepth: " << (inRegValue & BIT(3) ? "10-bit" : "8-bit")				<< endl
 				<< "Audio Channels: " << (inRegValue & BIT(12) ? 8 : 2)						<< endl
 				<< "Scan Mode: " << (inRegValue & BIT(13) ? "Progressive" : "Interlaced")	<< endl
-				<< "Standard: " << (inRegValue & BIT(14) ? "SD" : "HD")						<< endl;
-			if (hdmiVers == 1 || hdmiVers == 2)
-				oss << "Video Standard: " << sStds[vidStd]									<< endl;
-			oss	<< "Protocol: " << (inRegValue & BIT(27) ? "DVI" : "HDMI")					<< endl
+				<< "Standard: " << (inRegValue & BIT(14) ? "SD" : "HD")						<< endl
+				<< "Video Standard: " << sStds[vidStd]										<< endl
+				<< "Protocol: " << (inRegValue & BIT(27) ? "DVI" : "HDMI")					<< endl
 				<< "Video Rate : " << (rate < 8 ? sRates[rate] : string("invalid"));
 			return oss.str();
 		}
@@ -2495,11 +2711,12 @@ private:
 			const UWord	txCh12Sel	((inRegValue & (BIT(29)|BIT(30))) >> 29);
 			static const NTV2AudioChannelPair pairs[] = {NTV2_AudioChannel1_2, NTV2_AudioChannel3_4, NTV2_AudioChannel5_6, NTV2_AudioChannel7_8};
 			oss	<< "HDMI In EDID Write-Enable: " << EnabDisab(inRegValue & BIT(0))							<< endl
-				<< "Force User Output Params: " << SetNotset(inRegValue & BIT(1))							<< endl
+				<< "HDMI Force Output Params: " << SetNotset(inRegValue & BIT(1))							<< endl
 				<< "HDMI In Audio Chan Select: " << ::NTV2AudioChannelPairToString(pairs[chanPair], true)	<< endl
 				<< "hdmi_rx_8ch_src_off: " << YesNo(inRegValue & BIT(4))									<< endl
 				<< "Swap HDMI In Audio Ch. 3/4: " << YesNo(inRegValue & BIT(5))								<< endl
 				<< "Swap HDMI Out Audio Ch. 3/4: " << YesNo(inRegValue & BIT(6))							<< endl
+				<< "HDMI Prefer 420: " << SetNotset(inRegValue & BIT(7))									<< endl
 				<< "hdmi_rx_spdif_err: " << SetNotset(inRegValue & BIT(8))									<< endl
 				<< "hdmi_rx_afifo_under: " << SetNotset(inRegValue & BIT(9))								<< endl
 				<< "hdmi_rx_afifo_empty: " << SetNotset(inRegValue & BIT(10))								<< endl
@@ -2509,6 +2726,7 @@ private:
 				<< "DE polarity: " << (inRegValue & BIT(19) ? "Inverted" : "Normal")						<< endl
 				<< "Tx Src Sel: " << DEC(txSrcSel) << " (" << xHEX0N(txSrcSel,4) << ")"						<< endl
 				<< "Tx Center Cut: " << SetNotset(inRegValue & BIT(24))										<< endl
+				<< "Tx 12 bit: " << SetNotset(inRegValue & BIT(26))											<< endl
 				<< "RGB Input Gamut: " << (inRegValue & BIT(28) ? "Full Range" : "Narrow Range (SMPTE)")	<< endl
 				<< "Tx_ch12_sel: " << DEC(txCh12Sel) << " (" << xHEX0N(txCh12Sel,4) << ")"					<< endl
 				<< "Input AVI Gamut: " << (inRegValue & BIT(31) ? "Full Range" : "Narrow Range (SMPTE)")	<< endl
@@ -2902,6 +3120,79 @@ private:
 		virtual	~DecodeEnhancedCSCCoefficient()	{}
 	}	mEnhCSCCoeffDecoder;
 
+	struct DecodeCSCoeff1234 : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inDeviceID;
+			const uint32_t	coeff1 (((inRegValue >> 11) & 0x00000003) | uint32_t(inRegValue & 0x000007FF));
+			const uint32_t	coeff2 ((inRegValue >> 14) & 0x00001FFF);
+			uint16_t		nCoeff1(1), nCoeff2(2);
+			switch(inRegNum)
+			{
+				case kRegCSCoefficients3_4:		case kRegCS2Coefficients3_4:	case kRegCS3Coefficients3_4:	case kRegCS4Coefficients3_4:
+				case kRegCS5Coefficients3_4:	case kRegCS6Coefficients3_4:	case kRegCS7Coefficients3_4:	case kRegCS8Coefficients3_4:
+					nCoeff1 = 3;	nCoeff2 = 4;	break;
+			}
+			//			kRegCS?Coefficients1_2					kRegCS?Coefficients3_4
+			//	CSC		1	2	3	4	5	6	7	8			1	2	3	4	5	6	7	8
+			//	RegNum	142	147	291	296	347	460	465	470			143	148	292	297	348	461	466	471
+			//	kRegCS?Coefficients1_2:	kK2RegMaskVidKeySyncStatus			= BIT(28)	0=OK		1=SyncFail		GetColorSpaceVideoKeySyncFail
+			//	kRegCS?Coefficients1_2:	kK2RegMaskMakeAlphaFromKeySelect	= BIT(29)	0=No		1=Yes			GetColorSpaceMakeAlphaFromKey
+			//	kRegCS?Coefficients1_2:	kK2RegMaskColorSpaceMatrixSelect	= BIT(30)	0=Rec709	1=Rec601		GetColorSpaceMatrixSelect
+			//	kRegCS?Coefficients1_2:	kK2RegMaskUseCustomCoefSelect		= BIT(31)	0=No		1=Yes			GetColorSpaceUseCustomCoefficient
+			//	kRegCS?Coefficients3_4:	kK2RegMaskXena2RGBRange				= BIT(31)	0=Full		1=SMPTE			GetColorSpaceRGBBlackRange
+			//	kK2RegMaskCustomCoefficientLow		= BITS(0-10)	CSCCustomCoeffs.Coefficient1	GetColorSpaceCustomCoefficients
+			//	kK2RegMaskCustomCoefficientHigh		= BITS(16-26)	CSCCustomCoeffs.Coefficient2	GetColorSpaceCustomCoefficients
+			//	kK2RegMaskCustomCoefficient12BitLow	= BITS(0-12)	CSCCustomCoeffs.Coefficient1	GetColorSpaceCustomCoefficients12Bit
+			//	kK2RegMaskCustomCoefficient12BitHigh= BITS(14-26)	CSCCustomCoeffs.Coefficient2	GetColorSpaceCustomCoefficients12Bit
+			ostringstream	oss;
+			if (nCoeff1 == 1)
+				oss	<< "Video Key Sync Status: "		<< (inRegValue & BIT(28) ? "SyncFail" : "OK")	<< endl
+					<< "Make Alpha From Key Input: "	<< EnabDisab(inRegValue & BIT(29))				<< endl
+					<< "Matrix Select: "				<< (inRegValue & BIT(30) ? "Rec601" : "Rec709")	<< endl
+					<< "Use Custom Coeffs: "			<< YesNo(inRegValue & BIT(31))					<< endl;
+			else
+				oss	<< "RGB Range: "					<< (inRegValue & BIT(31) ? "SMPTE (0x040-0x3C0)" : "Full (0x000-0x3FF)")	<< endl;
+			oss	<< "Coefficient" << DEC(nCoeff1) << ": "	<< xHEX0N(coeff1, 4)	<< endl
+				<< "Coefficient" << DEC(nCoeff2) << ": "	<< xHEX0N(coeff2, 4);
+			return oss.str();
+		}
+		virtual	~DecodeCSCoeff1234()	{}
+	}	mCSCoeff1234Decoder;
+
+	struct DecodeCSCoeff567890 : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inDeviceID;
+			const uint32_t	coeff5 (((inRegValue >> 11) & 0x00000003) | uint32_t(inRegValue & 0x000007FF));
+			const uint32_t	coeff6 ((inRegValue >> 14) & 0x00001FFF);
+			uint16_t	nCoeff5(5), nCoeff6(6);
+			switch(inRegNum)
+			{
+				case kRegCSCoefficients7_8:		case kRegCS2Coefficients7_8:	case kRegCS3Coefficients7_8:	case kRegCS4Coefficients7_8:
+				case kRegCS5Coefficients7_8:	case kRegCS6Coefficients7_8:	case kRegCS7Coefficients7_8:	case kRegCS8Coefficients7_8:
+					nCoeff5 = 7;	nCoeff6 = 8;	break;
+				case kRegCSCoefficients9_10:	case kRegCS2Coefficients9_10:	case kRegCS3Coefficients9_10:	case kRegCS4Coefficients9_10:
+				case kRegCS5Coefficients9_10:	case kRegCS6Coefficients9_10:	case kRegCS7Coefficients9_10:	case kRegCS8Coefficients9_10:
+					nCoeff5 = 9;	nCoeff6 = 10;	break;
+			}
+			//			kRegCS?Coefficients5_6				kRegCS?Coefficients7_8				kRegCS?Coefficients9_10
+			//	CSC		1	2	3	4	5	6	7	8		1	2	3	4	5	6	7	8		1	2	3	4	5	6	7	8
+			//	RegNum	143	148	292	297	348	461	466	471		144	149	293	298	349	462	467	472		145	150	294	299	350	463	468	473
+			//	kK2RegMaskCustomCoefficientLow	= BITS(0-10) CSCCustomCoeffs.Coefficient5	GetColorSpaceCustomCoefficients
+			//	kK2RegMaskCustomCoefficientHigh	= BITS(16-26) CSCCustomCoeffs.Coefficient6	GetColorSpaceCustomCoefficients
+			//	kK2RegMaskCustomCoefficient12BitLow	= BITS(0-12) CSCCustomCoeffs.Coefficient5	GetColorSpaceCustomCoefficients12Bit
+			//	kK2RegMaskCustomCoefficient12BitHigh= BITS(14-26) CSCCustomCoeffs.Coefficient6	GetColorSpaceCustomCoefficients12Bit
+			ostringstream	oss;
+			oss	<< "Coefficient" << DEC(nCoeff5) << ": "	<< xHEX0N(coeff5, 4)	<< endl
+				<< "Coefficient" << DEC(nCoeff6) << ": "	<< xHEX0N(coeff6, 4);
+			return oss.str();
+		}
+		virtual	~DecodeCSCoeff567890()	{}
+	}	mCSCoeff567890Decoder;
+
 	struct DecodeSDIErrorStatus : public Decoder
 	{
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
@@ -2944,86 +3235,148 @@ private:
 	static const int	STARTSWITH	=	1;
 	static const int	ENDSWITH	=	2;
 	static const int	EXACTMATCH	=	3;
-	
+
 	typedef map <uint32_t, const Decoder *>		RegNumToDecoderMap;
 	typedef pair <uint32_t, const Decoder *>	RegNumToDecoderPair;
-	typedef multimap <string, uint32_t>			RegClassToRegNumMap, StringToRegNumMap;
+	typedef multimap <string, uint32_t>			RegClassToRegNumMMap, StringToRegNumMMap;
 	typedef pair <string, uint32_t>				StringToRegNumPair;
-	typedef RegClassToRegNumMap::const_iterator	RegClassToRegNumConstIter;
-	typedef StringToRegNumMap::const_iterator	StringToRegNumConstIter;
-	
-	RegNumToStringMap		mRegNumToStringMap;
-	RegNumToDecoderMap		mRegNumToDecoderMap;
-	RegClassToRegNumMap		mRegClassToRegNumMap;
-	StringToRegNumMap		mStringToRegNumMap;
-	mutable NTV2StringSet	mAllRegClasses;
-	
+	typedef RegClassToRegNumMMap::const_iterator	RegClassToRegNumConstIter;
+	typedef StringToRegNumMMap::const_iterator	StringToRegNumConstIter;
+
 	typedef pair <uint32_t, uint32_t>							XptRegNumAndMaskIndex;	//	First: register number;  second: mask index (0=0x000000FF, 1=0x0000FF00, 2=0x00FF0000, 3=0xFF000000)
 	typedef map <NTV2InputCrosspointID, XptRegNumAndMaskIndex>	InputXpt2XptRegNumMaskIndexMap;
 	typedef map <XptRegNumAndMaskIndex, NTV2InputCrosspointID>	XptRegNumMaskIndex2InputXptMap;
 	typedef	InputXpt2XptRegNumMaskIndexMap::const_iterator		InputXpt2XptRegNumMaskIndexMapConstIter;
 	typedef	XptRegNumMaskIndex2InputXptMap::const_iterator		XptRegNumMaskIndex2InputXptMapConstIter;
-	
+
+private:	//	INSTANCE DATA
+	mutable AJALock			mGuardMutex;
+	RegNumToStringMap		mRegNumToStringMap;
+	RegNumToDecoderMap		mRegNumToDecoderMap;
+	RegClassToRegNumMMap	mRegClassToRegNumMMap;
+	StringToRegNumMMap		mStringToRegNumMMap;
+	mutable NTV2StringSet	mAllRegClasses;	//	Mutable -- caches results from 'const' method GetAllRegisterClasses
 	InputXpt2XptRegNumMaskIndexMap		mInputXpt2XptRegNumMaskIndexMap;
 	XptRegNumMaskIndex2InputXptMap		mXptRegNumMaskIndex2InputXptMap;
 	
 };	//	RegisterExpert
 
-static const RegisterExpert	gRegExpert;		//	Register Expert Singleton
+
+static RegisterExpertPtr	gpRegExpert;		//	Points to Register Expert Singleton
+static AJALock				gRegExpertGuardMutex;
 
 
+RegisterExpertPtr RegisterExpert::GetInstance(const bool inCreateIfNecessary)
+{
+	AJAAutoLock		locker(&gRegExpertGuardMutex);
+	if (!gpRegExpert  &&  inCreateIfNecessary)
+		gpRegExpert = new RegisterExpert;
+	return gpRegExpert;
+}
+
+bool RegisterExpert::DisposeInstance(void)
+{
+	AJAAutoLock		locker(&gRegExpertGuardMutex);
+	if (!gpRegExpert)
+		return false;
+	gpRegExpert = NULL;
+	return true;
+}
+
+bool CNTV2RegisterExpert::Allocate(void)
+{
+	AJAAutoLock	lock(&gRegExpertGuardMutex);
+	RegisterExpertPtr pInst(RegisterExpert::GetInstance(true));
+	return pInst ? true : false;
+}
+
+bool CNTV2RegisterExpert::IsAllocated(void)
+{
+	AJAAutoLock	lock(&gRegExpertGuardMutex);
+	RegisterExpertPtr pInst(RegisterExpert::GetInstance(false));
+	return pInst ? true : false;
+}
+
+bool CNTV2RegisterExpert::Deallocate(void)
+{
+	AJAAutoLock	lock(&gRegExpertGuardMutex);
+	RegisterExpertPtr pInst(RegisterExpert::GetInstance(false));
+	return pInst ? pInst->DisposeInstance() : false;
+}
 
 string CNTV2RegisterExpert::GetDisplayName (const uint32_t inRegNum)
 {
-	return gRegExpert.RegNameToString (inRegNum);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->RegNameToString(inRegNum) : string();
 }
 
 string CNTV2RegisterExpert::GetDisplayValue (const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID)
 {
-	return gRegExpert.RegValueToString (inRegNum, inRegValue, inDeviceID);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->RegValueToString(inRegNum, inRegValue, inDeviceID) : string();
 }
 
 bool CNTV2RegisterExpert::IsRegisterInClass (const uint32_t inRegNum, const string & inClassName)
 {
-	return gRegExpert.IsRegInClass (inRegNum, inClassName);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->IsRegInClass(inRegNum, inClassName) : false;
 }
 
 NTV2StringSet CNTV2RegisterExpert::GetAllRegisterClasses (void)
 {
-	return gRegExpert.GetAllRegisterClasses ();
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetAllRegisterClasses() : NTV2StringSet();
 }
 
 NTV2StringSet CNTV2RegisterExpert::GetRegisterClasses (const uint32_t inRegNum)
 {
-	return gRegExpert.GetRegisterClasses (inRegNum);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetRegisterClasses(inRegNum) : NTV2StringSet();
 }
 
 NTV2RegNumSet CNTV2RegisterExpert::GetRegistersForClass	(const string & inClassName)
 {
-	return gRegExpert.GetRegistersForClass (inClassName);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetRegistersForClass(inClassName) : NTV2RegNumSet();
 }
 
 NTV2RegNumSet CNTV2RegisterExpert::GetRegistersForChannel (const NTV2Channel inChannel)
 {
-	return NTV2_IS_VALID_CHANNEL (inChannel)  ?  gRegExpert.GetRegistersForClass (gChlClasses[inChannel])  :  NTV2RegNumSet();
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return NTV2_IS_VALID_CHANNEL(inChannel)  ?  (pRegExpert ? pRegExpert->GetRegistersForClass(gChlClasses[inChannel]):NTV2RegNumSet())  :  NTV2RegNumSet();
 }
 
 NTV2RegNumSet CNTV2RegisterExpert::GetRegistersForDevice (const NTV2DeviceID inDeviceID, const bool inIncludeVirtuals)
 {
-	return gRegExpert.GetRegistersForDevice (inDeviceID, inIncludeVirtuals);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetRegistersForDevice(inDeviceID, inIncludeVirtuals) : NTV2RegNumSet();
 }
 
 NTV2RegNumSet CNTV2RegisterExpert::GetRegistersWithName (const string & inName, const int inSearchStyle)
 {
-	return gRegExpert.GetRegistersWithName (inName, inSearchStyle);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetRegistersWithName(inName, inSearchStyle) : NTV2RegNumSet();
 }
 
 NTV2InputCrosspointID CNTV2RegisterExpert::GetInputCrosspointID (const uint32_t inXptRegNum, const uint32_t inMaskIndex)
 {
-	return gRegExpert.GetInputCrosspointID (inXptRegNum, inMaskIndex);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetInputCrosspointID(inXptRegNum, inMaskIndex) : NTV2_INPUT_CROSSPOINT_INVALID;
 }
 
 bool CNTV2RegisterExpert::GetCrosspointSelectGroupRegisterInfo (const NTV2InputCrosspointID inInputXpt, uint32_t & outXptRegNum, uint32_t & outMaskIndex)
 {
-	return gRegExpert.GetXptRegNumAndMaskIndex (inInputXpt, outXptRegNum, outMaskIndex);
+	AJAAutoLock	locker(&gRegExpertGuardMutex);
+	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
+	return pRegExpert ? pRegExpert->GetXptRegNumAndMaskIndex(inInputXpt, outXptRegNum, outMaskIndex) : false;
 }

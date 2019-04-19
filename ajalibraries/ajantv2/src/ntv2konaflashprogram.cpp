@@ -1,7 +1,7 @@
 /**
 	@file		ntv2konaflashprogram.cpp
 	@brief		Implementation of CNTV2KonaFlashProgram class.
-	@copyright	(C) 2010-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2010-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2konaflashprogram.h"
@@ -110,7 +110,7 @@ void CNTV2KonaFlashProgram::SetQuietMode()
 
 void CNTV2KonaFlashProgram::SetMBReset()
 {
-    if (IsKonaIPDevice())
+    if (IsIPDevice())
     {
         //Hold MB in reset
         if(GetDeviceID() == DEVICE_ID_IOIP_2022 || GetDeviceID() == DEVICE_ID_IOIP_2110)
@@ -532,7 +532,7 @@ bool CNTV2KonaFlashProgram::ReadInfoString()
     }
     else
     {
-        if (_deviceID != 0x010220 || !IsKonaIPDevice())
+        if (_deviceID != 0x010220 || !IsIPDevice())
             return false;
 		uint32_t baseAddress = _mcsInfoOffset;
         SetFlashBlockIDBank(MCS_INFO_BLOCK);
@@ -635,6 +635,8 @@ void CNTV2KonaFlashProgram::Program(bool fullVerify)
 	}
 	else
 		throw "Board Can't be opened";
+	
+	SetWarmBootFirmwareReload(true);
 }
 
 bool CNTV2KonaFlashProgram::ProgramFlashValue(uint32_t address, uint32_t value)
@@ -767,6 +769,7 @@ bool CNTV2KonaFlashProgram::VerifyFlash(FlashBlockID flashID, bool fullVerify)
 	uint32_t* bitFilePtr = (uint32_t*)_bitFileBuffer;
 	uint32_t dwordSizeCount = (_bitFileSize+4)/4;
 	int32_t percentComplete = 0;
+	int32_t lastPercentComplete = -1;
 
 	switch(_flashID)
 	{
@@ -813,8 +816,12 @@ bool CNTV2KonaFlashProgram::VerifyFlash(FlashBlockID flashID, bool fullVerify)
 		WriteRegister(kVRegFlashStatus, count);
 		if(!_bQuiet)
 		{
-			printf("Program verify: %i%%\r", percentComplete);
-			fflush(stdout);
+			if (percentComplete != lastPercentComplete)
+			{
+				printf("Program verify: %i%%\r", percentComplete);
+				fflush(stdout);
+				lastPercentComplete = percentComplete;
+			}
 		}
 		count += fullVerify ? 1 : 64;
 		baseAddress += fullVerify ? 4 : 256;
@@ -1169,7 +1176,7 @@ bool CNTV2KonaFlashProgram::CreateEDIDIntelRecord()
 
 bool CNTV2KonaFlashProgram::ProgramMACAddresses(MacAddr * mac1, MacAddr * mac2)
 {
-	if(!IsKonaIPDevice())
+	if(!IsIPDevice())
 		return false;
 
     if (mac1 == NULL || mac2 == NULL)
@@ -1268,7 +1275,7 @@ bool CNTV2KonaFlashProgram::ReadMACAddresses(MacAddr & mac1, MacAddr & mac2)
 	uint32_t lo2;
 	uint32_t hi2;
 
-	if(!IsKonaIPDevice())
+	if(!IsIPDevice())
 		return false;
 
     if (_spiFlash)
@@ -1358,7 +1365,7 @@ bool CNTV2KonaFlashProgram::ReadMACAddresses(MacAddr & mac1, MacAddr & mac2)
 bool
 CNTV2KonaFlashProgram::ProgramLicenseInfo(std::string licenseString)
 {
-	if(!IsKonaIPDevice())
+	if(!IsIPDevice())
 		return false;
 
     if (_spiFlash)
@@ -1435,7 +1442,7 @@ bool CNTV2KonaFlashProgram::ReadLicenseInfo(std::string& serialString)
 {
     const uint32_t maxSize = 100;
 
-    if(!IsKonaIPDevice())
+    if(!IsIPDevice())
         return false;
 
     if (_spiFlash)
@@ -1821,6 +1828,8 @@ bool CNTV2KonaFlashProgram::ProgramFromMCS(bool verify)
             WriteRegister(kRegXenaxFlashControlStatus, WRITESTATUS_COMMAND);
             WaitForFlashNOTBusy();
             SetBankSelect(BANK_0);
+
+			SetWarmBootFirmwareReload(true);
         }
         else
         {

@@ -77,13 +77,13 @@ $(info $(A_LIB_NTV2_PATH))
 # $(call ensure_dir_exists, somepath/value)
 
 # create the passed in dir (and parents if needed) if they do not already exist
-ensure_dir_exists = if [ ! -d $1 ]; then mkdir -p $1; fi
+ensure_dir_exists = @if [ ! -d $1 ]; then mkdir -p $1; fi
 
 # if the passed dir exists run the makefile in that dir
-make_if_dir_exists = if [ -d $1 ]; then $(MAKE) -C $1 ;fi
+make_if_dir_exists = @if [ -d $1 ]; then $(MAKE) -C $1 ;fi
 
 # if the passed dir exists run the makefile in that dir with the clean rule
-clean_if_dir_exists = if [ -d $1 ]; then $(MAKE) -C $1 clean ;fi
+clean_if_dir_exists = @if [ -d $1 ]; then $(MAKE) -C $1 clean ;fi
 
 export A_ARCH
 export A_BUILD_PATH

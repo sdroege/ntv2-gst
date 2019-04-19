@@ -1,7 +1,7 @@
 /**
 	@file		ntv2register.cpp
 	@brief		Implements most of CNTV2Card's register-based functions.
-	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2card.h"
@@ -25,17 +25,20 @@
 #endif
 #include <deque>
 
-#define	CVIDFAIL(__x__)		AJA_sERROR  (AJA_DebugUnit_VideoGeneric, AJAFUNC << ": " << __x__)
-#define	CVIDWARN(__x__)		AJA_sWARNING(AJA_DebugUnit_VideoGeneric, AJAFUNC << ": " << __x__)
-#define	CVIDNOTE(__x__)		AJA_sNOTICE (AJA_DebugUnit_VideoGeneric, AJAFUNC << ": " << __x__)
-#define	CVIDINFO(__x__)		AJA_sINFO   (AJA_DebugUnit_VideoGeneric, AJAFUNC << ": " << __x__)
-#define	CVIDDBG(__x__)		AJA_sDEBUG  (AJA_DebugUnit_VideoGeneric, AJAFUNC << ": " << __x__)
+#define	HEX16(__x__)		"0x" << hex << setw(16) << setfill('0') <<               uint64_t(__x__)  << dec
+#define INSTP(_p_)			HEX16(uint64_t(_p_))
+#define	CVIDFAIL(__x__)		AJA_sERROR  (AJA_DebugUnit_VideoGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	CVIDWARN(__x__)		AJA_sWARNING(AJA_DebugUnit_VideoGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	CVIDNOTE(__x__)		AJA_sNOTICE (AJA_DebugUnit_VideoGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	CVIDINFO(__x__)		AJA_sINFO   (AJA_DebugUnit_VideoGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	CVIDDBG(__x__)		AJA_sDEBUG  (AJA_DebugUnit_VideoGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
 
-#define	ROUTEFAIL(__x__)	AJA_sERROR  (AJA_DebugUnit_RoutingGeneric, AJAFUNC << ": " << __x__)
-#define	ROUTEWARN(__x__)	AJA_sWARNING(AJA_DebugUnit_RoutingGeneric, AJAFUNC << ": " << __x__)
-#define	ROUTENOTE(__x__)	AJA_sNOTICE (AJA_DebugUnit_RoutingGeneric, AJAFUNC << ": " << __x__)
-#define	ROUTEINFO(__x__)	AJA_sINFO   (AJA_DebugUnit_RoutingGeneric, AJAFUNC << ": " << __x__)
-#define	ROUTEDBG(__x__)		AJA_sDEBUG  (AJA_DebugUnit_RoutingGeneric, AJAFUNC << ": " << __x__)
+#define	LOGGING_ROUTING_CHANGES			(AJADebug::IsActive(AJA_DebugUnit_RoutingGeneric))
+#define	ROUTEFAIL(__x__)	AJA_sERROR  (AJA_DebugUnit_RoutingGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	ROUTEWARN(__x__)	AJA_sWARNING(AJA_DebugUnit_RoutingGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	ROUTENOTE(__x__)	AJA_sNOTICE (AJA_DebugUnit_RoutingGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	ROUTEINFO(__x__)	AJA_sINFO   (AJA_DebugUnit_RoutingGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
+#define	ROUTEDBG(__x__)		AJA_sDEBUG  (AJA_DebugUnit_RoutingGeneric, INSTP(this) << "::" << AJAFUNC << ": " << __x__)
 
 using namespace std;
 
@@ -119,7 +122,7 @@ static const ULWord	gChannelToCSCoeff12RegNum []		= {	kRegCSCoefficients1_2,	kRe
 
 static const ULWord	gChannelToCSCoeff34RegNum []		= {	kRegCSCoefficients3_4,	kRegCS2Coefficients3_4,	kRegCS3Coefficients3_4,	kRegCS4Coefficients3_4,
 															kRegCS5Coefficients3_4,	kRegCS6Coefficients3_4,	kRegCS7Coefficients3_4,	kRegCS8Coefficients3_4,	0};
-/*
+
 static const ULWord	gChannelToCSCoeff56RegNum []		= {	kRegCSCoefficients5_6,	kRegCS2Coefficients5_6,	kRegCS3Coefficients5_6,	kRegCS4Coefficients5_6,
 															kRegCS5Coefficients5_6,	kRegCS6Coefficients5_6,	kRegCS7Coefficients5_6,	kRegCS8Coefficients5_6,	0};
 
@@ -128,7 +131,7 @@ static const ULWord	gChannelToCSCoeff78RegNum []		= {	kRegCSCoefficients7_8,	kRe
 
 static const ULWord	gChannelToCSCoeff910RegNum []		= {	kRegCSCoefficients9_10,	kRegCS2Coefficients9_10,	kRegCS3Coefficients9_10,	kRegCS4Coefficients9_10,
 															kRegCS5Coefficients9_10,	kRegCS6Coefficients9_10,	kRegCS7Coefficients9_10,	kRegCS8Coefficients9_10,	0};
-*/
+
 static const ULWord	gChannelToSDIInVPIDLinkAValidMask[]	= {	kRegMaskSDIInVPIDLinkAValid,	kRegMaskSDIIn2VPIDLinkAValid,	kRegMaskSDIIn3VPIDLinkAValid,	kRegMaskSDIIn4VPIDLinkAValid,
 															kRegMaskSDIIn5VPIDLinkAValid,	kRegMaskSDIIn6VPIDLinkAValid,	kRegMaskSDIIn7VPIDLinkAValid,	kRegMaskSDIIn8VPIDLinkAValid,	0};
 
@@ -153,7 +156,7 @@ static const ULWord	gChannelTo2MFrame []				= {	kRegCh1Control2MFrame, kRegCh2Co
 static const ULWord	gChannelToRP188ModeGCRegisterNum []		= {	kRegGlobalControl,			kRegGlobalControl,			kRegGlobalControl2,			kRegGlobalControl2,
 																kRegGlobalControl2,			kRegGlobalControl2,			kRegGlobalControl2,			kRegGlobalControl2,			0};
 static const ULWord	gChannelToRP188ModeMasks []				= {	kRegMaskRP188ModeCh1,		kRegMaskRP188ModeCh2,		kRegMaskRP188ModeCh3,		kRegMaskRP188ModeCh4,
-																kRegMaskRP188ModeCh5,		kRegMaskRP188ModeCh6,		kRegMaskRP188ModeCh7,		kRegMaskRP188ModeCh8,		0};
+																kRegMaskRP188ModeCh5,		ULWord(kRegMaskRP188ModeCh6),	kRegMaskRP188ModeCh7,		kRegMaskRP188ModeCh8,		0};
 static const ULWord	gChannelToRP188ModeShifts []			= {	kRegShiftRP188ModeCh1,		kRegShiftRP188ModeCh2,		kRegShiftRP188ModeCh3,		kRegShiftRP188ModeCh4,
 																kRegShiftRP188ModeCh5,		kRegShiftRP188ModeCh6,		kRegShiftRP188ModeCh7,		kRegShiftRP188ModeCh8,		0};
 static const ULWord	gChannelToRP188DBBRegisterNum []		= {	kRegRP188InOut1DBB,			kRegRP188InOut2DBB,			kRegRP188InOut3DBB,			kRegRP188InOut4DBB,
@@ -185,7 +188,7 @@ static const ULWord	gChannelToSDIIn6GModeShift []	= {	kRegShiftSDIIn16GbpsMode,	
 														kRegShiftSDIIn56GbpsMode,	kRegShiftSDIIn66GbpsMode,	kRegShiftSDIIn76GbpsMode,	kRegShiftSDIIn86GbpsMode,	0};
 
 static const ULWord	gChannelToSDIIn12GModeMask []	= {	kRegMaskSDIIn112GbpsMode,		kRegMaskSDIIn212GbpsMode,	kRegMaskSDIIn312GbpsMode,	kRegMaskSDIIn412GbpsMode,
-														kRegMaskSDIIn512GbpsMode,	kRegMaskSDIIn612GbpsMode,	kRegMaskSDIIn712GbpsMode,	kRegMaskSDIIn812GbpsMode,	0};
+														kRegMaskSDIIn512GbpsMode,	kRegMaskSDIIn612GbpsMode,	kRegMaskSDIIn712GbpsMode,	ULWord(kRegMaskSDIIn812GbpsMode),	0};
 
 static const ULWord	gChannelToSDIIn12GModeShift []	= {	kRegShiftSDIIn112GbpsMode,	kRegShiftSDIIn212GbpsMode,	kRegShiftSDIIn312GbpsMode,	kRegShiftSDIIn412GbpsMode,
 														kRegShiftSDIIn512GbpsMode,	kRegShiftSDIIn612GbpsMode,	kRegShiftSDIIn712GbpsMode,	kRegShiftSDIIn812GbpsMode,	0};
@@ -427,8 +430,26 @@ NTV2VideoFormat CNTV2Card::GetNTV2VideoFormat (NTV2FrameRate frameRate, NTV2Stan
 					else
 						 videoFormat = progressivePicture ? NTV2_FORMAT_1080psf_2500_2 : NTV2_FORMAT_1080i_5000;
 					break;
-				case NTV2_FRAMERATE_2400:	videoFormat = inputGeometry == 8 ? NTV2_FORMAT_1080psf_2K_2400 : NTV2_FORMAT_1080psf_2400;			break;
-				case NTV2_FRAMERATE_2398:	videoFormat = inputGeometry == 8 ? NTV2_FORMAT_1080psf_2K_2398 : NTV2_FORMAT_1080psf_2398;			break;
+				case NTV2_FRAMERATE_2400:
+					if (isThreeG)
+					{
+						videoFormat = inputGeometry == 8 ? NTV2_FORMAT_1080p_2K_4800_B : NTV2_FORMAT_UNKNOWN;
+					}
+					else
+					{
+						videoFormat = inputGeometry == 8 ? NTV2_FORMAT_1080psf_2K_2400 : NTV2_FORMAT_1080psf_2400;
+					}
+					break;
+				case NTV2_FRAMERATE_2398:
+					if (isThreeG)
+					{
+						videoFormat = inputGeometry == 8 ? NTV2_FORMAT_1080p_2K_4795_B : NTV2_FORMAT_UNKNOWN;
+					}
+					else
+					{
+						videoFormat = inputGeometry == 8 ? NTV2_FORMAT_1080psf_2K_2398 : NTV2_FORMAT_1080psf_2398;
+					}
+					break;
 				default:	break;	// Unsupported
 			}
 			break;
@@ -1449,12 +1470,12 @@ bool CNTV2Card::SetReference (NTV2ReferenceSource value)
 		break;
 	}
 
-	if(IsKonaIPDevice())
+	if(IsIPDevice())
 	{
 		WriteRegister(kRegGlobalControl2, ptpControl, kRegMaskPCRReferenceEnable, kRegShiftPCRReferenceEnable);
 	}
 
-	if (::NTV2DeviceGetNumVideoChannels(_boardID) > 4 || IsKonaIPDevice())
+	if (::NTV2DeviceGetNumVideoChannels(_boardID) > 4 || IsIPDevice())
 	{
 		WriteRegister (kRegGlobalControl2, refControl2,	kRegMaskRefSource2, kRegShiftRefSource2);
 	}
@@ -1472,7 +1493,7 @@ bool CNTV2Card::GetReference (NTV2ReferenceSource & outValue)
 
 	outValue = NTV2ReferenceSource(refControl1);
 
-	if (::NTV2DeviceGetNumVideoChannels(_boardID) > 4 || IsKonaIPDevice())
+	if (::NTV2DeviceGetNumVideoChannels(_boardID) > 4 || IsIPDevice())
 	{
 		ReadRegister (kRegGlobalControl2,  refControl2,  kRegMaskRefSource2,  kRegShiftRefSource2);
 		if (refControl2)
@@ -1491,19 +1512,18 @@ bool CNTV2Card::GetReference (NTV2ReferenceSource & outValue)
 				outValue = NTV2_REFERENCE_INPUT8;
 				break;
 			case 4:
-				if(IsKonaIPDevice())
+				if(IsIPDevice())
 				{
 					ReadRegister(kRegGlobalControl2, ptpControl, kRegMaskPCRReferenceEnable, kRegShiftPCRReferenceEnable);
 				}
 				outValue = ptpControl == 0 ? NTV2_REFERENCE_SFP1_PCR : NTV2_REFERENCE_SFP1_PTP;
 				break;
 			case 5:
-				if(IsKonaIPDevice())
+				if(IsIPDevice())
 				{
 					ReadRegister(kRegGlobalControl2, ptpControl, kRegMaskPCRReferenceEnable, kRegShiftPCRReferenceEnable);
 				}
 				outValue = ptpControl == 0 ? NTV2_REFERENCE_SFP2_PCR : NTV2_REFERENCE_SFP2_PTP;
-				break;
 				break;
 			default:
 				break;
@@ -2281,7 +2301,7 @@ bool CNTV2Card::GetRunningFirmwarePackageRevision (ULWord & outRevision)
     if (!IsOpen())
         return false;
 
-    if (!IsKonaIPDevice())
+    if (!IsIPDevice())
         return false;
 
     return ReadRegister(kRegSarekPackageVersion + SAREK_REGS, outRevision);
@@ -2304,6 +2324,9 @@ bool CNTV2Card::GetRunningFirmwareRevision (UWord & outRevision)
 bool CNTV2Card::GetRunningFirmwareDate (UWord & outYear, UWord & outMonth, UWord & outDay)
 {
 	outYear = outMonth = outDay = 0;
+	if (!::NTV2DeviceCanReportRunningFirmwareDate(GetDeviceID()))
+		return false;
+
 	uint32_t	regValue	(0);
 	if (!ReadRegister(kRegBitfileDate, regValue))
 		return false;
@@ -2330,6 +2353,9 @@ bool CNTV2Card::GetRunningFirmwareDate (UWord & outYear, UWord & outMonth, UWord
 bool CNTV2Card::GetRunningFirmwareTime (UWord & outHours, UWord & outMinutes, UWord & outSeconds)
 {
 	outHours = outMinutes = outSeconds = 0;
+	if (!::NTV2DeviceCanReportRunningFirmwareDate(GetDeviceID()))
+		return false;
+
 	uint32_t	regValue	(0);
 	if (!ReadRegister(kRegBitfileTime, regValue))
 		return false;
@@ -2429,8 +2455,17 @@ bool CNTV2Card::ReadSDIInVPID (const NTV2Channel inChannel, ULWord & outValue_A,
 	}
 
 	// reverse byte order
-	outValue_A = NTV2EndianSwap32(valA);
-	outValue_B = NTV2EndianSwap32(valB);
+	if (GetDeviceID() == DEVICE_ID_KONALHI)
+	{
+		outValue_A = valA;
+		outValue_B = valB;
+	}
+	else
+	{
+		outValue_A = NTV2EndianSwap32(valA);
+		outValue_B = NTV2EndianSwap32(valB);
+	}
+	
 	return true;
 
 }	//	ReadSDIInVPID
@@ -2477,11 +2512,9 @@ bool CNTV2Card::SupportsP2PTransfer (void)
 			case 0xEB0E:  // Corvid 44
 			case 0xEB0D:  // Corvid 88
 				return true;
-				break;
 
 			default:
 				return false;
-				break;
 		}
 	return false;
 }
@@ -2500,11 +2533,9 @@ bool CNTV2Card::SupportsP2PTarget (void)
 			case 0xEB0E:  // Corvid 44
 			case 0xEB0D:  // Corvid 88
 				return true;
-				break;
 
 			default:
 				return false;
-				break;
 		}
 	return false;
 }
@@ -3300,7 +3331,6 @@ bool CNTV2Card::GetColorCorrectionHostAccessBank (NTV2ColorCorrectionHostAccessB
 		case NTV2_CHANNEL1:
 		case NTV2_CHANNEL2:
 			return CNTV2DriverInterface::ReadRegister (kRegGlobalControl, outValue, kRegMaskCCHostBankSelect, kRegShiftCCHostAccessBankSelect);
-			break;
 
 		case NTV2_CHANNEL3:
 		case NTV2_CHANNEL4:
@@ -3555,14 +3585,14 @@ bool CNTV2Card::WriteOutputTimingControl (const ULWord inValue, const UWord inOu
 				WriteRegister (gChannelToOutputTimingCtrlRegNum[NTV2_CHANNEL7], inValue);
 				WriteRegister (gChannelToOutputTimingCtrlRegNum[NTV2_CHANNEL6], inValue);
 				WriteRegister (gChannelToOutputTimingCtrlRegNum[NTV2_CHANNEL5], inValue);
-				/* FALLTHRU */
+				AJA_FALL_THRU;
 			case 4:
 				WriteRegister (gChannelToOutputTimingCtrlRegNum[NTV2_CHANNEL4], inValue);
 				WriteRegister (gChannelToOutputTimingCtrlRegNum[NTV2_CHANNEL3], inValue);
-				/* FALLTHRU */
+				AJA_FALL_THRU;
 			case 2:
 				WriteRegister (gChannelToOutputTimingCtrlRegNum[NTV2_CHANNEL2], inValue);
-				/* FALLTHRU */
+				AJA_FALL_THRU;
 			default:
 				return WriteRegister (gChannelToOutputTimingCtrlRegNum [NTV2_CHANNEL1], inValue);
 		}
@@ -4615,20 +4645,20 @@ NTV2VideoFormat CNTV2Card::GetInputVideoFormat (NTV2InputSource inSource, const 
 {
 	switch (inSource)
 	{
-		case NTV2_INPUTSOURCE_SDI1:		return GetSDIInputVideoFormat (NTV2_CHANNEL1, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI2:		return GetSDIInputVideoFormat (NTV2_CHANNEL2, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI3:		return GetSDIInputVideoFormat (NTV2_CHANNEL3, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI4:		return GetSDIInputVideoFormat (NTV2_CHANNEL4, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI5:		return GetSDIInputVideoFormat (NTV2_CHANNEL5, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI6:		return GetSDIInputVideoFormat (NTV2_CHANNEL6, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI7:		return GetSDIInputVideoFormat (NTV2_CHANNEL7, inIsProgressivePicture);	break;
-		case NTV2_INPUTSOURCE_SDI8:		return GetSDIInputVideoFormat (NTV2_CHANNEL8, inIsProgressivePicture);	break;
-        case NTV2_INPUTSOURCE_HDMI1:	return GetHDMIInputVideoFormat (NTV2_CHANNEL1);							break;
-        case NTV2_INPUTSOURCE_HDMI2:	return GetHDMIInputVideoFormat (NTV2_CHANNEL2);							break;
-        case NTV2_INPUTSOURCE_HDMI3:	return GetHDMIInputVideoFormat (NTV2_CHANNEL3);							break;
-        case NTV2_INPUTSOURCE_HDMI4:	return GetHDMIInputVideoFormat (NTV2_CHANNEL4);							break;
-        case NTV2_INPUTSOURCE_ANALOG1:	return GetAnalogInputVideoFormat ();									break;
-		default:						return NTV2_FORMAT_UNKNOWN;												break;
+		case NTV2_INPUTSOURCE_SDI1:		return GetSDIInputVideoFormat (NTV2_CHANNEL1, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI2:		return GetSDIInputVideoFormat (NTV2_CHANNEL2, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI3:		return GetSDIInputVideoFormat (NTV2_CHANNEL3, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI4:		return GetSDIInputVideoFormat (NTV2_CHANNEL4, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI5:		return GetSDIInputVideoFormat (NTV2_CHANNEL5, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI6:		return GetSDIInputVideoFormat (NTV2_CHANNEL6, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI7:		return GetSDIInputVideoFormat (NTV2_CHANNEL7, inIsProgressivePicture);
+		case NTV2_INPUTSOURCE_SDI8:		return GetSDIInputVideoFormat (NTV2_CHANNEL8, inIsProgressivePicture);
+        case NTV2_INPUTSOURCE_HDMI1:	return GetHDMIInputVideoFormat (NTV2_CHANNEL1);
+        case NTV2_INPUTSOURCE_HDMI2:	return GetHDMIInputVideoFormat (NTV2_CHANNEL2);
+        case NTV2_INPUTSOURCE_HDMI3:	return GetHDMIInputVideoFormat (NTV2_CHANNEL3);
+        case NTV2_INPUTSOURCE_HDMI4:	return GetHDMIInputVideoFormat (NTV2_CHANNEL4);
+        case NTV2_INPUTSOURCE_ANALOG1:	return GetAnalogInputVideoFormat ();
+		default:						return NTV2_FORMAT_UNKNOWN;
 	}
 }
 
@@ -5634,17 +5664,22 @@ bool CNTV2Card::Connect (const NTV2InputCrosspointID inInputXpt, const NTV2Outpu
 			}
 
 	ULWord	outputXpt(0);
-	ReadRegister(regNum, outputXpt, sMasks[ndx], sShifts[ndx]);
+	const bool isLogging (LOGGING_ROUTING_CHANGES);
+	if (isLogging)
+		ReadRegister(regNum, outputXpt, sMasks[ndx], sShifts[ndx]);
 	const bool result (WriteRegister(regNum, inOutputXpt, sMasks[ndx], sShifts[ndx]));
-	if (!result)
-		ROUTEFAIL(GetDisplayName() << ": Failed to connect " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt)
-					<< ": reg=" << DEC(regNum) << " val=" << DEC(inOutputXpt) << " mask=" << xHEX0N(sMasks[ndx],8) << " shift=" << DEC(sShifts[ndx]));
-	else if (outputXpt  &&  inOutputXpt != outputXpt)
-		ROUTENOTE(GetDisplayName() << ": Connected " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt)
-					<< " -- was from " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt)));
-	else if (!outputXpt  &&  inOutputXpt != outputXpt)
-		ROUTENOTE(GetDisplayName() << ": Connected " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt) << " -- was disconnected");
-	//else	ROUTEDBG(GetDisplayName() << ": Connection " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt) << " unchanged -- already connected");
+	if (isLogging)
+	{
+		if (!result)
+			ROUTEFAIL(GetDisplayName() << ": Failed to connect " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt)
+						<< ": reg=" << DEC(regNum) << " val=" << DEC(inOutputXpt) << " mask=" << xHEX0N(sMasks[ndx],8) << " shift=" << DEC(sShifts[ndx]));
+		else if (outputXpt  &&  inOutputXpt != outputXpt)
+			ROUTENOTE(GetDisplayName() << ": Connected " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt)
+						<< " -- was from " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt)));
+		else if (!outputXpt  &&  inOutputXpt != outputXpt)
+			ROUTENOTE(GetDisplayName() << ": Connected " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt) << " -- was disconnected");
+		//else	ROUTEDBG(GetDisplayName() << ": Connection " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(inOutputXpt) << " unchanged -- already connected");
+	}
 	return result;
 }
 
@@ -5665,14 +5700,20 @@ bool CNTV2Card::Disconnect (const NTV2InputCrosspointID inInputXpt)
 	if (regNum > maxRegNum)
 		return false;	//	This device doesn't have that routing register
 
-	const bool changed (ReadRegister(regNum, outputXpt, sMasks[ndx], sShifts[ndx])  &&  outputXpt);
+	const bool isLogging (LOGGING_ROUTING_CHANGES);
+	bool changed (false);
+	if (isLogging)
+		changed = ReadRegister(regNum, outputXpt, sMasks[ndx], sShifts[ndx])  &&  outputXpt;
 	const bool result (WriteRegister(regNum, NTV2_XptBlack, sMasks[ndx], sShifts[ndx]));
-	if (result && changed)
-		ROUTENOTE(GetDisplayName() << ": Disconnected " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt)));
-	else if (!result)
-		ROUTEFAIL(GetDisplayName() << ": Failed to disconnect " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt))
-					<< ": reg=" << DEC(regNum) << " val=0 mask=" << xHEX0N(sMasks[ndx],8) << " shift=" << DEC(sShifts[ndx]));
-	//else	ROUTEDBG(GetDisplayName() << ": " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt)) << " already disconnected");
+	if (isLogging)
+	{
+		if (result && changed)
+			ROUTENOTE(GetDisplayName() << ": Disconnected " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt)));
+		else if (!result)
+			ROUTEFAIL(GetDisplayName() << ": Failed to disconnect " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt))
+						<< ": reg=" << DEC(regNum) << " val=0 mask=" << xHEX0N(sMasks[ndx],8) << " shift=" << DEC(sShifts[ndx]));
+		//else	ROUTEDBG(GetDisplayName() << ": " << ::NTV2InputCrosspointIDToString(inInputXpt) << " <== " << ::NTV2OutputCrosspointIDToString(NTV2OutputXptID(outputXpt)) << " already disconnected");
+	}
 	return result;
 }
 
@@ -6241,10 +6282,10 @@ bool CNTV2Card::GetColorSpaceUseCustomCoefficient (ULWord & outUseCustomCoeffici
 			&&  ReadRegister (gChannelToCSCoeff12RegNum[inChannel], outUseCustomCoefficient,  kK2RegMaskUseCustomCoefSelect,  kK2RegShiftUseCustomCoefSelect);
 }
 
-bool CNTV2Card::SetColorSpaceMakeAlphaFromKey (const ULWord inMakeAlphaFromKey, const NTV2Channel inChannel)
+bool CNTV2Card::SetColorSpaceMakeAlphaFromKey (const bool inMakeAlphaFromKey, const NTV2Channel inChannel)
 {
 	return !IS_CHANNEL_INVALID(inChannel)
-			&&  WriteRegister (gChannelToCSCoeff12RegNum[inChannel], inMakeAlphaFromKey, kK2RegMaskMakeAlphaFromKeySelect, kK2RegShiftMakeAlphaFromKeySelect);
+			&&  WriteRegister (gChannelToCSCoeff12RegNum[inChannel], inMakeAlphaFromKey?1:0, kK2RegMaskMakeAlphaFromKeySelect, kK2RegShiftMakeAlphaFromKeySelect);
 }
 
 bool CNTV2Card::GetColorSpaceMakeAlphaFromKey (ULWord & outMakeAlphaFromKey, const NTV2Channel inChannel)
@@ -6253,50 +6294,38 @@ bool CNTV2Card::GetColorSpaceMakeAlphaFromKey (ULWord & outMakeAlphaFromKey, con
 			&&  ReadRegister (gChannelToCSCoeff12RegNum[inChannel], outMakeAlphaFromKey, kK2RegMaskMakeAlphaFromKeySelect, kK2RegShiftMakeAlphaFromKeySelect);
 }
 
-
-static const ULWord sRegsCoeffs12[]	=	{	kRegCSCoefficients1_2,		kRegCS2Coefficients1_2,		kRegCS3Coefficients1_2,		kRegCS4Coefficients1_2,
-											kRegCS5Coefficients1_2,		kRegCS6Coefficients1_2,		kRegCS7Coefficients1_2,		kRegCS8Coefficients1_2	};
-static const ULWord sRegsCoeffs34[]	=	{	kRegCSCoefficients3_4,		kRegCS2Coefficients3_4,		kRegCS3Coefficients3_4,		kRegCS4Coefficients3_4,
-											kRegCS5Coefficients3_4,		kRegCS6Coefficients3_4,		kRegCS7Coefficients3_4,		kRegCS8Coefficients3_4	};
-static const ULWord sRegsCoeffs56[]	=	{	kRegCSCoefficients5_6,		kRegCS2Coefficients5_6,		kRegCS3Coefficients5_6,		kRegCS4Coefficients5_6,
-											kRegCS5Coefficients5_6,		kRegCS6Coefficients5_6,		kRegCS7Coefficients5_6,		kRegCS8Coefficients5_6	};
-static const ULWord sRegsCoeffs78[]	=	{	kRegCSCoefficients7_8,		kRegCS2Coefficients7_8,		kRegCS3Coefficients7_8,		kRegCS4Coefficients7_8,
-											kRegCS5Coefficients7_8,		kRegCS6Coefficients7_8,		kRegCS7Coefficients7_8,		kRegCS8Coefficients7_8	};
-static const ULWord sRegsCoeffs910[]=	{	kRegCSCoefficients9_10,		kRegCS2Coefficients9_10,	kRegCS3Coefficients9_10,	kRegCS4Coefficients9_10,
-											kRegCS5Coefficients9_10,	kRegCS6Coefficients9_10,	kRegCS7Coefficients9_10,	kRegCS8Coefficients9_10	};
-
-bool CNTV2Card::SetColorSpaceCustomCoefficients (const ColorSpaceConverterCustomCoefficients & inCoefficients, const NTV2Channel inChannel)
+bool CNTV2Card::SetColorSpaceCustomCoefficients (const NTV2CSCCustomCoeffs & inCoefficients, const NTV2Channel inChannel)
 {
 	if (IS_CHANNEL_INVALID(inChannel))
 		return false;
 
-	return		WriteRegister (sRegsCoeffs12[inChannel],	inCoefficients.Coefficient1,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	WriteRegister (sRegsCoeffs12[inChannel],	inCoefficients.Coefficient2,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	WriteRegister (sRegsCoeffs34[inChannel],	inCoefficients.Coefficient3,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	WriteRegister (sRegsCoeffs34[inChannel],	inCoefficients.Coefficient4,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	WriteRegister (sRegsCoeffs56[inChannel],	inCoefficients.Coefficient5,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	WriteRegister (sRegsCoeffs56[inChannel],	inCoefficients.Coefficient6,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	WriteRegister (sRegsCoeffs78[inChannel],	inCoefficients.Coefficient7,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	WriteRegister (sRegsCoeffs78[inChannel],	inCoefficients.Coefficient8,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	WriteRegister (sRegsCoeffs910[inChannel],	inCoefficients.Coefficient9,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	WriteRegister (sRegsCoeffs910[inChannel],	inCoefficients.Coefficient10,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh);
+	return		WriteRegister (gChannelToCSCoeff12RegNum[inChannel],	inCoefficients.Coefficient1,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	WriteRegister (gChannelToCSCoeff12RegNum[inChannel],	inCoefficients.Coefficient2,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	WriteRegister (gChannelToCSCoeff34RegNum[inChannel],	inCoefficients.Coefficient3,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	WriteRegister (gChannelToCSCoeff34RegNum[inChannel],	inCoefficients.Coefficient4,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	WriteRegister (gChannelToCSCoeff56RegNum[inChannel],	inCoefficients.Coefficient5,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	WriteRegister (gChannelToCSCoeff56RegNum[inChannel],	inCoefficients.Coefficient6,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	WriteRegister (gChannelToCSCoeff78RegNum[inChannel],	inCoefficients.Coefficient7,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	WriteRegister (gChannelToCSCoeff78RegNum[inChannel],	inCoefficients.Coefficient8,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	WriteRegister (gChannelToCSCoeff910RegNum[inChannel],	inCoefficients.Coefficient9,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	WriteRegister (gChannelToCSCoeff910RegNum[inChannel],	inCoefficients.Coefficient10,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh);
 }
 
-bool CNTV2Card::GetColorSpaceCustomCoefficients(ColorSpaceConverterCustomCoefficients & outCoefficients, NTV2Channel inChannel)
+bool CNTV2Card::GetColorSpaceCustomCoefficients(NTV2CSCCustomCoeffs & outCoefficients, NTV2Channel inChannel)
 {
 	if (IS_CHANNEL_INVALID (inChannel))
 		return false;
 
-	return		ReadRegister (sRegsCoeffs12[inChannel],		outCoefficients.Coefficient1,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	ReadRegister (sRegsCoeffs12[inChannel],		outCoefficients.Coefficient2,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	ReadRegister (sRegsCoeffs34[inChannel],		outCoefficients.Coefficient3,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	ReadRegister (sRegsCoeffs34[inChannel],		outCoefficients.Coefficient4,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	ReadRegister (sRegsCoeffs56[inChannel],		outCoefficients.Coefficient5,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	ReadRegister (sRegsCoeffs56[inChannel],		outCoefficients.Coefficient6,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	ReadRegister (sRegsCoeffs78[inChannel],		outCoefficients.Coefficient7,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	ReadRegister (sRegsCoeffs78[inChannel],		outCoefficients.Coefficient8,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
-			&&	ReadRegister (sRegsCoeffs910[inChannel],	outCoefficients.Coefficient9,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
-			&&	ReadRegister (sRegsCoeffs910[inChannel],	outCoefficients.Coefficient10,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh);
+	return		ReadRegister (gChannelToCSCoeff12RegNum[inChannel],		outCoefficients.Coefficient1,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	ReadRegister (gChannelToCSCoeff12RegNum[inChannel],		outCoefficients.Coefficient2,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	ReadRegister (gChannelToCSCoeff34RegNum[inChannel],		outCoefficients.Coefficient3,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	ReadRegister (gChannelToCSCoeff34RegNum[inChannel],		outCoefficients.Coefficient4,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	ReadRegister (gChannelToCSCoeff56RegNum[inChannel],		outCoefficients.Coefficient5,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	ReadRegister (gChannelToCSCoeff56RegNum[inChannel],		outCoefficients.Coefficient6,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	ReadRegister (gChannelToCSCoeff78RegNum[inChannel],		outCoefficients.Coefficient7,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	ReadRegister (gChannelToCSCoeff78RegNum[inChannel],		outCoefficients.Coefficient8,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh)
+			&&	ReadRegister (gChannelToCSCoeff910RegNum[inChannel],	outCoefficients.Coefficient9,	kK2RegMaskCustomCoefficientLow,		kK2RegShiftCustomCoefficientLow)
+			&&	ReadRegister (gChannelToCSCoeff910RegNum[inChannel],	outCoefficients.Coefficient10,	kK2RegMaskCustomCoefficientHigh,	kK2RegShiftCustomCoefficientHigh);
 }
 
 // 12/7/2006	To increase accuracy and decrease generational degredation, the width of the coefficients
@@ -6306,39 +6335,39 @@ bool CNTV2Card::GetColorSpaceCustomCoefficients(ColorSpaceConverterCustomCoeffic
 //				the low coefficient ended on the 0 bit ... the hi coefficient was simply widened to 13 bits
 //				total.  The 2 LSBs of the low coefficient are written *in front* of the 11 MSBs, hence the
 //				shifting and masking below. - jac
-bool CNTV2Card::SetColorSpaceCustomCoefficients12Bit (const ColorSpaceConverterCustomCoefficients & inCoefficients, const NTV2Channel inChannel)
+bool CNTV2Card::SetColorSpaceCustomCoefficients12Bit (const NTV2CSCCustomCoeffs & inCoefficients, const NTV2Channel inChannel)
 {
 	if (IS_CHANNEL_INVALID (inChannel))
 		return false;
 
 	ULWord MSBs(inCoefficients.Coefficient1 >> 2);
 	ULWord LSBs(inCoefficients.Coefficient1 & 0x00000003);
-	if (!WriteRegister (sRegsCoeffs12[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
-		||  !WriteRegister (sRegsCoeffs12[inChannel],	inCoefficients.Coefficient2,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
+	if (!WriteRegister (gChannelToCSCoeff12RegNum[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
+		||  !WriteRegister (gChannelToCSCoeff12RegNum[inChannel],	inCoefficients.Coefficient2,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
 			return false;
 
 	MSBs = inCoefficients.Coefficient3 >> 2;
 	LSBs = inCoefficients.Coefficient3 & 0x00000003;
-	if (!WriteRegister (sRegsCoeffs34[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
-		||  !WriteRegister (sRegsCoeffs34[inChannel],	inCoefficients.Coefficient4,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
+	if (!WriteRegister (gChannelToCSCoeff34RegNum[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
+		||  !WriteRegister (gChannelToCSCoeff34RegNum[inChannel],	inCoefficients.Coefficient4,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
 			return false;
 
 	MSBs = inCoefficients.Coefficient5 >> 2;
 	LSBs = inCoefficients.Coefficient5 & 0x00000003;
-	if (!WriteRegister (sRegsCoeffs56[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
-		||  !WriteRegister (sRegsCoeffs56[inChannel],	inCoefficients.Coefficient6,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
+	if (!WriteRegister (gChannelToCSCoeff56RegNum[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
+		||  !WriteRegister (gChannelToCSCoeff56RegNum[inChannel],	inCoefficients.Coefficient6,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
 			return false;
 
 	MSBs = inCoefficients.Coefficient7 >> 2;
 	LSBs = inCoefficients.Coefficient7 & 0x00000003;
-	if (!WriteRegister (sRegsCoeffs78[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
-		||  !WriteRegister (sRegsCoeffs78[inChannel],	inCoefficients.Coefficient8,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
+	if (!WriteRegister (gChannelToCSCoeff78RegNum[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
+		||  !WriteRegister (gChannelToCSCoeff78RegNum[inChannel],	inCoefficients.Coefficient8,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh))
 			return false;
 
 	MSBs = inCoefficients.Coefficient9 >> 2;
 	LSBs = inCoefficients.Coefficient9 & 0x00000003;
-	return WriteRegister (sRegsCoeffs910[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
-		&&  WriteRegister (sRegsCoeffs910[inChannel],	inCoefficients.Coefficient10,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh);
+	return WriteRegister (gChannelToCSCoeff910RegNum[inChannel],	MSBs | (LSBs << 11),			kK2RegMaskCustomCoefficient12BitLow,	kK2RegShiftCustomCoefficient12BitLow)
+		&&  WriteRegister (gChannelToCSCoeff910RegNum[inChannel],	inCoefficients.Coefficient10,	kK2RegMaskCustomCoefficient12BitHigh,	kK2RegShiftCustomCoefficient12BitHigh);
 }
 
 // 12/7/2006	To increase accuracy and decrease generational degredation, the width of the coefficients
@@ -6348,47 +6377,47 @@ bool CNTV2Card::SetColorSpaceCustomCoefficients12Bit (const ColorSpaceConverterC
 //				the low coefficient ended on the 0 bit ... the hi coefficient was simply widened to 13 bits
 //				total.  The 2 LSBs of the low coefficient are written *in front* of the 11 MSBs, hence the
 //				shifting and masking below. - jac
-bool CNTV2Card::GetColorSpaceCustomCoefficients12Bit (ColorSpaceConverterCustomCoefficients & outCoefficients, const NTV2Channel inChannel)
+bool CNTV2Card::GetColorSpaceCustomCoefficients12Bit (NTV2CSCCustomCoeffs & outCoefficients, const NTV2Channel inChannel)
 {
 	if (IS_CHANNEL_INVALID (inChannel))
 		return false;
 
 	ULWord regVal(0),  MSBs(0),  LSBs(0);
 
-	if (!ReadRegister (sRegsCoeffs12[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
+	if (!ReadRegister (gChannelToCSCoeff12RegNum[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
 		return false;
 	LSBs = (regVal >> 11) & 0x00000003;
 	MSBs = regVal & 0x000007FF;
 	outCoefficients.Coefficient1 = MSBs | LSBs;
 
-	if (!ReadRegister (sRegsCoeffs12[inChannel], outCoefficients.Coefficient2,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
-		||  !ReadRegister (sRegsCoeffs34[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
+	if (!ReadRegister (gChannelToCSCoeff12RegNum[inChannel], outCoefficients.Coefficient2,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
+		||  !ReadRegister (gChannelToCSCoeff34RegNum[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
 			return false;
 	LSBs = (regVal >> 11) & 0x00000003;
 	MSBs = regVal & 0x000007FF;
 	outCoefficients.Coefficient3 = MSBs | LSBs;
 
-	if (!ReadRegister (sRegsCoeffs34[inChannel], outCoefficients.Coefficient4,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
-		||  !ReadRegister (sRegsCoeffs56[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
+	if (!ReadRegister (gChannelToCSCoeff34RegNum[inChannel], outCoefficients.Coefficient4,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
+		||  !ReadRegister (gChannelToCSCoeff56RegNum[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
 			return false;
 	LSBs = (regVal >> 11) & 0x00000003;
 	MSBs = regVal & 0x000007FF;
 	outCoefficients.Coefficient5 = MSBs | LSBs;
 
-	if (!ReadRegister (sRegsCoeffs56[inChannel], outCoefficients.Coefficient6,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
-		||  !ReadRegister (sRegsCoeffs78[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
+	if (!ReadRegister (gChannelToCSCoeff56RegNum[inChannel], outCoefficients.Coefficient6,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
+		||  !ReadRegister (gChannelToCSCoeff78RegNum[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
 			return false;
 	LSBs = (regVal >> 11) & 0x00000003;
 	MSBs = regVal & 0x000007FF;
 	outCoefficients.Coefficient7 = MSBs | LSBs;
 
-	if (!ReadRegister (sRegsCoeffs78[inChannel], outCoefficients.Coefficient8,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
-		||  !ReadRegister (sRegsCoeffs910[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
+	if (!ReadRegister (gChannelToCSCoeff78RegNum[inChannel], outCoefficients.Coefficient8,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh)
+		||  !ReadRegister (gChannelToCSCoeff910RegNum[inChannel], regVal,  kK2RegMaskCustomCoefficient12BitLow, kK2RegShiftCustomCoefficient12BitLow))
 			return false;
 	LSBs = (regVal >> 11) & 0x00000003;
 	MSBs = regVal & 0x000007FF;
 	outCoefficients.Coefficient9 = MSBs | LSBs;
-	return ReadRegister (sRegsCoeffs910[inChannel], outCoefficients.Coefficient10,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh);
+	return ReadRegister (gChannelToCSCoeff910RegNum[inChannel], outCoefficients.Coefficient10,  kK2RegMaskCustomCoefficient12BitHigh, kK2RegShiftCustomCoefficient12BitHigh);
 }
 
 
@@ -7077,187 +7106,157 @@ bool CNTV2Card::GetSDIOut12GEnable(const NTV2Channel inChannel, bool & outIsEnab
 
 
 // SDI bypass relay control
-static bool AccessWatchdogControlBit( CNTV2Card* card, ULWord* value, ULWord mask, ULWord shift, bool read )
+static inline bool ReadWatchdogControlBit (CNTV2Card & card, ULWord & outValue, const ULWord inMask, const ULWord inShift)
 {
-	if (!value)
-		return false;
-	if( read )
-		return card->ReadRegister (kRegSDIWatchdogControlStatus, *value, mask, shift);
-	if (!card->KickSDIWatchdog ())
-		return false;
-	return card->WriteRegister (kRegSDIWatchdogControlStatus, *value, mask, shift);
+	return card.ReadRegister (kRegSDIWatchdogControlStatus, outValue, inMask, inShift);
 }
+
+static bool WriteWatchdogControlBit (CNTV2Card & card, const ULWord inValue, const ULWord inMask, const ULWord inShift)
+{
+	if (!card.KickSDIWatchdog())
+		return false;
+	return card.WriteRegister (kRegSDIWatchdogControlStatus, inValue, inMask, inShift);
+}
+
 
 bool CNTV2Card::KickSDIWatchdog()
-{
-	bool status = true;
-
-	status &= WriteRegister( kRegSDIWatchdogKick2, 0x01234567 );
-	status &= WriteRegister( kRegSDIWatchdogKick1, 0xA5A55A5A );
-
-	return status;
+{	//	Write 0x01234567 into Kick2 register to begin watchdog reset, then in < 30 msec,
+	//	write 0xA5A55A5A into Kick1 register to complete the reset...
+	const bool status (WriteRegister(kRegSDIWatchdogKick2, 0x01234567));
+	return status && WriteRegister(kRegSDIWatchdogKick1, 0xA5A55A5A);
 }
 
-bool CNTV2Card::GetSDIWatchdogStatus(NTV2RelayState & value)
+bool CNTV2Card::GetSDIWatchdogStatus (NTV2RelayState & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIWatchdogStatus, kRegShiftSDIWatchdogStatus, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIWatchdogStatus, kRegShiftSDIWatchdogStatus))
 		return false;
 
-	value = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
-
+	outValue = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
 	return true;
 }
 
-bool CNTV2Card::GetSDIRelayPosition12(NTV2RelayState &  value)
+bool CNTV2Card::GetSDIRelayPosition12 (NTV2RelayState & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIRelayPosition12, kRegShiftSDIRelayPosition12, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIRelayPosition12, kRegShiftSDIRelayPosition12))
 		return false;
 
-	value = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
-
+	outValue = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
 	return true;
 }
 
-bool CNTV2Card::GetSDIRelayPosition34(NTV2RelayState &  value)
+bool CNTV2Card::GetSDIRelayPosition34 (NTV2RelayState & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIRelayPosition34, kRegShiftSDIRelayPosition34, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIRelayPosition34, kRegShiftSDIRelayPosition34))
 		return false;
 
-	value = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
-
+	outValue = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
 	return true;
 }
 
-bool CNTV2Card::GetSDIRelayManualControl12(NTV2RelayState & value)
+bool CNTV2Card::GetSDIRelayManualControl12 (NTV2RelayState & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIRelayControl12, kRegShiftSDIRelayControl12, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIRelayControl12, kRegShiftSDIRelayControl12))
 		return false;
 
-	value = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
-
+	outValue = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
 	return true;
 }
 
-bool CNTV2Card::SetSDIRelayManualControl12(NTV2RelayState value)
+bool CNTV2Card::SetSDIRelayManualControl12 (const NTV2RelayState inValue)
 {
-	ULWord statusBit = (value == NTV2_THROUGH_DEVICE) ? 1 : 0;
-
-	return AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIRelayControl12, kRegShiftSDIRelayControl12, false );
+	const ULWord statusBit ((inValue == NTV2_THROUGH_DEVICE) ? 1 : 0);
+	return WriteWatchdogControlBit (*this, statusBit, kRegMaskSDIRelayControl12, kRegShiftSDIRelayControl12);
 }
 
-bool CNTV2Card::GetSDIRelayManualControl34(NTV2RelayState & value)
+bool CNTV2Card::GetSDIRelayManualControl34 (NTV2RelayState & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIRelayControl34, kRegShiftSDIRelayControl34, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIRelayControl34, kRegShiftSDIRelayControl34))
 		return false;
 
-	value = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
-
+	outValue = statusBit ? NTV2_THROUGH_DEVICE : NTV2_DEVICE_BYPASSED;
 	return true;
 }
 
-bool CNTV2Card::SetSDIRelayManualControl34(NTV2RelayState value)
+bool CNTV2Card::SetSDIRelayManualControl34 (const NTV2RelayState inValue)
 {
-	ULWord statusBit = (value == NTV2_THROUGH_DEVICE) ? 1 : 0;
-
-	return AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIRelayControl34, kRegShiftSDIRelayControl34, false );
+	const ULWord statusBit ((inValue == NTV2_THROUGH_DEVICE) ? 1 : 0);
+	return WriteWatchdogControlBit (*this, statusBit, kRegMaskSDIRelayControl34, kRegShiftSDIRelayControl34);
 }
 
-bool CNTV2Card::GetSDIWatchdogEnable12(bool & value)
+bool CNTV2Card::GetSDIWatchdogEnable12 (bool & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIWatchdogEnable12, kRegShiftSDIWatchdogEnable12, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIWatchdogEnable12, kRegShiftSDIWatchdogEnable12))
 		return false;
 
-	value = statusBit ? true : false;
-
+	outValue = statusBit ? true : false;
 	return true;
 }
 
-bool CNTV2Card::SetSDIWatchdogEnable12(bool value)
+bool CNTV2Card::SetSDIWatchdogEnable12 (const bool inValue)
 {
-	ULWord statusBit = (value == NTV2_THROUGH_DEVICE) ? 1 : 0;
-
-	return AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIWatchdogEnable12, kRegShiftSDIWatchdogEnable12, false );
+	const ULWord statusBit ((inValue == NTV2_THROUGH_DEVICE) ? 1 : 0);
+	return WriteWatchdogControlBit (*this, statusBit, kRegMaskSDIWatchdogEnable12, kRegShiftSDIWatchdogEnable12);
 }
 
-bool CNTV2Card::GetSDIWatchdogEnable34(bool & value)
+bool CNTV2Card::GetSDIWatchdogEnable34 (bool & outValue)
 {
-	ULWord statusBit;
-
-	if( !AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIWatchdogEnable34, kRegShiftSDIWatchdogEnable34, true ) )
+	ULWord statusBit(0);
+	if (!ReadWatchdogControlBit (*this, statusBit, kRegMaskSDIWatchdogEnable34, kRegShiftSDIWatchdogEnable34))
 		return false;
 
-	value = statusBit ? true : false;
-
+	outValue = statusBit ? true : false;
 	return true;
 }
 
-bool CNTV2Card::SetSDIWatchdogEnable34(bool value)
+bool CNTV2Card::SetSDIWatchdogEnable34 (const bool inValue)
 {
-	ULWord statusBit = (value == NTV2_THROUGH_DEVICE) ? 1 : 0;
-
-	return AccessWatchdogControlBit( this, &statusBit, kRegMaskSDIWatchdogEnable34, kRegShiftSDIWatchdogEnable34, false );
+	const ULWord statusBit ((inValue == NTV2_THROUGH_DEVICE) ? 1 : 0);
+	return WriteWatchdogControlBit (*this, statusBit, kRegMaskSDIWatchdogEnable34, kRegShiftSDIWatchdogEnable34);
 }
 
-bool CNTV2Card::GetSDIWatchdogTimeout(ULWord & value)
+bool CNTV2Card::GetSDIWatchdogTimeout (ULWord & outValue)
 {
-	return ReadRegister( kRegSDIWatchdogTimeout, value );
+	return ReadRegister (kRegSDIWatchdogTimeout, outValue);
 }
 
-bool CNTV2Card::SetSDIWatchdogTimeout(ULWord value)
+bool CNTV2Card::SetSDIWatchdogTimeout (const ULWord inValue)
 {
-	if( !KickSDIWatchdog() )
-		return false;
-
-	return WriteRegister( kRegSDIWatchdogTimeout, value );
+	return KickSDIWatchdog()  &&  WriteRegister (kRegSDIWatchdogTimeout, inValue);
 }
 
-bool CNTV2Card::GetSDIWatchdogState(NTV2SDIWatchdogState & state)
+bool CNTV2Card::GetSDIWatchdogState (NTV2SDIWatchdogState & outState)
 {
 	NTV2SDIWatchdogState tempState;
-	bool status = true;
-
-	status &= GetSDIRelayManualControl12( tempState.manualControl12  );
-	status &= GetSDIRelayManualControl34( tempState.manualControl34  );
-	status &= GetSDIRelayPosition12(      tempState.relayPosition12  );
-	status &= GetSDIRelayPosition34(      tempState.relayPosition34  );
-	status &= GetSDIWatchdogStatus(       tempState.watchdogStatus   );
-	status &= GetSDIWatchdogEnable12(     tempState.watchdogEnable12 );
-	status &= GetSDIWatchdogEnable34(     tempState.watchdogEnable34 );
-	status &= GetSDIWatchdogTimeout(      tempState.watchdogTimeout  );
-
-	if( status )
+	if (   GetSDIRelayManualControl12 (tempState.manualControl12  )
+		&& GetSDIRelayManualControl34 (tempState.manualControl34  )
+		&& GetSDIRelayPosition12      (tempState.relayPosition12  )
+		&& GetSDIRelayPosition34      (tempState.relayPosition34  )
+		&& GetSDIWatchdogStatus       (tempState.watchdogStatus   )
+		&& GetSDIWatchdogEnable12     (tempState.watchdogEnable12 )
+		&& GetSDIWatchdogEnable34     (tempState.watchdogEnable34 )
+		&& GetSDIWatchdogTimeout      (tempState.watchdogTimeout  ))
 	{
-		state = tempState;
+		outState = tempState;
 		return true;
 	}
-
 	return false;
 }
 
-bool CNTV2Card::SetSDIWatchdogState(const NTV2SDIWatchdogState & state)
+bool CNTV2Card::SetSDIWatchdogState (const NTV2SDIWatchdogState & inState)
 {
-	bool status = true;
-
-	status &= SetSDIRelayManualControl12( state.manualControl12  );
-	status &= SetSDIRelayManualControl34( state.manualControl34  );
-	status &= SetSDIWatchdogTimeout(      state.watchdogTimeout  );
-	status &= SetSDIWatchdogEnable12(     state.watchdogEnable12 );
-	status &= SetSDIWatchdogEnable34(     state.watchdogEnable34 );
-
-	return true;
+	return SetSDIRelayManualControl12 (inState.manualControl12)
+		&& SetSDIRelayManualControl34 (inState.manualControl34)
+		&& SetSDIWatchdogTimeout      (inState.watchdogTimeout)
+		&& SetSDIWatchdogEnable12     (inState.watchdogEnable12)
+		&& SetSDIWatchdogEnable34     (inState.watchdogEnable34);
 }
+
 
 bool CNTV2Card::Enable4KDCRGBMode(bool enable)
 {
@@ -7627,6 +7626,15 @@ bool CNTV2Card::GetDieVoltage (double & outVoltage)
 	return true;
 }
 
+bool CNTV2Card::SetWarmBootFirmwareReload(bool enable)
+{
+	bool canReboot = false;
+	CanWarmBootFPGA(canReboot);
+	if(!canReboot)
+		return false;
+	return WriteRegister(kRegCPLDVersion, enable ? 1:0, BIT(8), 8);
+}
+
 bool CNTV2Card::ReadRegisters (const NTV2RegNumSet & inRegisters,  NTV2RegisterValueMap & outValues)
 {
 	outValues.clear ();
@@ -7636,18 +7644,16 @@ bool CNTV2Card::ReadRegisters (const NTV2RegNumSet & inRegisters,  NTV2RegisterV
 	NTV2GetRegisters	getRegsParams (inRegisters);
 	if (NTV2Message (reinterpret_cast <NTV2_HEADER *> (&getRegsParams)))
 		return getRegsParams.GetRegisterValues (outValues);
-	else
-	{
-		//	Non-atomic user-space workaround until GETREGS implemented in driver...
-		for (NTV2RegNumSetConstIter iter (inRegisters.begin ());  iter != inRegisters.end ();  ++iter)
+	else	//	Non-atomic user-space workaround until GETREGS implemented in driver...
+		for (NTV2RegNumSetConstIter iter(inRegisters.begin());  iter != inRegisters.end();  ++iter)
 		{
 			ULWord	tempVal	(0);
-			if (ReadRegister (*iter, tempVal))
-				outValues [*iter] = tempVal;
+			if (*iter != kRegXenaxFlashDOUT)	//	Prevent firmware erase/program/verify failures
+				if (ReadRegister (*iter, tempVal))
+					outValues[*iter] = tempVal;
 		}
-	}
 
-	return outValues.size () == inRegisters.size ();
+	return outValues.size() == inRegisters.size();
 }
 
 bool CNTV2Card::ReadRegisters (NTV2RegisterReads & inOutValues)
@@ -7658,18 +7664,16 @@ bool CNTV2Card::ReadRegisters (NTV2RegisterReads & inOutValues)
 		return true;		//	Nothing to do!
 
 	NTV2GetRegisters	getRegsParams (inOutValues);
-	if (NTV2Message (reinterpret_cast <NTV2_HEADER *> (&getRegsParams)))
+	if (NTV2Message (reinterpret_cast<NTV2_HEADER*>(&getRegsParams)))
 	{
 		if (!getRegsParams.GetRegisterValues (inOutValues))
 			return false;
 	}
-	else
-	{
-		//	Non-atomic user-space workaround until GETREGS implemented in driver...
-		for (NTV2RegisterReadsIter iter (inOutValues.begin ());  iter != inOutValues.end ();  ++iter)
-			if (!ReadRegister (iter->registerNumber, iter->registerValue))
-				return false;
-	}
+	else	//	Non-atomic user-space workaround until GETREGS implemented in driver...
+		for (NTV2RegisterReadsIter iter(inOutValues.begin());  iter != inOutValues.end();  ++iter)
+			if (iter->registerNumber != kRegXenaxFlashDOUT)	//	Prevent firmware erase/program/verify failures
+				if (!ReadRegister (iter->registerNumber, iter->registerValue))
+					return false;
 	return true;
 }
 

@@ -1,7 +1,7 @@
 /**
 	@file		ntv2publicinterface.cpp
 	@brief		Implementations of methods declared in 'ntv2publicinterface.h'.
-	@copyright	(C) 2016-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2publicinterface.h"
@@ -166,11 +166,15 @@ ostream & NTV2_HEADER::Print (ostream & inOutStream) const
 ostream & operator << (ostream & inOutStream, const NTV2_TRAILER & inObj)
 {
 	inOutStream << "[";
-	if (NTV2_IS_VALID_TRAILER_TAG (inObj.fTrailerTag))
-		inOutStream << NTV2_4CC_AS_STRING (inObj.fTrailerTag);
+	if (NTV2_IS_VALID_TRAILER_TAG(inObj.fTrailerTag))
+		inOutStream << NTV2_4CC_AS_STRING(inObj.fTrailerTag);
 	else
-		inOutStream << "BAD-" << hex << inObj.fTrailerTag << dec;
-	return inOutStream << " v" << inObj.fTrailerVersion << "]";
+		inOutStream << "BAD-" << HEX0N(inObj.fTrailerTag,8);
+	return inOutStream << " rawVers=" << xHEX0N(inObj.fTrailerVersion,8) << " clientSDK="
+				<< DEC(NTV2SDKVersionDecode_Major(inObj.fTrailerVersion))
+				<< "." << DEC(NTV2SDKVersionDecode_Minor(inObj.fTrailerVersion))
+				<< "." << DEC(NTV2SDKVersionDecode_Point(inObj.fTrailerVersion))
+				<< "." << DEC(NTV2SDKVersionDecode_Build(inObj.fTrailerVersion)) << "]";
 }
 
 
@@ -913,6 +917,12 @@ NTV2InputSourceSet & operator += (NTV2InputSourceSet & inOutSet, const NTV2Input
 }
 
 
+ostream & operator << (ostream & inOutStrm, const NTV2SegmentedXferInfo & inRun)
+{
+	return inRun.Print(inOutStrm);
+}
+
+
 //	Implementation of NTV2AutoCirculateStateToString...
 string NTV2AutoCirculateStateToString (const NTV2AutoCirculateState inState)
 {
@@ -926,9 +936,33 @@ string NTV2AutoCirculateStateToString (const NTV2AutoCirculateState inState)
 
 
 NTV2_TRAILER::NTV2_TRAILER ()
-	:	fTrailerVersion		(NTV2_CURRENT_TRAILER_VERSION),
+	:	fTrailerVersion		(NTV2SDKVersionEncode(AJA_NTV2_SDK_VERSION_MAJOR, AJA_NTV2_SDK_VERSION_MINOR, AJA_NTV2_SDK_VERSION_POINT, AJA_NTV2_SDK_BUILD_NUMBER)),
 		fTrailerTag			(NTV2_TRAILER_TAG)
 {
+}
+
+
+ostream & NTV2SegmentedXferInfo::Print (ostream & inStrm, const bool inDumpSegments) const
+{
+	if (!isValid())
+		return inStrm << "(invalid)";
+	if (inDumpSegments)
+	{
+	}
+	else
+	{
+		static const string sUnits[] = {"", " U8", " U16", "", " U32", "", "", "", " U64", ""};
+		inStrm	<< DEC(getSegmentCount()) << " x " << DEC(getSegmentLength())
+				<< sUnits[getElementLength()] << " segs";
+		if (getSourceOffset())
+			inStrm	<< " srcOff=" << DEC(getSourceOffset());
+		inStrm << " srcSpan=" << DEC(getSourcePitch()) << (isSourceBottomUp()?" VF":"");
+		if (getDestOffset())
+			inStrm	<< " dstOff=" << DEC(getDestOffset());
+		inStrm << " dstSpan=" << DEC(getDestPitch()) << (isDestBottomUp()?" VF":"")
+				<< " totElm=" << DEC(getTotalElements()) << " totByt=" << DEC(getTotalBytes());
+	}
+	return inStrm;
 }
 
 
@@ -1075,44 +1109,6 @@ bool NTV2_POINTER::Deallocate (void)
 }
 
 
-void NTV2_POINTER::Fill (const UByte inValue)
-{
-	UByte *	pBytes	(reinterpret_cast <UByte *> (GetHostPointer ()));
-	if (pBytes)
-		::memset (pBytes, inValue, GetByteCount ());
-}
-
-
-void NTV2_POINTER::Fill (const UWord inValue)
-{
-	UWord *		pUWords		(reinterpret_cast <UWord *> (GetHostPointer ()));
-	size_t		loopCount	(GetByteCount () / sizeof (inValue));
-	if (pUWords)
-		for (size_t n (0);  n < loopCount;  n++)
-			pUWords [n] = inValue;
-}
-
-
-void NTV2_POINTER::Fill (const ULWord inValue)
-{
-	ULWord *	pULWords	(reinterpret_cast <ULWord *> (GetHostPointer ()));
-	size_t		loopCount	(GetByteCount () / sizeof (inValue));
-	if (pULWords)
-		for (size_t n (0);  n < loopCount;  n++)
-			pULWords [n] = inValue;
-}
-
-
-void NTV2_POINTER::Fill (const ULWord64 inValue)
-{
-	ULWord64 *	pULWord64s	(reinterpret_cast <ULWord64 *> (GetHostPointer ()));
-	size_t		loopCount	(GetByteCount () / sizeof (inValue));
-	if (pULWord64s)
-		for (size_t n (0);  n < loopCount;  n++)
-			pULWord64s [n] = inValue;
-}
-
-
 void * NTV2_POINTER::GetHostAddress (const ULWord inByteOffset, const bool inFromEnd) const
 {
 	if (IsNULL())
@@ -1175,6 +1171,35 @@ bool NTV2_POINTER::CopyFrom (const NTV2_POINTER & inBuffer,
 	pDst += inDstByteOffset;
 
 	::memcpy (pDst, pSrc, inByteCount);
+	return true;
+}
+
+
+bool NTV2_POINTER::CopyFrom (const NTV2_POINTER & inSrcBuffer, const NTV2SegmentedXferInfo & inXferInfo)
+{
+	if (!inXferInfo.isValid()  ||  inSrcBuffer.IsNULL()  ||  IsNULL())
+		return false;
+
+	//	Copy every segment...
+	ULWord			srcOffset	(inXferInfo.getSourceOffset() * inXferInfo.getElementLength());
+	ULWord			dstOffset	(inXferInfo.getDestOffset() * inXferInfo.getElementLength());
+	const ULWord	srcPitch	(inXferInfo.getSourcePitch() * inXferInfo.getElementLength());
+	const ULWord	dstPitch	(inXferInfo.getDestPitch() * inXferInfo.getElementLength());
+	const ULWord	bytesPerSeg	(inXferInfo.getSegmentLength() * inXferInfo.getElementLength());
+	for (ULWord segNdx(0);  segNdx < inXferInfo.getSegmentCount();  segNdx++)
+	{
+		const void *	pSrc (inSrcBuffer.GetHostAddress(srcOffset));
+		void *			pDst (GetHostAddress(dstOffset));
+		if (!pSrc)	return false;
+		if (!pDst)	return false;
+		if (srcOffset + bytesPerSeg > inSrcBuffer.GetByteCount())
+			return false;	//	memcpy will read past end of srcBuffer
+		if (dstOffset + bytesPerSeg > GetByteCount())
+			return false;	//	memcpy will write past end of me
+		::memcpy (pDst,  pSrc,  bytesPerSeg);
+		srcOffset += srcPitch;	//	Bump src offset
+		dstOffset += dstPitch;	//	Bump dst offset
+	}	//	for each segment
 	return true;
 }
 
@@ -1792,9 +1817,10 @@ string AUTOCIRCULATE_STATUS::operator [] (const unsigned inIndexNum) const
 			case 17:	oss << dec << (acOptionFlags & AUTOCIRCULATE_WITH_COLORCORRECT	? "Yes" : "No");	break;
 			case 18:	oss << dec << (acOptionFlags & AUTOCIRCULATE_WITH_VIDPROC		? "Yes" : "No");	break;
 			case 19:	oss << dec << (acOptionFlags & AUTOCIRCULATE_WITH_ANC			? "Yes" : "No");	break;
+			case 20:	oss << dec << (acOptionFlags & AUTOCIRCULATE_WITH_FIELDS		? "Yes" : "No");	break;
 			default:																						break;
 		}
-	else if (inIndexNum < 20)
+	else if (inIndexNum < 21)
 		oss << "---";
 	return oss.str();
 }

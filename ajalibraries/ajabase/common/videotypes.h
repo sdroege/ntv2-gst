@@ -1,6 +1,6 @@
 /**
 	@file		videotypes.h
-	@copyright	Copyright (C) 2010-2018 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2010-2019 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the enumeration constants used in the ajabase library.
 **/
 
@@ -51,6 +51,8 @@ enum AJA_VideoFormat
 	AJA_VideoFormat_2K_1080p_2500,
 	AJA_VideoFormat_2K_1080p_2997,
 	AJA_VideoFormat_2K_1080p_3000,
+	AJA_VideoFormat_2K_1080p_4795,
+	AJA_VideoFormat_2K_1080p_4800,
 	AJA_VideoFormat_2K_1080p_5000,
 	AJA_VideoFormat_2K_1080p_5994,
 	AJA_VideoFormat_2K_1080p_6000,
@@ -84,6 +86,8 @@ enum AJA_VideoFormat
 	AJA_VideoFormat_4K_1080p_2500,
 	AJA_VideoFormat_4K_1080p_2997,	
 	AJA_VideoFormat_4K_1080p_3000,
+	AJA_VideoFormat_4K_1080p_4795,
+	AJA_VideoFormat_4K_1080p_4800,
 	AJA_VideoFormat_4K_1080p_5000,
 	AJA_VideoFormat_4K_1080p_5994,
 	AJA_VideoFormat_4K_1080p_6000,

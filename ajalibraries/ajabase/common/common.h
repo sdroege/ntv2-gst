@@ -1,6 +1,6 @@
 /**
 	@file		common.h
-	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2019 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Private include file for all ajabase sources.
 **/
 
@@ -12,13 +12,14 @@
 	#pragma warning(disable:4800)
 #endif
 
+#include "ajabase/common/export.h"
 #include "ajabase/common/public.h"
 #include "ajabase/system/debug.h"
 
 namespace aja
 {
 
-static const std::string WHITESPACE(" \t\n\r");
+static std::string WHITESPACE = " \t\n\r";
 
 /**
  *	Replaces all occurrences of a substring within a string with a new string

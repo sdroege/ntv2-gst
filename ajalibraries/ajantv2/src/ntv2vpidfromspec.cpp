@@ -1,7 +1,7 @@
 /**
 	@file		ntv2vpidfromspec.cpp
 	@brief		Generates a VPID based on a specification struct. See the SMPTE 352 standard for details.
-	@copyright	(C) 2012-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2012-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		This file is included in driver builds. It must not contain any c++.
 **/
 
@@ -476,37 +476,51 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		byte4 |= pInVPIDSpec->audioCarriage	<< 2;		//	0x0C
 	}
 
-	//	Bit depth
-	switch (pixelFormat)
+	if (NTV2_IS_QUAD_FRAME_FORMAT(outputFormat))
 	{
-	case NTV2_FBF_ARGB:
-	case NTV2_FBF_RGBA:
-	case NTV2_FBF_ABGR:
-	case NTV2_FBF_8BIT_YCBCR:
-	case NTV2_FBF_8BIT_YCBCR_YUY2:
-	case NTV2_FBF_24BIT_BGR:
-	case NTV2_FBF_24BIT_RGB:
-		byte4 |= VPIDBitDepth_8;
-		break;
+		byte4 |= VPIDAudio_Copied << 2;
+	}
 
-	case NTV2_FBF_10BIT_YCBCR:
-	case NTV2_FBF_10BIT_RGB:
-	case NTV2_FBF_10BIT_DPX:
-	case NTV2_FBF_10BIT_DPX_LE:
-	case NTV2_FBF_10BIT_RGB_PACKED:
-	case NTV2_FBF_10BIT_YCBCR_DPX:
-	case NTV2_FBF_10BIT_ARGB:
-		byte4 |= VPIDBitDepth_10;
-		break;
-
-	case NTV2_FBF_48BIT_RGB:
-		byte4 |= VPIDBitDepth_12;
-		break;
-
-	default:
+	//	Bit depth
+	if(NTV2_IS_VALID_FBF(pixelFormat))
+	{
+		byte4 |= pixelFormat == NTV2_FBF_48BIT_RGB ? VPIDBitDepth_12 : VPIDBitDepth_10;
+	}
+	else
+	{
 		*pOutVPID = 0;
 		return true;
 	}
+//	switch (pixelFormat)
+//	{
+//	case NTV2_FBF_ARGB:
+//	case NTV2_FBF_RGBA:
+//	case NTV2_FBF_ABGR:
+//	case NTV2_FBF_8BIT_YCBCR:
+//	case NTV2_FBF_8BIT_YCBCR_YUY2:
+//	case NTV2_FBF_24BIT_BGR:
+//	case NTV2_FBF_24BIT_RGB:
+//		byte4 |= VPIDBitDepth_8;
+//		break;
+
+//	case NTV2_FBF_10BIT_YCBCR:
+//	case NTV2_FBF_10BIT_RGB:
+//	case NTV2_FBF_10BIT_DPX:
+//	case NTV2_FBF_10BIT_DPX_LE:
+//	case NTV2_FBF_10BIT_RGB_PACKED:
+//	case NTV2_FBF_10BIT_YCBCR_DPX:
+//	case NTV2_FBF_10BIT_ARGB:
+//		byte4 |= VPIDBitDepth_10;
+//		break;
+
+//	case NTV2_FBF_48BIT_RGB:
+//		byte4 |= VPIDBitDepth_12;
+//		break;
+
+//	default:
+//		*pOutVPID = 0;
+//		return true;
+//	}
 
 	//	Return VPID value to caller
 	*pOutVPID = ((ULWord)byte1 << 24) | ((ULWord)byte2 << 16) | ((ULWord)byte3 << 8) | byte4;

@@ -1,6 +1,6 @@
 /**
     @file		info.cpp
-	@copyright	Copyright (C) 2009-2018 AJA Video Systems, Inc.  All rights reserved.
+	@copyright	Copyright (C) 2009-2019 AJA Video Systems, Inc.  All rights reserved.
     @brief		Implements the AJASystemInfo class.
 **/
 
@@ -68,9 +68,9 @@ string AJASystemInfo::ToString (const AJALabelValuePairs & inLabelValuePairs, co
 		else
 			valueLines.push_back(value);
 		if (inMaxValWidth)
-			for (ValueLinesConstIter it(valueLines.begin());  it != valueLines.end();  ++it)
+			for (ValueLinesConstIter iter(valueLines.begin());  iter != valueLines.end();  ++iter)
 			{
-				const string &	lineStr(*it);
+				const string &	lineStr(*iter);
 				size_t	pos(0);
 				do
 				{
@@ -96,12 +96,12 @@ string AJASystemInfo::ToString (const AJALabelValuePairs & inLabelValuePairs, co
 }
 
 
-AJASystemInfo::AJASystemInfo(AJASystemInfoMemoryUnit units)
+AJASystemInfo::AJASystemInfo(AJASystemInfoMemoryUnit units, AJASystemInfoSections sections)
 {
 	// create the implementation class
     mpImpl = new AJASystemInfoImpl(units);
 
-    Rescan();
+    Rescan(sections);
 }
 
 AJASystemInfo::~AJASystemInfo()
@@ -113,7 +113,7 @@ AJASystemInfo::~AJASystemInfo()
 	}
 }
 
-AJAStatus AJASystemInfo::Rescan (void)
+AJAStatus AJASystemInfo::Rescan (AJASystemInfoSections sections)
 {
     AJAStatus ret = AJA_STATUS_FAIL;
     if(mpImpl)
@@ -139,8 +139,9 @@ AJAStatus AJASystemInfo::Rescan (void)
         mpImpl->mLabelMap[int(AJA_SystemInfoTag_Path_PersistenceStoreSystem)] = "System Persistence Store Path";
         mpImpl->mLabelMap[int(AJA_SystemInfoTag_Path_Applications)] = "AJA Applications Path";
         mpImpl->mLabelMap[int(AJA_SystemInfoTag_Path_Utilities)] = "AJA Utilities Path";
+        mpImpl->mLabelMap[int(AJA_SystemInfoTag_Path_Firmware)] = "AJA Firmware Path";
 
-        ret = mpImpl->Rescan();
+        ret = mpImpl->Rescan(sections);
     }
 
     return ret;

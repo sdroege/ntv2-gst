@@ -1,7 +1,7 @@
 /**
 	@file		ntv2debug.cpp
 	@brief		Implements the NTV2 debug output functions.
-	@copyright	(C) 2004-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		Because this module is compiled into the driver, it must remain straight ANSI 'C' -- no C++ or STL.
 **/
 
@@ -66,6 +66,7 @@ const char * NTV2DeviceIDString (const NTV2DeviceID id)
 		case DEVICE_ID_KONAHDMI:					return "DEVICE_ID_KONAHDMI";
 		case DEVICE_ID_KONA5:						return "DEVICE_ID_KONA5";
 		case DEVICE_ID_KONA5_12G:					return "DEVICE_ID_KONA5_12G";
+		case DEVICE_ID_CORVID44_12G:				return "DEVICE_ID_CORVID44_12G";
 		case DEVICE_ID_NOTFOUND:					return "DEVICE_ID_NOTFOUND";
 	}
 	return "";
@@ -110,6 +111,7 @@ const char * NTV2DeviceString (const NTV2DeviceID id)
 		case DEVICE_ID_KONAHDMI:					return "KonaHDMI";
 		case DEVICE_ID_KONA5:						return "Kona5";
 		case DEVICE_ID_KONA5_12G:					return "Kona5_12G";
+		case DEVICE_ID_CORVID44_12G:				return "Corvid44_12G";
 		case DEVICE_ID_NOTFOUND:					return "Unknown";
 	}
 
@@ -381,11 +383,28 @@ const char *NTV2VideoFormatString (NTV2VideoFormat fmt)
 		case NTV2_FORMAT_4096x2160p_6000:			result = "NTV2_FORMAT_4096x2160p_6000";	break;
 		case NTV2_FORMAT_4096x2160p_11988:			result = "NTV2_FORMAT_4096x2160p_11988";	break;
 		case NTV2_FORMAT_4096x2160p_12000:			result = "NTV2_FORMAT_4096x2160p_12000";	break;
+		case NTV2_FORMAT_4x2048x1080p_4795_B:		result = "NTV2_FORMAT_4x2048x1080p_4795_B";	break;
+		case NTV2_FORMAT_4x2048x1080p_4800_B:		result = "NTV2_FORMAT_4x2048x1080p_4800_B";	break;
+		case NTV2_FORMAT_4x1920x1080p_5000_B:		result = "NTV2_FORMAT_4x1920x1080p_5000_B";	break;
+		case NTV2_FORMAT_4x1920x1080p_5994_B:		result = "NTV2_FORMAT_4x1920x1080p_5994_B";	break;
+		case NTV2_FORMAT_4x1920x1080p_6000_B:		result = "NTV2_FORMAT_4x1920x1080p_6000_B";	break;
+		case NTV2_FORMAT_4x2048x1080p_5000_B:		result = "NTV2_FORMAT_4x2048x1080p_5000_B";	break;
+		case NTV2_FORMAT_4x2048x1080p_5994_B:		result = "NTV2_FORMAT_4x2048x1080p_5994_B";	break;
+		case NTV2_FORMAT_4x2048x1080p_6000_B:		result = "NTV2_FORMAT_4x2048x1080p_6000_B";	break;
+		case NTV2_FORMAT_3840x2160p_5000_B:			result = "NTV2_FORMAT_3840x2160p_5000_B";	break;
+		case NTV2_FORMAT_3840x2160p_5994_B:			result = "NTV2_FORMAT_3840x2160p_5994_B";	break;
+		case NTV2_FORMAT_3840x2160p_6000_B:			result = "NTV2_FORMAT_3840x2160p_6000_B";	break;
+		case NTV2_FORMAT_4096x2160p_4795_B:			result = "NTV2_FORMAT_4096x2160p_4795_B";	break;
+		case NTV2_FORMAT_4096x2160p_4800_B:			result = "NTV2_FORMAT_4096x2160p_4800_B";	break;
+		case NTV2_FORMAT_4096x2160p_5000_B:			result = "NTV2_FORMAT_4096x2160p_5000_B";	break;
+		case NTV2_FORMAT_4096x2160p_5994_B:			result = "NTV2_FORMAT_4096x2160p_5994_B";	break;
+		case NTV2_FORMAT_4096x2160p_6000_B:			result = "NTV2_FORMAT_4096x2160p_6000_B";	break;
 		case NTV2_FORMAT_END_HIGH_DEF_FORMATS:		result = "";								break;
 		case NTV2_FORMAT_END_STANDARD_DEF_FORMATS:	result = "";								break;
 		case NTV2_FORMAT_END_2K_DEF_FORMATS:		result = "";								break;
 		case NTV2_FORMAT_END_HIGH_DEF_FORMATS2:		result = "";								break;
 		case NTV2_FORMAT_END_4K_TSI_DEF_FORMATS:	result = "";								break;
+		case NTV2_FORMAT_END_4K_DEF_FORMATS2:		result = "";								break;
 		case NTV2_FORMAT_UNKNOWN:					result = "";								break;
 #if !defined (_DEBUG)
 		default:									result = "";								break;

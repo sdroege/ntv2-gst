@@ -1,7 +1,7 @@
 /**
     @file		ntv2registerexpert.h
     @brief		Declares the CNTV2RegisterExpert class.
-    @copyright	(C) 2016-2018 AJA Video Systems, Inc.	Proprietary and confidential information.
+    @copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2REGEXPERT_H
@@ -21,14 +21,15 @@
 
 
 //	Streaming Helpers
-#define	YesNo(__x__)			((__x__) ? "Y"			: "N")
-#define	OnOff(__x__)			((__x__) ? "On"			: "Off")
-#define	SetNotset(__x__)		((__x__) ? "Set"		: "Not Set")
-#define	EnabDisab(__x__)		((__x__) ? "Enabled"	: "Disabled")
-#define	DisabEnab(__x__)		((__x__) ? "Disabled"	: "Enabled")
-#define	ActInact(__x__)			((__x__) ? "Active"		: "Inactive")
-#define	SuppNotsupp(__x__)		((__x__) ? "Supported"	: "Unsupported")
-#define	PresNotPres(__x__)		((__x__) ? "Present"	: "Not Present")
+#define	YesNo(__x__)					((__x__) ? "Y"				: "N")
+#define	OnOff(__x__)					((__x__) ? "On"				: "Off")
+#define	SetNotset(__x__)				((__x__) ? "Set"			: "Not Set")
+#define	EnabDisab(__x__)				((__x__) ? "Enabled"		: "Disabled")
+#define	DisabEnab(__x__)				((__x__) ? "Disabled"		: "Enabled")
+#define	ActInact(__x__)					((__x__) ? "Active"			: "Inactive")
+#define	SuppNotsupp(__x__)				((__x__) ? "Supported"		: "Unsupported")
+#define	PresNotPres(__x__)				((__x__) ? "Present"		: "Not Present")
+#define	ThruDeviceOrBypassed(__x__)		((__x__) ? "Thru Device"	: "Device Bypassed")
 
 
 //	Register classifier keys
@@ -168,10 +169,27 @@ class AJAExport CNTV2RegisterExpert
         **/
         static bool						GetCrosspointSelectGroupRegisterInfo (const NTV2InputCrosspointID inInputXpt, uint32_t & outXptRegNum, uint32_t & outMaskIndex);
 
-        static const int	CONTAINS	=	0;
-        static const int	STARTSWITH	=	1;
-        static const int	ENDSWITH	=	2;
-        static const int	EXACTMATCH	=	3;
+        static const int	CONTAINS	=	0;	///< @brief	The name must contain the search string (see CNTV2RegisterExpert::GetRegistersWithName)
+        static const int	STARTSWITH	=	1;	///< @brief	The name must start with the search string (see CNTV2RegisterExpert::GetRegistersWithName)
+        static const int	ENDSWITH	=	2;	///< @brief	The name must end with the search string (see CNTV2RegisterExpert::GetRegistersWithName)
+        static const int	EXACTMATCH	=	3;	///< @brief	The name must exactly match the search string (see CNTV2RegisterExpert::GetRegistersWithName)
+    	static bool			IsAllocated(void);	///< @return	True if the Register Expert singleton has been allocated/created;  otherwise false.
+
+        /**
+            @brief		Explicitly allocates the Register Expert singleton.
+            @return		True if successful;  otherwise false.
+            @note		Normally, there is no need to call this function, as the RegisterExpert singleton is
+            			automatically allocated.
+        **/
+    	static bool Allocate(void);
+
+        /**
+            @brief		Explicitly deallocates the Register Expert singleton.
+            @return		True if successful;  otherwise false.
+            @note		Normally, there is no need to call this function, as the RegisterExpert singleton is
+            			automatically deallocated.
+        **/
+    	static bool Deallocate(void);
 
 };	//	CNTV2RegisterExpert
 

@@ -1,7 +1,7 @@
 /**
 	@file		ntv2m31.h
 	@brief		Declaration of CNTV2m31 class.
-	@copyright	Copyright (C) 2015-2018 AJA Video Systems, Inc.  Proprietary and Confidential information.
+	@copyright	Copyright (C) 2015-2019 AJA Video Systems, Inc.  Proprietary and Confidential information.
 **/
 
 
