@@ -639,6 +639,10 @@ AJAStatus NTV2GstAV::SetupVideo (void)
   mDevice.SetMode (mInputChannel, NTV2_MODE_CAPTURE, false);
   mDevice.SetFrameBufferFormat (mInputChannel, mPixelFormat);
 
+  if (mQuad) {
+    mDevice.Set4kSquaresEnable(true, (NTV2Channel) mInputChannel);
+  }
+
   mDevice.EnableChannel (mInputChannel);
 
   //    Setup frame buffer
