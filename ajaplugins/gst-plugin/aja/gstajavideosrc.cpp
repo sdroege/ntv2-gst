@@ -1199,8 +1199,13 @@ retry:
       src->colorimetry != f->video_buff->colorimetry ||
       src->fullRange != f->video_buff->fullRange ||
       !gst_pad_has_current_caps (GST_BASE_SRC_PAD (src))) {
-    if (src->modeEnum != f->mode)
-    GST_DEBUG_OBJECT (src, "Mode changed from %d to %d", src->modeEnum, f->mode);
+    GST_DEBUG_OBJECT (src, "Mode changed from %d to %d (transfer "
+        "characteristics: %d -> %d, colorimetry: %d -> %d, full "
+        "range: %d -> %d)", src->modeEnum, f->mode,
+        src->transferCharacteristics, f->video_buff->transferCharacteristics,
+        src->colorimetry, f->video_buff->colorimetry,
+        src->fullRange, f->video_buff->fullRange);
+
     src->modeEnum = f->mode;
     src->transferCharacteristics = f->video_buff->transferCharacteristics;
     src->colorimetry = f->video_buff->colorimetry;
@@ -1236,6 +1241,7 @@ retry:
     }
     src->info.colorimetry.range = src->fullRange ? GST_VIDEO_COLOR_RANGE_0_255 : GST_VIDEO_COLOR_RANGE_16_235;
     caps = gst_video_info_to_caps (&src->info);
+    GST_DEBUG_OBJECT (src, "Configuring caps %" GST_PTR_FORMAT, caps);
     gst_base_src_set_caps (GST_BASE_SRC_CAST (bsrc), caps);
     gst_element_post_message (GST_ELEMENT_CAST (src),
         gst_message_new_latency (GST_OBJECT_CAST (src)));
