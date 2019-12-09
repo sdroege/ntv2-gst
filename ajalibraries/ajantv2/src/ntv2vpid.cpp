@@ -26,8 +26,12 @@ static NTV2VideoFormat	stTable2048i		[VPIDPictureRate_ReservedF + 1];
 static NTV2VideoFormat	stTable1920i		[VPIDPictureRate_ReservedF + 1];
 static NTV2VideoFormat	stTable3840pSID		[VPIDPictureRate_ReservedF + 1];
 static NTV2VideoFormat	stTable4096pSID		[VPIDPictureRate_ReservedF + 1];
+static NTV2VideoFormat	stTable3840psfSID	[VPIDPictureRate_ReservedF + 1];
+static NTV2VideoFormat	stTable4096psfSID	[VPIDPictureRate_ReservedF + 1];
 static NTV2VideoFormat	stTable3840pTSI		[VPIDPictureRate_ReservedF + 1];
 static NTV2VideoFormat	stTable4096pTSI		[VPIDPictureRate_ReservedF + 1];
+static NTV2VideoFormat	stTable7680p		[VPIDPictureRate_ReservedF + 1];
+static NTV2VideoFormat	stTable8192p		[VPIDPictureRate_ReservedF + 1];
 static bool				stTablesInitialized	(false);
 
 class VPIDTableInitializer
@@ -84,11 +88,11 @@ class VPIDTableInitializer
 			stTable2048psf[VPIDPictureRate_2500] = NTV2_FORMAT_1080psf_2K_2500;
 	//		stTable2048psf[VPIDPictureRate_2997] = NTV2_FORMAT_1080psf_2K_2997;
 	//		stTable2048psf[VPIDPictureRate_3000] = NTV2_FORMAT_1080psf_2K_3000;
-			stTable2048psf[VPIDPictureRate_4795] = NTV2_FORMAT_1080p_2K_4795_A;		// 3G-B or Duallink 1.5G
-			stTable2048psf[VPIDPictureRate_4800] = NTV2_FORMAT_1080p_2K_4800_A;		// 3G-B or Duallink 1.5G
-			stTable2048psf[VPIDPictureRate_5000] = NTV2_FORMAT_1080p_2K_5000_A;		// 3G-B or Duallink 1.5G
-			stTable2048psf[VPIDPictureRate_5994] = NTV2_FORMAT_1080p_2K_5994_A;		// 3G-B or Duallink 1.5G
-			stTable2048psf[VPIDPictureRate_6000] = NTV2_FORMAT_1080p_2K_6000_A;		// 3G-B or Duallink 1.5G
+			stTable2048psf[VPIDPictureRate_4795] = NTV2_FORMAT_1080p_2K_4795_B;		// 3G-B or Duallink 1.5G
+			stTable2048psf[VPIDPictureRate_4800] = NTV2_FORMAT_1080p_2K_4800_B;		// 3G-B or Duallink 1.5G
+			stTable2048psf[VPIDPictureRate_5000] = NTV2_FORMAT_1080p_2K_5000_B;		// 3G-B or Duallink 1.5G
+			stTable2048psf[VPIDPictureRate_5994] = NTV2_FORMAT_1080p_2K_5994_B;		// 3G-B or Duallink 1.5G
+			stTable2048psf[VPIDPictureRate_6000] = NTV2_FORMAT_1080p_2K_6000_B;		// 3G-B or Duallink 1.5G
 		
 			stTable1920psf[VPIDPictureRate_2398] = NTV2_FORMAT_1080psf_2398;
 			stTable1920psf[VPIDPictureRate_2400] = NTV2_FORMAT_1080psf_2400;
@@ -118,6 +122,15 @@ class VPIDTableInitializer
 			stTable3840pSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x1920x1080p_5994;
 			stTable3840pSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x1920x1080p_6000;
 
+			stTable3840psfSID[VPIDPictureRate_2398] = NTV2_FORMAT_4x1920x1080psf_2398;
+			stTable3840psfSID[VPIDPictureRate_2400] = NTV2_FORMAT_4x1920x1080psf_2400;	
+			stTable3840psfSID[VPIDPictureRate_2500] = NTV2_FORMAT_4x1920x1080psf_2500;
+			stTable3840psfSID[VPIDPictureRate_2997] = NTV2_FORMAT_4x1920x1080psf_2997;			
+			stTable3840psfSID[VPIDPictureRate_3000] = NTV2_FORMAT_4x1920x1080psf_3000;			
+			stTable3840psfSID[VPIDPictureRate_5000] = NTV2_FORMAT_4x1920x1080p_5000;
+			stTable3840psfSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x1920x1080p_5994;
+			stTable3840psfSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x1920x1080p_6000;
+
 			stTable4096pSID[VPIDPictureRate_2398] = NTV2_FORMAT_4x2048x1080p_2398;
 			stTable4096pSID[VPIDPictureRate_2400] = NTV2_FORMAT_4x2048x1080p_2400;
 			stTable4096pSID[VPIDPictureRate_2500] = NTV2_FORMAT_4x2048x1080p_2500;
@@ -128,6 +141,17 @@ class VPIDTableInitializer
 			stTable4096pSID[VPIDPictureRate_5000] = NTV2_FORMAT_4x2048x1080p_5000;
 			stTable4096pSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x2048x1080p_5994;
 			stTable4096pSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x2048x1080p_6000;
+
+			stTable4096psfSID[VPIDPictureRate_2398] = NTV2_FORMAT_4x2048x1080psf_2398;
+			stTable4096psfSID[VPIDPictureRate_2400] = NTV2_FORMAT_4x2048x1080psf_2400;
+			stTable4096psfSID[VPIDPictureRate_2500] = NTV2_FORMAT_4x2048x1080psf_2500;
+			stTable4096psfSID[VPIDPictureRate_2997] = NTV2_FORMAT_4x2048x1080psf_2997;
+			stTable4096psfSID[VPIDPictureRate_3000] = NTV2_FORMAT_4x2048x1080psf_3000;
+			stTable4096psfSID[VPIDPictureRate_4795] = NTV2_FORMAT_4x2048x1080p_4795;
+			stTable4096psfSID[VPIDPictureRate_4800] = NTV2_FORMAT_4x2048x1080p_4800;
+			stTable4096psfSID[VPIDPictureRate_5000] = NTV2_FORMAT_4x2048x1080p_5000;
+			stTable4096psfSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x2048x1080p_5994;
+			stTable4096psfSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x2048x1080p_6000;
 
             stTable3840pTSI[VPIDPictureRate_2398] = NTV2_FORMAT_3840x2160p_2398;
             stTable3840pTSI[VPIDPictureRate_2400] = NTV2_FORMAT_3840x2160p_2400;
@@ -148,6 +172,27 @@ class VPIDTableInitializer
             stTable4096pTSI[VPIDPictureRate_5000] = NTV2_FORMAT_4096x2160p_5000;
             stTable4096pTSI[VPIDPictureRate_5994] = NTV2_FORMAT_4096x2160p_5994;
             stTable4096pTSI[VPIDPictureRate_6000] = NTV2_FORMAT_4096x2160p_6000;
+			
+			stTable7680p[VPIDPictureRate_2398] = NTV2_FORMAT_4x3840x2160p_2398;
+            stTable7680p[VPIDPictureRate_2400] = NTV2_FORMAT_4x3840x2160p_2400;
+            stTable7680p[VPIDPictureRate_2500] = NTV2_FORMAT_4x3840x2160p_2500;
+            stTable7680p[VPIDPictureRate_2997] = NTV2_FORMAT_4x3840x2160p_2997;
+            stTable7680p[VPIDPictureRate_3000] = NTV2_FORMAT_4x3840x2160p_3000;
+            stTable7680p[VPIDPictureRate_5000] = NTV2_FORMAT_4x3840x2160p_5000;
+            stTable7680p[VPIDPictureRate_5994] = NTV2_FORMAT_4x3840x2160p_5994;
+            stTable7680p[VPIDPictureRate_6000] = NTV2_FORMAT_4x3840x2160p_6000;
+
+            stTable8192p[VPIDPictureRate_2398] = NTV2_FORMAT_4x4096x2160p_2398;
+            stTable8192p[VPIDPictureRate_2400] = NTV2_FORMAT_4x4096x2160p_2400;
+            stTable8192p[VPIDPictureRate_2500] = NTV2_FORMAT_4x4096x2160p_2500;
+            stTable8192p[VPIDPictureRate_2997] = NTV2_FORMAT_4x4096x2160p_2997;
+            stTable8192p[VPIDPictureRate_3000] = NTV2_FORMAT_4x4096x2160p_3000;
+            stTable8192p[VPIDPictureRate_4795] = NTV2_FORMAT_4x4096x2160p_4795;
+            stTable8192p[VPIDPictureRate_4800] = NTV2_FORMAT_4x4096x2160p_4800;
+            stTable8192p[VPIDPictureRate_5000] = NTV2_FORMAT_4x4096x2160p_5000;
+            stTable8192p[VPIDPictureRate_5994] = NTV2_FORMAT_4x4096x2160p_5994;
+            stTable8192p[VPIDPictureRate_6000] = NTV2_FORMAT_4x4096x2160p_6000;
+			
 			stTablesInitialized = true;
 		}	//	constructor
 
@@ -209,6 +254,20 @@ bool CNTV2VPID::IsStandard3Ga (void) const
 	case VPIDStandard_1080_3Ga:
 	case VPIDStandard_1080_Dual_3Ga:
 	case VPIDStandard_2160_QuadLink_3Ga:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+bool CNTV2VPID::IsStandardMultiLink4320 (void) const
+{
+	switch(GetStandard())
+	{
+	case VPIDStandard_4320_DualLink_12Gb:
+	case VPIDStandard_4320_QuadLink_12Gb:
 		return true;
 	default:
 		break;
@@ -299,13 +358,35 @@ VPIDPictureRate CNTV2VPID::GetPictureRate (void) const
 
 void CNTV2VPID::SetImageAspect16x9 (const bool inIs16x9Aspect)
 {
-	m_uVPID = (m_uVPID & ~kRegMaskVPIDImageAspect16x9) |
-		(((inIs16x9Aspect ? 1 : 0) << kRegShiftVPIDImageAspect16x9) & kRegMaskVPIDImageAspect16x9);
+	VPIDStandard standard = GetStandard();
+	if(standard == VPIDStandard_1080	||
+		standard == VPIDStandard_1080_DualLink ||
+		standard == VPIDStandard_1080_DualLink_3Gb ||
+		standard == VPIDStandard_2160_QuadDualLink_3Gb ||
+		standard == VPIDStandard_2160_DualLink)
+	{
+		m_uVPID = (m_uVPID & ~kRegMaskVPIDImageAspect16x9Alt) |
+			(((inIs16x9Aspect ? 1 : 0) << kRegShiftVPIDImageAspect16x9Alt) & kRegMaskVPIDImageAspect16x9Alt);
+	}
+	else
+	{
+		m_uVPID = (m_uVPID & ~kRegMaskVPIDImageAspect16x9) |
+			(((inIs16x9Aspect ? 1 : 0) << kRegShiftVPIDImageAspect16x9) & kRegMaskVPIDImageAspect16x9);
+	}
 }
 
 
 bool CNTV2VPID::GetImageAspect16x9 (void) const
 {
+	VPIDStandard standard = GetStandard();
+	if(standard == VPIDStandard_1080	||
+		standard == VPIDStandard_1080_DualLink ||
+		standard == VPIDStandard_1080_DualLink_3Gb ||
+		standard == VPIDStandard_2160_QuadDualLink_3Gb ||
+		standard == VPIDStandard_2160_DualLink)
+	{
+		return (m_uVPID & kRegMaskVPIDImageAspect16x9Alt) != 0;
+	}
 	return (m_uVPID & kRegMaskVPIDImageAspect16x9) != 0; 
 }
 
@@ -349,19 +430,6 @@ VPIDChannel CNTV2VPID::GetDualLinkChannel (void) const
 }
 
 
-void CNTV2VPID::SetDynamicRange (const VPIDDynamicRange inDynamicRange)
-{
-	m_uVPID = (m_uVPID & ~kRegMaskVPIDDynamicRange) |
-		(((ULWord)inDynamicRange << kRegShiftVPIDDynamicRange) & kRegMaskVPIDDynamicRange);
-}
-
-
-VPIDDynamicRange CNTV2VPID::GetDynamicRange (void) const
-{
-	return (VPIDDynamicRange)((m_uVPID & kRegMaskVPIDDynamicRange) >> kRegShiftVPIDDynamicRange); 
-}
-
-
 void CNTV2VPID::SetBitDepth (const VPIDBitDepth inBitDepth)
 {
 	m_uVPID = (m_uVPID & ~kRegMaskVPIDBitDepth) |
@@ -373,6 +441,88 @@ VPIDBitDepth CNTV2VPID::GetBitDepth (void) const
 {
 	return (VPIDBitDepth)((m_uVPID & kRegMaskVPIDBitDepth) >> kRegShiftVPIDBitDepth); 
 }
+
+void CNTV2VPID::SetTransferCharacteristics (const NTV2VPIDXferChars iXferChars)
+{
+	m_uVPID = (m_uVPID & ~kRegMaskVPIDXferChars) |
+		(((ULWord)iXferChars << kRegShiftVPIDXferChars) & kRegMaskVPIDXferChars);
+}
+
+
+NTV2VPIDXferChars CNTV2VPID::GetTransferCharacteristics (void) const
+{
+	return (NTV2VPIDXferChars)((m_uVPID & kRegMaskVPIDXferChars) >> kRegShiftVPIDXferChars); 
+}
+
+void CNTV2VPID::SetColorimetry (const NTV2VPIDColorimetry inColorimetry)
+{
+	VPIDStandard standard = GetStandard();
+	if(standard == VPIDStandard_1080	||
+		standard == VPIDStandard_1080_DualLink ||
+		standard == VPIDStandard_1080_DualLink_3Gb ||
+		standard == VPIDStandard_2160_QuadDualLink_3Gb ||
+		standard == VPIDStandard_2160_DualLink)
+	{
+		ULWord lowBit = 0, highBit = 0;
+		highBit = (inColorimetry&0x2)>>1;
+		lowBit = inColorimetry&0x1;
+		m_uVPID = (m_uVPID & ~kRegMaskVPIDColorimetryAltHigh) |
+			((highBit << kRegShiftVPIDColorimetryAltHigh) & kRegMaskVPIDColorimetryAltHigh);
+		m_uVPID = (m_uVPID & ~kRegMaskVPIDColorimetryAltLow) |
+			((lowBit << kRegShiftVPIDColorimetryAltLow) & kRegMaskVPIDColorimetryAltLow);
+	}
+	else
+	{
+		m_uVPID = (m_uVPID & ~kRegMaskVPIDColorimetry) |
+			(((ULWord)inColorimetry << kRegShiftVPIDColorimetry) & kRegMaskVPIDColorimetry);
+	}
+}
+
+
+NTV2VPIDColorimetry CNTV2VPID::GetColorimetry (void) const
+{
+	VPIDStandard standard = GetStandard();
+	if(standard == VPIDStandard_1080	||
+		standard == VPIDStandard_1080_DualLink ||
+		standard == VPIDStandard_1080_DualLink_3Gb ||
+		standard == VPIDStandard_2160_QuadDualLink_3Gb ||
+		standard == VPIDStandard_2160_DualLink)
+	{
+		//The bits are sparse so...
+		uint8_t lowBit = 0, highBit = 0, value = 0;
+		lowBit = (m_uVPID & kRegMaskVPIDColorimetryAltLow) >> kRegShiftVPIDColorimetryAltLow;
+		highBit = (m_uVPID & kRegMaskVPIDColorimetryAltHigh) >> kRegShiftVPIDColorimetryAltHigh;
+		value = (highBit << 1)|lowBit;
+		return (NTV2VPIDColorimetry)value;
+	}
+	return (NTV2VPIDColorimetry)((m_uVPID & kRegMaskVPIDColorimetry) >> kRegShiftVPIDColorimetry); 
+}
+
+void CNTV2VPID::SetLuminance (const NTV2VPIDLuminance inLuminance)
+{
+	m_uVPID = (m_uVPID & ~kRegmaskVPIDLuminance) |
+		(((ULWord)inLuminance << kRegShiftVPIDLuminance) & kRegmaskVPIDLuminance);
+}
+
+
+NTV2VPIDLuminance CNTV2VPID::GetLuminance (void) const
+{
+	return (NTV2VPIDLuminance)((m_uVPID & kRegmaskVPIDLuminance) >> kRegShiftVPIDLuminance); 
+}
+
+#if !defined (NTV2_DEPRECATE)
+void CNTV2VPID::SetDynamicRange (const VPIDDynamicRange inDynamicRange)
+{
+	m_uVPID = (m_uVPID & ~kRegMaskVPIDDynamicRange) |
+		(((ULWord)inDynamicRange << kRegShiftVPIDDynamicRange) & kRegMaskVPIDDynamicRange);
+}
+
+
+VPIDDynamicRange CNTV2VPID::GetDynamicRange (void) const
+{
+	return (VPIDDynamicRange)((m_uVPID & kRegMaskVPIDDynamicRange) >> kRegShiftVPIDDynamicRange); 
+}
+#endif
 
 
 //	static - this one doesn't support 3Gb
@@ -438,7 +588,10 @@ bool CNTV2VPID::SetVPIDData (ULWord &				outVPID,
 							const VPIDChannel		inChannel,
 							const bool				inUseChannel,
 							const bool				inOutputIs6G,
-							const bool				inOutputIs12G)
+							const bool				inOutputIs12G,
+							const NTV2VPIDXferChars	inXferChars,
+							const NTV2VPIDColorimetry	inColorimetry,
+							const NTV2VPIDLuminance	inLuminance)
 {
 	VPIDSpec vpidSpec;
 
@@ -459,6 +612,9 @@ bool CNTV2VPID::SetVPIDData (ULWord &				outVPID,
 	vpidSpec.audioCarriage			= VPIDAudio_Unknown;
 	vpidSpec.isOutput6G				= inOutputIs6G;
 	vpidSpec.isOutput12G			= inOutputIs12G;
+	vpidSpec.transferCharacteristics = inXferChars;
+	vpidSpec.colorimetry			= inColorimetry;
+	vpidSpec.luminance				= inLuminance;
 
 	return ::SetVPIDFromSpec (&outVPID, &vpidSpec);
 }
@@ -555,6 +711,8 @@ NTV2VideoFormat CNTV2VPID::GetVideoFormat (void) const
 	case VPIDStandard_2160_QuadDualLink_3Gb:
 	case VPIDStandard_2160_Single_6Gb:
 	case VPIDStandard_2160_Single_12Gb:
+		if (vpidProgTransport)
+		{
 		if (vpidHorizontal2048)
 		{
 			videoFormat = stTable4096pSID[vpidFrameRate];
@@ -562,6 +720,29 @@ NTV2VideoFormat CNTV2VPID::GetVideoFormat (void) const
 		else
 		{
 			videoFormat = stTable3840pSID[vpidFrameRate];
+			}
+		}
+		else
+		{
+			if (vpidHorizontal2048)
+			{
+				videoFormat = stTable4096psfSID[vpidFrameRate];
+			}
+			else
+			{
+				videoFormat = stTable3840psfSID[vpidFrameRate];
+			}
+		}
+		break;
+	case VPIDStandard_4320_DualLink_12Gb:
+	case VPIDStandard_4320_QuadLink_12Gb:
+		if (vpidHorizontal2048)
+		{
+			videoFormat = stTable8192p[vpidFrameRate];
+		}
+		else
+		{
+			videoFormat = stTable7680p[vpidFrameRate];
 		}
 		break;
 	default:
@@ -571,6 +752,198 @@ NTV2VideoFormat CNTV2VPID::GetVideoFormat (void) const
 	return videoFormat;
 }
 
+// Macro to simplify returning of string for given enum
+#define VPID_ENUM_CASE_RETURN_STR(enum_name) case(enum_name): return #enum_name;
+
+const string CNTV2VPID::VersionString(VPIDVersion version)
+{
+	switch (version)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDVersion_0);
+		VPID_ENUM_CASE_RETURN_STR(VPIDVersion_1);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::StandardString(VPIDStandard std)
+{
+	switch (std)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_Unknown);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_483_576);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_483_576_DualLink);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_483_576_540Mbs);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_720);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_483_576_1485Mbs);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_DualLink);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_720_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_DualLink_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_720_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_483_576_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_720_Stereo_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Stereo_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_QuadLink);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_720_Stereo_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Stereo_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Stereo_DualLink_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Dual_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Dual_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_DualLink);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_QuadLink_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_QuadDualLink_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Stereo_Quad_3Ga);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Stereo_Quad_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_Stereo_Quad_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_OctLink);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_UHDTV1_Single_DualLink_10Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_UHDTV2_Quad_OctaLink_10Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_UHDTV1_MultiLink_10Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_UHDTV2_MultiLink_10Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_VC2);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_720_1080_Stereo);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_VC2_Level65_270Mbs);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_4K_DCPIF_FSW709_10Gbs);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_FT_2048x1556_Dual);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_FT_2048x1556_3Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_Single_6Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_Single_6Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_AFR_Single_6Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_Single_12Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_1080_10_12_AFR_Single_12Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_4320_DualLink_12Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_2160_DualLink_12Gb);
+		VPID_ENUM_CASE_RETURN_STR(VPIDStandard_4320_QuadLink_12Gb);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::PictureRateString(VPIDPictureRate rate)
+{
+	switch (rate)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_None);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_Reserved1);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_2398);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_2400);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_4795);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_2500);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_2997);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_3000);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_4800);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_5000);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_5994);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_6000);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_ReservedC);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_ReservedD);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_ReservedE);
+		VPID_ENUM_CASE_RETURN_STR(VPIDPictureRate_ReservedF);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::SamplingString(VPIDSampling sample)
+{
+	switch (sample)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUV_422);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUV_444);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_GBR_444);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUV_420);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUVA_4224);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUVA_4444);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_GBRA_4444);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_Reserved7);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUVD_4224);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_YUVD_4444);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_GBRD_4444);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_ReservedB);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_ReservedC);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_ReservedD);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_ReservedE);
+		VPID_ENUM_CASE_RETURN_STR(VPIDSampling_XYZ_444);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::ChannelString(VPIDChannel chan)
+{
+	switch (chan)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_1);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_2);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_3);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_4);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_5);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_6);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_7);
+		VPID_ENUM_CASE_RETURN_STR(VPIDChannel_8);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::DynamicRangeString(VPIDDynamicRange range)
+{
+	switch (range)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDDynamicRange_100);
+		VPID_ENUM_CASE_RETURN_STR(VPIDDynamicRange_200);
+		VPID_ENUM_CASE_RETURN_STR(VPIDDynamicRange_400);
+		VPID_ENUM_CASE_RETURN_STR(VPIDDynamicRange_Reserved3);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::BitDepthString(VPIDBitDepth depth)
+{
+	switch (depth)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDBitDepth_8);
+		VPID_ENUM_CASE_RETURN_STR(VPIDBitDepth_10);
+		VPID_ENUM_CASE_RETURN_STR(VPIDBitDepth_12);
+		VPID_ENUM_CASE_RETURN_STR(VPIDBitDepth_Reserved3);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::LinkString(VPIDLink link)
+{
+	switch (link)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_1);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_2);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_3);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_4);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_5);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_6);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_7);
+		VPID_ENUM_CASE_RETURN_STR(VPIDLink_8);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
+
+const string CNTV2VPID::AudioString(VPIDAudio audio)
+{
+	switch (audio)
+	{
+		VPID_ENUM_CASE_RETURN_STR(VPIDAudio_Unknown);
+		VPID_ENUM_CASE_RETURN_STR(VPIDAudio_Copied);
+		VPID_ENUM_CASE_RETURN_STR(VPIDAudio_Additional);
+		VPID_ENUM_CASE_RETURN_STR(VPIDAudio_Reserved);
+		// intentionally not setting a default: so compiler will warn about missing enums
+	}
+	return "";
+}
 
 static string VPIDVersionToString (const VPIDVersion inVers)
 {
@@ -633,6 +1006,9 @@ static string VPIDStandardToString (const VPIDStandard inStd)
 		case VPIDStandard_1080_AFR_Single_6Gb:			return "1080_AFR_Single_6Gb";
 		case VPIDStandard_2160_Single_12Gb:				return "2160_Single_12Gb";
 		case VPIDStandard_1080_10_12_AFR_Single_12Gb:	return "1080_10_12_AFR_Single_12Gb";
+		case VPIDStandard_4320_DualLink_12Gb:			return "4320_DualLink_12Gb";
+		case VPIDStandard_2160_DualLink_12Gb:			return "2160_DualLink_12Gb";
+		case VPIDStandard_4320_QuadLink_12Gb:			return "4320_QuadLink_12Gb";
 	#if !defined(_DEBUG)
 		default:	break;
 	#endif
@@ -650,6 +1026,10 @@ static const string sVPIDDynamicRange[]	= {	"100", "200", "400", "Reserved3"	};
 static const string sVPIDBitDepth[]		= {	"8", "10", "12", "Reserved3"	};
 static const string sVPIDLink[]			= {	"1", "2", "3", "4", "5", "6", "7", "8"	};
 static const string	sVPIDAudio[]		= {	"Unknown", "Copied", "Additional", "Reserved" };
+static const string sVPIDTransfer[]		= { "SDR", "HLG", "PQ", "Unspecified" };
+static const string sVPIDColorimetry[]	= { "Rec709", "Reserved", "UHDTV", "Unknown" };
+static const string sVPIDLuminance[]	= { "YCbCr", "ICtCp" };
+
 
 
 ostream & CNTV2VPID::Print (ostream & ostrm) const
@@ -662,11 +1042,14 @@ ostream & CNTV2VPID::Print (ostream & ostrm) const
 				<< " rate=" << sVPIDPictureRate[GetPictureRate()]
 				<< " samp=" << sVPIDSampling[GetSampling()]
 				<< " channel=" << sVPIDChannel[GetChannel()]
-				<< " dynRange=" << sVPIDDynamicRange[GetDynamicRange()]
+				//<< " dynRange=" << sVPIDDynamicRange[GetDynamicRange()]
 				<< " bitDepth=" << sVPIDBitDepth[GetBitDepth()]
 				<< " 3Ga=" << YesNo(IsStandard3Ga())
 				<< " Tsi=" << YesNo(IsStandardTwoSampleInterleave())
-				<< " 16x9=" << YesNo(GetImageAspect16x9());
+				<< " 16x9=" << YesNo(GetImageAspect16x9())
+				<< " xferChars=" << sVPIDTransfer[GetTransferCharacteristics()]
+				<< " colorimetry=" << sVPIDColorimetry[GetColorimetry()]
+				<< " luminance=" << sVPIDLuminance[GetLuminance()];
 	return ostrm;
 }
 
@@ -685,10 +1068,12 @@ AJALabelValuePairs & CNTV2VPID::GetInfo (AJALabelValuePairs & outInfo) const
 	AJASystemInfo::append(outInfo, "Aspect Ratio:",				GetImageAspect16x9() ? "16x9" : "4x3");
 	AJASystemInfo::append(outInfo, "Sampling:",					sVPIDSampling[GetSampling()]);
 	AJASystemInfo::append(outInfo, "Channel:",					sVPIDChannel[GetChannel()]);
-	AJASystemInfo::append(outInfo, "Dynamic Range:",			sVPIDDynamicRange[GetDynamicRange()]);
 	AJASystemInfo::append(outInfo, "Bit Depth:",				sVPIDBitDepth[GetBitDepth()]);
 	AJASystemInfo::append(outInfo, "3Ga:",						YesOrNo(IsStandard3Ga()));
 	AJASystemInfo::append(outInfo, "Two Sample Interleave:",	YesOrNo(IsStandardTwoSampleInterleave()));
+	AJASystemInfo::append(outInfo, "Xfer Characteristics:",		sVPIDTransfer[GetTransferCharacteristics()]);
+	AJASystemInfo::append(outInfo, "Colorimetry:",				sVPIDColorimetry[GetColorimetry()]);
+	AJASystemInfo::append(outInfo, "Luminance:",				sVPIDLuminance[GetLuminance()]);
 	return outInfo;
 }
 

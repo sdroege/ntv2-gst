@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2004 - 2018 AJA Video Systems, Inc.
+# Copyright (C) 2004 - 2019 AJA Video Systems, Inc.
 # Proprietary and Confidential information.
 # All righs reserved
 #
@@ -12,16 +12,15 @@ SUFFIXES:
 
 include $(DIR)/configure.mk
 
-MAKETARGET = $(MAKE) -C $@ -f $(CURDIR)/Makefile \
-                  SRCDIR=$(CURDIR) $(MAKECMDGOALS)
+MAKETARGET = $(MAKE) -C $@ -f $(CURDIR)/Makefile SRCDIR=$(CURDIR) $(MAKECMDGOALS)
 
 .PHONY: $(OBJDIR)
 $(OBJDIR):
-	+@[ -d $@ ] || mkdir -p $@
+	@mkdir -p $@
 	+@$(MAKETARGET)
 
 Makefile : ;
 %.mk :: ;
 
-% :: $(OBJDIR) ; :
+% :: $(OBJDIR) ;
 

@@ -42,8 +42,16 @@ enum NTV2TestPatternSelect
 	NTV2_TestPatt_ColorQuadrant,
 	NTV2_TestPatt_ColorQuadrantBorder,
 	NTV2_TestPatt_ColorQuadrantTsi,
+	NTV2_TestPatt_ZonePlate_12b_RGB,
+	NTV2_TestPatt_LinearRamp_12b_RGB,
+	NTV2_TestPatt_HLG_Narrow_12b_RGB,
+	NTV2_TestPatt_PQ_Narrow_12b_RGB,
+	NTV2_TestPatt_PQ_Wide_12b_RGB,
 	NTV2_TestPatt_All
 };
+
+#define NTV2_IS_VALID_PATTERN(__S__) ((__S__) >= NTV2_TestPatt_ColorBars100  &&  (__S__) < NTV2_TestPatt_All)
+#define NTV2_IS_12B_PATTERN(__S__)	 ((__S__) >= NTV2_TestPatt_ZonePlate_12b_RGB  &&  (__S__) < NTV2_TestPatt_All)
 
 
 /**
@@ -57,9 +65,16 @@ public:
 							NTV2TestPatternGen ();
 	virtual					~NTV2TestPatternGen ();
 
-	virtual bool			DrawTestPattern (NTV2TestPatternSelect pattNum, uint32_t frameWidth, uint32_t frameHeight,
-											NTV2FrameBufferFormat pixelFormat, NTV2TestPatternBuffer & outBuffer);
-
+	virtual bool			DrawTestPattern (const NTV2TestPatternSelect inPattern, uint32_t inFrameWidth, uint32_t inFrameHeight,
+											const NTV2FrameBufferFormat inPixelFormat, NTV2TestPatternBuffer & outBuffer);
+	virtual inline bool		DrawTestPattern (const NTV2TestPatternSelect inPattern,
+											const NTV2FormatDescriptor & inDesc,
+											NTV2TestPatternBuffer & outBuffer)
+																			{return DrawTestPattern(inPattern,
+																									inDesc.GetRasterWidth(),
+																									inDesc.GetVisibleRasterHeight(),
+																									inDesc.GetPixelFormat(),
+																									outBuffer);}
 	inline void				setSignalMask (NTV2SignalMask signalMask)		{_signalMask = signalMask;}
 	inline void				setUseRGBSmpteRange (bool useRGBSmpteRange)		{_bRGBSmpteRange = useRGBSmpteRange;}
 	inline bool				getUseRGBSmpteRange (void) const				{return _bRGBSmpteRange;}
@@ -69,6 +84,7 @@ public:
 	inline void				setAlphaFromLuma (bool alphaFromLuma)			{_bAlphaFromLuma = alphaFromLuma;}
 	inline bool				getAlphaFromLuma (void) const					{return _bAlphaFromLuma;}
 
+	static bool							canDrawTestPattern (const NTV2TestPatternSelect inPattern, const NTV2FormatDescriptor & inDesc);
 	static const NTV2TestPatternNames &	getTestPatternNames (void);
 #if !defined(NTV2_DEPRECATE_15_0)
 	static NTV2_SHOULD_BE_DEPRECATED (NTV2TestPatternList &		getTestPatternList (void));
@@ -84,9 +100,18 @@ protected:
 	virtual bool	DrawQuandrantBorderFrame ();
 	virtual bool	DrawColorQuandrantFrame ();
 	virtual bool	DrawColorQuandrantFrameTsi ();
+	
+	//12b patterns
+	virtual void	setupHDRTestPatternGeometries();
+	virtual bool	DrawTestPatternNarrowHLG();
+	virtual bool	DrawTestPatternNarrowPQ();
+	virtual bool	DrawTestPatternWidePQ();
+	virtual bool	Draw12BitRamp();
+	virtual bool	Draw12BitZonePlate();
+	virtual void	PrepareForOutput();
 
 	bool IsSDStandard();
-	bool GetStandard(int &standard, bool &b4K);
+	bool GetStandard(int &standard, bool &b4K, bool &b8K);
 
 protected:
 	NTV2TestPatternSelect	_patternNumber;
@@ -104,6 +129,17 @@ protected:
 	double					_sliderValue;
 	NTV2SignalMask			_signalMask;
 	NTV2FrameBufferFormat	_pixelFormat;
+	
+	uint32_t mNumPixels;
+    uint32_t mNumLines;
+    uint32_t mBitsPerComponent;
+    uint32_t mSamplesPerPixel;
+	uint16_t mCompressionType;
+    uint32_t mDataOffset;
+    uint32_t mDataSize;
+    std::vector<char> mData;
+    std::vector<uint16_t> mUnPackedRAWBuffer;
+    std::vector<uint16_t> mRGBBuffer;
 
 };	//	NTV2TestPatternGen
 

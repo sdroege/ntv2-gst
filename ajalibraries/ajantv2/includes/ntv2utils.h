@@ -292,11 +292,17 @@ AJAExport bool	CopyRaster (const NTV2FrameBufferFormat	inPixelFormat,
 AJAExport NTV2Standard GetNTV2StandardFromScanGeometry (UByte geometry, bool progressiveTransport);
 
 /**
+	@return		The ::NTV2VideoFormat that is supported by the device (in frame buffer).
+	@param[in]	inVideoFormat	Specifies the input ::NTV2VideoFormat of interest.
+**/
+AJAExport NTV2VideoFormat GetSupportedNTV2VideoFormatFromInputVideoFormat (const NTV2VideoFormat inVideoFormat);
+
+/**
 	@return		The ::NTV2Standard that corresponds to the given ::NTV2VideoFormat.
 	@param[in]	inVideoFormat	Specifies the ::NTV2VideoFormat of interest.
 	@see		::GetNTV2FrameGeometryFromVideoFormat, ::GetGeometryFromStandard
 **/
-AJAExport NTV2Standard GetNTV2StandardFromVideoFormat (const NTV2VideoFormat inVideoFormat);
+AJAExport NTV2Standard GetNTV2StandardFromVideoFormat (const NTV2VideoFormat inVideoFormat, const bool inForhardware = false);
 
 /**
 	@return		The ::NTV2FrameGeometry that corresponds to the given ::NTV2VideoFormat.
@@ -346,15 +352,15 @@ AJAExport ULWord GetVideoWriteSize (const NTV2VideoFormat inVideoFormat,
 									const NTV2FrameBufferFormat inFBFormat,
 									const NTV2VANCMode inVancMode = NTV2_VANCMODE_OFF);
 
-AJAExport NTV2VideoFormat GetQuarterSizedVideoFormat(NTV2VideoFormat videoFormat);
-AJAExport NTV2VideoFormat GetQuadSizedVideoFormat(NTV2VideoFormat videoFormat, bool isSquareDivision = true);
-AJAExport NTV2FrameGeometry GetQuarterSizedGeometry(NTV2FrameGeometry geometry);
-AJAExport NTV2FrameGeometry Get4xSizedGeometry(NTV2FrameGeometry geometry);
-AJAExport NTV2Standard GetQuarterSizedStandard(NTV2Standard geometry);
-AJAExport NTV2Standard Get4xSizedStandard(NTV2Standard geometry, bool bIs4k = false);
+AJAExport NTV2VideoFormat GetQuarterSizedVideoFormat (const NTV2VideoFormat inVideoFormat);
+AJAExport NTV2VideoFormat GetQuadSizedVideoFormat (const NTV2VideoFormat inVideoFormat, const bool isSquareDivision = true);
+AJAExport NTV2FrameGeometry GetQuarterSizedGeometry (const NTV2FrameGeometry inGeometry);
+AJAExport NTV2FrameGeometry Get4xSizedGeometry (const NTV2FrameGeometry inGeometry);
+AJAExport NTV2Standard GetQuarterSizedStandard (const NTV2Standard inGeometry);
+AJAExport NTV2Standard Get4xSizedStandard (const NTV2Standard inGeometry, const bool bIs4k = false);
 
-AJAExport double GetFramesPerSecond(NTV2FrameRate frameRate);
-AJAExport double GetFrameTime(NTV2FrameRate frameRate);
+AJAExport double GetFramesPerSecond (const NTV2FrameRate inFrameRate);
+AJAExport double GetFrameTime (const NTV2FrameRate inFrameRate);
 /**
 	@return		The first NTV2VideoFormat that matches the given frame rate and raster dimensions (and whether it's interlaced or not).
 	@param[in]	inFrameRate		Specifies the frame rate of interest.
@@ -362,8 +368,15 @@ AJAExport double GetFrameTime(NTV2FrameRate frameRate);
 	@param[in]	inWidthPixels	Specifies the raster width, in pixels.
 	@param[in]	inIsInterlaced	Specify true for interlaced/psf video, or false for progressive.
 	@param[in]	inIsLevelB    	Specify true for level B, or false for everything else.
+	@param[in]	inIsPSF			Specify true for segmented format false for everything else.
+
 **/
-AJAExport NTV2VideoFormat	GetFirstMatchingVideoFormat (const NTV2FrameRate inFrameRate, const UWord inHeightLines, const UWord inWidthPixels, const bool inIsInterlaced, const bool inIsLevelB);
+AJAExport NTV2VideoFormat	GetFirstMatchingVideoFormat (const NTV2FrameRate inFrameRate,
+														 const UWord inHeightLines,
+														 const UWord inWidthPixels,
+														 const bool inIsInterlaced,
+														 const bool inIsLevelB,
+														 const bool inIsPSF);
 
 /**
 	@brief		Answers with the given frame rate, in frames per second, as two components:
@@ -422,21 +435,65 @@ AJAExport NTV2FrameRate			GetNTV2FrameRateFromVideoFormat (NTV2VideoFormat video
 AJAExport NTV2FrameGeometry		GetNormalizedFrameGeometry (const NTV2FrameGeometry inFrameGeometry);
 
 /**
-	@return	The equivalent VANC ::NTV2FrameGeometry value for a given ::NTV2VANCMode.
+	@return		The equivalent VANC ::NTV2FrameGeometry value for a given ::NTV2VANCMode.
 	@param[in]	inFrameGeometry	Specifies the ::NTV2FrameGeometry to be converted into its VANC equivalent.
 	@param[in]	inVancMode		Specifies the desired ::NTV2VANCMode.
 	@see		::GetNormalizedFrameGeometry
 **/
 AJAExport NTV2FrameGeometry		GetVANCFrameGeometry (const NTV2FrameGeometry inFrameGeometry, const NTV2VANCMode inVancMode);
 
-AJAExport ULWord				GetNTV2FrameGeometryWidth (NTV2FrameGeometry geometry);
-AJAExport ULWord				GetNTV2FrameGeometryHeight (NTV2FrameGeometry geometry);
+/**
+	@return		True if the given ::NTV2FrameGeometry has tall or taller geometries associated with it;
+				otherwise false.
+	@param[in]	inFrameGeometry	Specifies the ::NTV2FrameGeometry.
+	@see		::GetVANCFrameGeometry
+**/
+AJAExport bool					HasVANCGeometries (const NTV2FrameGeometry inFrameGeometry);
 
 /**
-	@return	The equivalent normalized (non-VANC) ::NTV2FrameGeometry value for a given ::NTV2Standard.
+	@return		An ::NTV2GeometrySet containing normal, tall and (possibly) taller frame geometries
+				that are associated with the given ::NTV2FrameGeometry;  or an empty set if passed
+				an invalid geometry.
+	@param[in]	inFrameGeometry		Specifies the ::NTV2FrameGeometry. (Need not be normalized.)
+	@note		The resulting set will, at the least, contain the given geometry (if valid).
+	@see		::GetVANCFrameGeometry
+**/
+AJAExport NTV2GeometrySet		GetRelatedGeometries (const NTV2FrameGeometry inFrameGeometry);
+
+/**
+	@return		The equivalent NTV2VANCMode for a given ::NTV2FrameGeometry.
+	@param[in]	inFrameGeometry	Specifies the ::NTV2FrameGeometry.
+	@see		::GetVANCFrameGeometry
+**/
+AJAExport NTV2VANCMode			GetVANCModeForGeometry (const NTV2FrameGeometry inFrameGeometry);
+
+/**
+	@return		The pixel width of the given ::NTV2FrameGeometry.
+	@param[in]	inFrameGeometry	Specifies the ::NTV2FrameGeometry of interest.
+	@see		::GetVANCFrameGeometry
+**/
+AJAExport ULWord				GetNTV2FrameGeometryWidth (const NTV2FrameGeometry inFrameGeometry);
+
+/**
+	@return		The height, in lines, of the given ::NTV2FrameGeometry.
+	@param[in]	inFrameGeometry	Specifies the ::NTV2FrameGeometry of interest.
+	@see		::GetVANCFrameGeometry
+**/
+AJAExport ULWord				GetNTV2FrameGeometryHeight (const NTV2FrameGeometry inFrameGeometry);
+
+/**
+	@return		The equivalent normalized (non-VANC) ::NTV2FrameGeometry value for a given ::NTV2Standard.
 	@param[in]	inStandard		Specifies the ::NTV2Standard to be converted into a normalized ::NTV2FrameGeometry.
 **/
 AJAExport NTV2FrameGeometry		GetGeometryFromStandard (const NTV2Standard inStandard);
+
+/**
+	@return		The equivalent ::NTV2Standard for the given ::NTV2FrameGeometry.
+	@param[in]	inGeometry		Specifies the ::NTV2FrameGeometry to be converted into a ::NTV2Standard.
+	@param[in]	inIsProgressive	Specifies if the resulting Standard should have a progressive transport or not.
+								Defaults to true.
+**/
+AJAExport NTV2Standard			GetStandardFromGeometry (const NTV2FrameGeometry inGeometry, const bool inIsProgressive = true);
 
 AJAExport ULWord				GetDisplayWidth (NTV2VideoFormat videoFormat);
 AJAExport ULWord				GetDisplayHeight (NTV2VideoFormat videoFormat);
@@ -459,12 +516,18 @@ AJAExport NTV2_SHOULD_BE_DEPRECATED(std::string		NTV2CrosspointToString (const N
 AJAExport NTV2_SHOULD_BE_DEPRECATED(NTV2Channel		NTV2CrosspointToNTV2Channel (const NTV2Crosspoint inCrosspointChannel));
 AJAExport NTV2_SHOULD_BE_DEPRECATED(NTV2Crosspoint	NTV2ChannelToInputCrosspoint (const NTV2Channel inChannel));
 AJAExport NTV2_SHOULD_BE_DEPRECATED(NTV2Crosspoint	NTV2ChannelToOutputCrosspoint (const NTV2Channel inChannel));
+AJAExport NTV2_SHOULD_BE_DEPRECATED(NTV2InputSource	GetNTV2HDMIInputSourceForIndex (const ULWord inIndex0));
 
 AJAExport NTV2VideoFormat		GetTransportCompatibleFormat (const NTV2VideoFormat inFormat, const NTV2VideoFormat inTargetFormat);
 AJAExport bool					IsTransportCompatibleFormat (const NTV2VideoFormat inFormat1, const NTV2VideoFormat inFormat2);
 
-AJAExport NTV2InputSource		GetNTV2InputSourceForIndex (const ULWord inIndex0);				//	0-based index
-AJAExport NTV2InputSource		GetNTV2HDMIInputSourceForIndex (const ULWord inIndex0);
+/**
+	@return		The input source that corresponds to an index value, or ::NTV2_INPUTSOURCE_INVALID upon failure.
+	@param[in]	inIndex0	Specifies the unsigned, zero-based integer value to be converted into an equivalent ::NTV2InputSource.
+	@param[in]	inKinds		Optionally specifies the input source type (SDI, HDMI, Analog, etc.) of interest.
+							Defaults to ::NTV2_INPUTSOURCES_SDI.
+**/
+AJAExport NTV2InputSource		GetNTV2InputSourceForIndex (const ULWord inIndex0, const NTV2InputSourceKinds inKinds = NTV2_INPUTSOURCES_SDI);
 AJAExport ULWord				GetIndexForNTV2InputSource (const NTV2InputSource inValue);		//	0-based index
 
 /**
@@ -648,6 +711,7 @@ AJAExport bool IsYCbCrFormat(NTV2FrameBufferFormat format);
 AJAExport bool IsAlphaChannelFormat(NTV2FrameBufferFormat format);
 AJAExport bool Is2KFormat(NTV2VideoFormat format);
 AJAExport bool Is4KFormat(NTV2VideoFormat format);
+AJAExport bool Is8KFormat(NTV2VideoFormat format);
 AJAExport bool IsRaw(NTV2FrameBufferFormat format);
 AJAExport bool Is8BitFrameBufferFormat(NTV2FrameBufferFormat fbFormat);
 AJAExport bool IsVideoFormatA(NTV2VideoFormat format);
@@ -945,7 +1009,7 @@ AJAExport std::string NTV2AudioBufferSizeToString		(const NTV2AudioBufferSize		i
 AJAExport std::string NTV2AudioLoopBackToString			(const NTV2AudioLoopBack		inValue,	const bool inForRetailDisplay = false);
 AJAExport std::string NTV2AudioMonitorSelectToString	(const NTV2AudioMonitorSelect	inValue,	const bool inForRetailDisplay = false);
 AJAExport std::string NTV2EmbeddedAudioClockToString	(const NTV2EmbeddedAudioClock	inValue,	const bool inForRetailDisplay = false);
-AJAExport std::string NTV2GetBitfileName				(const NTV2DeviceID				inValue);
+AJAExport std::string NTV2GetBitfileName				(const NTV2DeviceID				inValue,	const bool useOemNameOnWindows = false);
 AJAExport bool        NTV2IsCompatibleBitfileName		(const std::string & inBitfileName, const NTV2DeviceID inDeviceID);
 AJAExport NTV2DeviceID NTV2GetDeviceIDFromBitfileName	(const std::string & inBitfileName);
 AJAExport std::string NTV2GetFirmwareFolderPath			(void);
@@ -966,6 +1030,11 @@ AJAExport std::string NTV2AudioChannelOctetToString		(const NTV2Audio8ChannelSel
 AJAExport std::string NTV2FramesizeToString				(const NTV2Framesize			inValue,	const bool inCompactDisplay = false);
 AJAExport std::string NTV2ModeToString					(const NTV2Mode					inValue,	const bool inCompactDisplay = false);
 AJAExport std::string NTV2VANCModeToString				(const NTV2VANCMode				inValue,	const bool inCompactDisplay = false);
+AJAExport std::string NTV2MixerKeyerModeToString		(const NTV2MixerKeyerMode		inValue,	const bool inCompactDisplay = false);
+AJAExport std::string NTV2MixerInputControlToString		(const NTV2MixerKeyerInputControl inValue,	const bool inCompactDisplay = false);
+AJAExport std::string NTV2VideoLimitingToString			(const NTV2VideoLimiting		inValue,	const bool inCompactDisplay = false);
+AJAExport std::string NTV2BreakoutTypeToString			(const NTV2BreakoutType			inValue,	const bool inCompactDisplay = false);
+AJAExport std::string NTV2AncDataRgnToStr				(const NTV2AncDataRgn			inValue,	const bool inCompactDisplay = false);
 AJAExport bool	convertHDRFloatToRegisterValues			(const HDRFloatValues & inFloatValues,		HDRRegValues & outRegisterValues);
 AJAExport bool	convertHDRRegisterToFloatValues			(const HDRRegValues & inRegisterValues,		HDRFloatValues & outFloatValues);
 AJAExport void  setHDRDefaultsForBT2020                 (HDRRegValues & outRegisterValues);
@@ -981,6 +1050,7 @@ typedef NTV2StringSet::const_iterator	NTV2StringSetConstIter;
 AJAExport std::string NTV2EmbeddedAudioInputToString	(const NTV2EmbeddedAudioInput	inValue,	const bool inCompactDisplay = false);
 AJAExport std::string NTV2AudioSourceToString			(const NTV2AudioSource			inValue,	const bool inCompactDisplay = false);
 
+AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2StringList & inData);
 AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2StringSet & inData);
 
 

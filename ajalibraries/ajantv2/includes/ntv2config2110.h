@@ -168,7 +168,8 @@ typedef struct
 	SFPData2110             sfp[2];
 	bool					multiSDP;
 	bool					audioCombine;
-	uint8_t					unused[14];
+	uint32_t                rxMatchOverride;
+	uint8_t					unused[10];
 } NetworkData2110;
 
 typedef struct
@@ -219,6 +220,10 @@ inline NTV2Stream ChToAudioStream(int ch)
 inline int AudioStreamToCh(NTV2Stream s)
 	{ return (int)(s >= NTV2_AUDIO1_STREAM ? s-NTV2_AUDIO1_STREAM : 0); }
 
+inline NTV2Stream ChToAncStream(int ch)
+	{ return (NTV2Stream)(NTV2_ANC1_STREAM+ch); }
+inline int AncStreamToCh(NTV2Stream s)
+	{ return (int)(s >= NTV2_ANC1_STREAM ? s-NTV2_ANC1_STREAM : 0); }
 
 /**
     @brief	Configures a SMPTE 2110 Transmit Channel.
@@ -332,11 +337,12 @@ public:
     bool        GetIPServicesControl(bool & enable, bool & forceReconfig);
 
 	std::string GetSDPUrl(const eSFP sfp, const NTV2Stream stream);
-	std::string GetGeneratedSDP(const eSFP sfp, const NTV2Stream stream);
+	std::string GetGeneratedSDP(bool enabledSfp1, bool enabledSfp2, const NTV2Stream stream);
 	bool        GetActualSDP(std::string url, std::string & sdp);
 	bool		ExtractRxVideoConfigFromSDP(std::string sdp, rx_2110Config & rxConfig);
 	bool		ExtractRxVideoConfigFromSDP(std::string sdp, multiRx_2110Config & rxConfig);
 	bool		ExtractRxAudioConfigFromSDP(std::string sdp, rx_2110Config & rxConfig);
+	bool		ExtractRxAncConfigFromSDP(std::string sdp, rx_2110Config & rxConfig);
 
     /**
         @brief		Disables the automatic (default) joining of multicast groups using IGMP, based on remote IP address for Rx Channels
@@ -360,7 +366,7 @@ public:
     bool        GetSFPMSAData(eSFP port, SFPMSAData & data);
     bool        GetLinkStatus(eSFP port, SFPStatus & sfpStatus);
 
-	bool        GenSDP(const eSFP sfp, const NTV2Stream stream, bool pushit=true);
+	bool        GenSDP(bool enableSfp1, bool enableSfp2, const NTV2Stream stream, bool pushit=true);
 
 	static uint32_t  Get2110TxStreamIndex(NTV2Stream stream );
     static uint32_t  GetDecapsulatorAddress(eSFP sfp, NTV2Stream stream);
@@ -396,16 +402,23 @@ protected:
     void        SetupDepacketizerStream(const NTV2Stream stream, const rx_2110Config & rxConfig);
     void        ResetDepacketizerStream(const NTV2Stream stream);
     uint32_t    GetDepacketizerAddress(const NTV2Stream stream);
-    bool        SetTxPacketizerChannel(const NTV2Stream stream, uint32_t  & baseAddr);
+	uint32_t	GetPacketizerAddress(const NTV2Stream stream);
 
     void        SetVideoFormatForRxTx(const NTV2Stream stream, const NTV2VideoFormat format, const bool rx);
     void        GetVideoFormatForRxTx(const NTV2Stream stream, NTV2VideoFormat & format, uint32_t & hwFormat, const bool rx);
 
     bool		ConfigurePTP(const eSFP sfp, const std::string localIPAddress);
 
+	bool		GenVideoStreamSDP(std::stringstream &sdp, const bool enableSfp1,
+					const bool enableSfp2, const NTV2Stream stream, char *gmInfo);
 	bool        GenVideoStreamSDPInfo(std::stringstream & sdp, const eSFP sfp, const NTV2Stream stream, char* gmInfo);
 	bool		GenVideoStreamMultiSDPInfo(std::stringstream & sdp, char* gmInfo);
+	bool		GenAudioStreamSDP(std::stringstream &sdp, const bool enableSfp1,
+					const bool enableSfp2, const NTV2Stream stream, char *gmInfo);
 	bool        GenAudioStreamSDPInfo(std::stringstream & sdp, const eSFP sfp, const NTV2Stream stream, char* gmInfo);
+	bool		GenAncStreamSDP(std::stringstream &sdp, const bool enableSfp1,
+					const bool enableSfp2, const NTV2Stream stream, char *gmInfo);
+	bool        GenAncStreamSDPInfo(std::stringstream & sdp, const eSFP sfp, const NTV2Stream stream, char* gmInfo);
 
     NTV2StreamType  StreamType(const NTV2Stream stream);
     NTV2Channel VideoStreamToChannel(const NTV2Stream stream);

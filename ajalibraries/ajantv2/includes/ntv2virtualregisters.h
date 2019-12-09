@@ -34,22 +34,23 @@ typedef enum
 	kVRegStrictTiming						= VIRTUALREG_START+5,		// Drift Correction requires Strict Frame Timing for Windows Media playback;Required for BackHaul;Correlate Presentation Time Stamp with Graph Clock;Turn off (default) to allow Playback even when Graph Manager gives us a Bogus Clcok!
 
 	// COMMON_VIRTUAL_REGS_KONA2
-	kVRegInputSelect						= VIRTUALREG_START+20,		/* Input 1, Input 2, DualLink	*/
-	kVRegSecondaryFormatSelect				= VIRTUALREG_START+21,		/* NTV2VideoFormats				*/
-	kVRegDigitalOutput1Select				= VIRTUALREG_START+22,		/* Primary, Secondary			*/
-	kVRegDigitalOutput2Select				= VIRTUALREG_START+23,		/* Primary, Secondary, DualLink */
-	kVRegAnalogOutputSelect					= VIRTUALREG_START+24,		/* Primary, Secondary			*/
-	kVRegAnalogOutputType					= VIRTUALREG_START+25,		/* Analog output type			*/
-	kVRegAnalogOutBlackLevel				= VIRTUALREG_START+26,		/* Analog output black level	*/
+	kVRegInputSelect						= VIRTUALREG_START+20,		// Input 1, Input 2, DualLink
+	kVRegSecondaryFormatSelect				= VIRTUALREG_START+21,		// NTV2VideoFormats	
+	kVRegDigitalOutput1Select				= VIRTUALREG_START+22,		// Primary, Secondary	
+	kVRegDigitalOutput2Select				= VIRTUALREG_START+23,		// Primary, Secondary, DualLink
+	kVRegAnalogOutputSelect					= VIRTUALREG_START+24,		// Primary, Secondary
+	kVRegAnalogOutputType					= VIRTUALREG_START+25,		// Analog output type
+	kVRegAnalogOutBlackLevel				= VIRTUALREG_START+26,		// Analog output black level
 
 	// COMMON_VIRTUAL_REGS_MISC
-	kVRegVideoOutPauseMode					= VIRTUALREG_START+40,		/* whether we pause on a frame or a field */
-	kVRegPulldownPattern					= VIRTUALREG_START+41,		/* which 3:2 pulldown pattern to use */
-	kVRegColorSpaceMode						= VIRTUALREG_START+42,		/* which color space matrix (Rec601, Rec709, ...) to use */
-	kVRegGammaMode							= VIRTUALREG_START+43,		/* which gamma LUT (Rec601, Rec709, ...) to use */
-	kVRegLUTType							= VIRTUALREG_START+44,		/* the current LUT function loaded into hardware */
-	kVRegRGB10Range							= VIRTUALREG_START+45,		/* the user-selected 10-bit RGB range (SMPTE 64-940 or Full 0-1023) */
-	kVRegRGB10Endian						= VIRTUALREG_START+46,		/* the user selected 10-bit RGB endian */
+	kVRegVideoOutPauseMode					= VIRTUALREG_START+40,		// whether we pause on a frame or a field
+	kVRegPulldownPattern					= VIRTUALREG_START+41,		// which 3:2 pulldown pattern to use
+	kVRegColorSpaceMode						= VIRTUALREG_START+42,		// which color space matrix (Rec601, Rec709, ...) to use
+	kVRegGammaMode							= VIRTUALREG_START+43,		// which gamma LUT (Rec601, Rec709, ...) to use
+	kVRegLUTType							= VIRTUALREG_START+44,		// the current LUT function loaded into hardware
+	kVRegRGB10Range							= VIRTUALREG_START+45,		// deprecated
+	kVRegRGB10Endian						= VIRTUALREG_START+46,		// the user selected 10-bit RGB endian
+	kVRegFanControl							= VIRTUALREG_START+47,		// the user fan control setting
 
 	// Windows platform custom section
 	kVRegBitFileDownload					= VIRTUALREG_START+50,		// NTV2BitfileType
@@ -100,6 +101,8 @@ typedef enum
 	kVRegTimeCodeIn8Delay					= VIRTUALREG_START+98,
 
 	kVRegDebug1								= VIRTUALREG_START+100,		// general debug register
+	kVRegDebugLastFormat					= VIRTUALREG_START+101,		// IP debug registers
+	kVRegDebugIPConfigTimeMS				= VIRTUALREG_START+102,
 
 	// Control Panel virtual registers
 	kVRegDisplayReferenceSelect				= VIRTUALREG_START+120,
@@ -111,67 +114,67 @@ typedef enum
 	kVRegDSKAudioMode						= VIRTUALREG_START+125,
 	kVRegDSKForegroundMode					= VIRTUALREG_START+126,
 	kVRegDSKForegroundFade					= VIRTUALREG_START+127,
-	kVRegCaptureReferenceSelect				= VIRTUALREG_START+128,
+	kVRegCaptureReferenceSelect				= VIRTUALREG_START+128,		// deprecated
 
-	kVReg2XTransferMode						= VIRTUALREG_START+130,
+	kVReg2XTransferMode						= VIRTUALREG_START+130, 	// deprecated
 	kVRegSDIOutput1RGBRange					= VIRTUALREG_START+131,
 	kVRegSDIInput1FormatSelect				= VIRTUALREG_START+132,
 	kVRegSDIInput2FormatSelect				= VIRTUALREG_START+133,
 	kVRegSDIInput1RGBRange					= VIRTUALREG_START+134,
 	kVRegSDIInput2RGBRange					= VIRTUALREG_START+135,
-	kVRegSDIInput1Stereo3DMode				= VIRTUALREG_START+136,
-	kVRegSDIInput2Stereo3DMode				= VIRTUALREG_START+137,
+	kVRegSDIInput1Stereo3DMode				= VIRTUALREG_START+136,		// deprecated
+	kVRegSDIInput2Stereo3DMode				= VIRTUALREG_START+137,		// deprecated
 	kVRegFrameBuffer1RGBRange				= VIRTUALREG_START+138,
-	kVRegFrameBuffer1Stereo3DMode			= VIRTUALREG_START+139,
+	kVRegFrameBuffer1Stereo3DMode			= VIRTUALREG_START+139,		// deprecated
 
 	kVRegHDMIInRgbRange						= VIRTUALREG_START+140,
-	kVRegHDMIOutRgbRange					= VIRTUALREG_START+141,
+	kVRegHDMIOutRgbRange					= VIRTUALREG_START+141,		//	See also kVRegHDMIOutRGBRange
 	kVRegAnalogInBlackLevel					= VIRTUALREG_START+142,
 	kVRegAnalogInputType					= VIRTUALREG_START+143,
 	kVRegHDMIOutColorSpaceModeCtrl			= VIRTUALREG_START+144,
 	kVRegHDMIOutProtocolMode				= VIRTUALREG_START+145,
-	kVRegHDMIOutStereoSelect				= VIRTUALREG_START+146,
-	kVRegHDMIOutStereoCodecSelect			= VIRTUALREG_START+147,
-	kVRegReversePulldownOffset				= VIRTUALREG_START+148,
+	kVRegHDMIOutStereoSelect				= VIRTUALREG_START+146,		// deprecated
+	kVRegHDMIOutStereoCodecSelect			= VIRTUALREG_START+147,		// deprecated
+	kVRegReversePulldownOffset				= VIRTUALREG_START+148,		// deprecated
 	kVRegSDIInput1ColorSpaceMode			= VIRTUALREG_START+149,
 
 	kVRegSDIInput2ColorSpaceMode			= VIRTUALREG_START+150,
 	kVRegSDIOutput2RGBRange					= VIRTUALREG_START+151,
-	kVRegSDIOutput1Stereo3DMode				= VIRTUALREG_START+152,
-	kVRegSDIOutput2Stereo3DMode				= VIRTUALREG_START+153,
+	kVRegSDIOutput1Stereo3DMode				= VIRTUALREG_START+152,		// deprecated
+	kVRegSDIOutput2Stereo3DMode				= VIRTUALREG_START+153,		// deprecated
 	kVRegFrameBuffer2RGBRange				= VIRTUALREG_START+154,
-	kVRegFrameBuffer2Stereo3DMode			= VIRTUALREG_START+155,
+	kVRegFrameBuffer2Stereo3DMode			= VIRTUALREG_START+155,		// deprecated
 	kVRegAudioGainDisable					= VIRTUALREG_START+156,
-	kVRegDBLAudioEnable						= VIRTUALREG_START+157,
-	kVRegActiveVideoOutFilter				= VIRTUALREG_START+158,
+	kVRegDBLAudioEnable						= VIRTUALREG_START+157,		// deprecated
+	kVRegActiveVideoOutFilter				= VIRTUALREG_START+158,		// deprecated
 	kVRegAudioInputMapSelect				= VIRTUALREG_START+159,
 
 	kVRegAudioInputDelay					= VIRTUALREG_START+160,
 	kVRegDSKGraphicFileIndex				= VIRTUALREG_START+161,
-	kVRegTimecodeBurnInMode					= VIRTUALREG_START+162,
-	kVRegUseQTTimecode						= VIRTUALREG_START+163,
+	kVRegTimecodeBurnInMode					= VIRTUALREG_START+162,		// deprecated
+	kVRegUseQTTimecode						= VIRTUALREG_START+163,		// deprecated
 	kVRegAvailable164						= VIRTUALREG_START+164,
 	kVRegRP188SourceSelect					= VIRTUALREG_START+165,
-	kVRegQTCodecModeDebug					= VIRTUALREG_START+166,
+	kVRegQTCodecModeDebug					= VIRTUALREG_START+166,		// deprecated
 	kVRegHDMIOutColorSpaceModeStatus		= VIRTUALREG_START+167,		// deprecated
 	kVRegDeviceOnline						= VIRTUALREG_START+168,
 	kVRegIsDefaultDevice					= VIRTUALREG_START+169,
 
-	kVRegDesktopFrameBufferStatus			= VIRTUALREG_START+170,
+	kVRegDesktopFrameBufferStatus			= VIRTUALREG_START+170,		// deprecated
 	kVRegSDIOutput1ColorSpaceMode			= VIRTUALREG_START+171,
 	kVRegSDIOutput2ColorSpaceMode			= VIRTUALREG_START+172,
 	kVRegAudioOutputDelay					= VIRTUALREG_START+173,
-	kVRegTimelapseEnable					= VIRTUALREG_START+174,
-	kVRegTimelapseCaptureValue				= VIRTUALREG_START+175,
-	kVRegTimelapseCaptureUnits				= VIRTUALREG_START+176,
-	kVRegTimelapseIntervalValue				= VIRTUALREG_START+177,
-	kVRegTimelapseIntervalUnits				= VIRTUALREG_START+178,
-	kVRegFrameBufferInstalled				= VIRTUALREG_START+179,
+	kVRegTimelapseEnable					= VIRTUALREG_START+174,		// deprecated
+	kVRegTimelapseCaptureValue				= VIRTUALREG_START+175,		// deprecated
+	kVRegTimelapseCaptureUnits				= VIRTUALREG_START+176,		// deprecated
+	kVRegTimelapseIntervalValue				= VIRTUALREG_START+177,		// deprecated
+	kVRegTimelapseIntervalUnits				= VIRTUALREG_START+178,		// deprecated
+	kVRegFrameBufferInstalled				= VIRTUALREG_START+179,		// deprecated
 
-	kVRegAnalogInStandard					= VIRTUALREG_START+180,
+	kVRegAnalogInStandard					= VIRTUALREG_START+180,		// deprecated
 	kVRegOutputTimecodeOffset				= VIRTUALREG_START+181,		// deprecated
 	kVRegOutputTimecodeType					= VIRTUALREG_START+182,		// deprecated
-	kVRegQuicktimeUsingBoard				= VIRTUALREG_START+183,		// Not used in Mac
+	kVRegQuicktimeUsingBoard				= VIRTUALREG_START+183,		// deprecated
 	kVRegApplicationPID						= VIRTUALREG_START+184,		// The rest of this section handled by IOCTL in Mac
 	kVRegApplicationCode					= VIRTUALREG_START+185,
 	kVRegReleaseApplication					= VIRTUALREG_START+186,
@@ -180,6 +183,7 @@ typedef enum
 	kVRegIpConfigStreamRefresh				= VIRTUALREG_START+189,
 	kVRegSDIInput1Raster					= VIRTUALREG_START+190,
 	kVRegInputChangedCount					= VIRTUALREG_START+191,
+	kVReg8kOutputTransportSelection			= VIRTUALREG_START+192,
 
 	// COMMON_VIRTUAL_REGS_PROCAMP_CONTROLS
 	kVRegProcAmpSDRegsInitialized			= VIRTUALREG_START+200,
@@ -231,7 +235,7 @@ typedef enum
 	kVRegMacUserModePingLevel				= VIRTUALREG_START+302,
 	kVRegMacKernelModePingLevel				= VIRTUALREG_START+303,
 	kVRegLatencyTimerValue					= VIRTUALREG_START+304,
-	kVRegAudioAVSyncEnable					= VIRTUALREG_START+305,
+
 	kVRegAudioInputSelect					= VIRTUALREG_START+306,
 	kVRegSerialSuspended					= VIRTUALREG_START+307,
 	kVRegXilinxProgramming					= VIRTUALREG_START+308,
@@ -315,13 +319,14 @@ typedef enum
                                                                         //	kVRegChannelCrosspointFirst+6
 	kVRegChannelCrosspointLast				= VIRTUALREG_START+387,		//	kVRegChannelCrosspointFirst+7
 
-//	kVRegDriverVersionMajor					= VIRTUALREG_START+388,		///< @deprecated	Obsolete starting in SDK 13.0, replaced by kVRegDriverVersion
-//	kVRegDriverVersionMinor					= VIRTUALREG_START+389,		///< @deprecated	Obsolete starting in SDK 13.0, replaced by kVRegDriverVersion
-//	kVRegDriverVersionPoint					= VIRTUALREG_START+390,		///< @deprecated	Obsolete starting in SDK 13.0, replaced by kVRegDriverVersion
+	//	Starting in SDK 13.0, kVRegDriverVersionMajor, kVRegDriverVersionMinor and kVRegDriverVersionPoint
+	//	were all replaced by a single virtual register kVRegDriverVersion.
+	kVRegMonAncField1Offset					= VIRTUALREG_START+389,		///< @brief	Monitor Anc Field1 byte offset from end of frame buffer (IoIP only, GUMP)
+	kVRegMonAncField2Offset					= VIRTUALREG_START+390,		///< @brief	Monitor Anc Field2 byte offset from end of frame buffer (IoIP only, GUMP)
 	kVRegFollowInputFormat					= VIRTUALREG_START+391,
 
-	kVRegAncField1Offset					= VIRTUALREG_START+392,		///< @brief	How many bytes to subtract from the end of a frame buffer for field 1 ANC
-	kVRegAncField2Offset					= VIRTUALREG_START+393,		///< @brief	How many bytes to subtract from the end of a frame buffer for field 2 ANC
+	kVRegAncField1Offset					= VIRTUALREG_START+392,		///< @brief	Anc Field1 byte offset from end of frame buffer (GUMP on all boards except RTP for SMPTE2022/IP)
+	kVRegAncField2Offset					= VIRTUALREG_START+393,		///< @brief	Anc Field2 byte offset from end of frame buffer (GUMP on all boards except RTP for SMPTE2022/IP)
 	kVRegAgentCheck							= VIRTUALREG_START+394,
 	kVRegUnused_2							= VIRTUALREG_START+395,
 	
@@ -450,7 +455,7 @@ typedef enum
     kVRegUserDefinedDBB						= VIRTUALREG_START+502,
     
     kVRegHDMIOutAudioChannels				= VIRTUALREG_START+503,
-    kVRegHDMIOutRGBRange					= VIRTUALREG_START+504,
+	kVRegUnused504							= VIRTUALREG_START+504,
     kVRegZeroHostAncPostCapture				= VIRTUALREG_START+505,
     kVRegZeroDeviceAncPostCapture			= VIRTUALREG_START+506,
     kVRegAudioMonitorChannelSelect          = VIRTUALREG_START+507,
@@ -479,9 +484,65 @@ typedef enum
 	kVRegHdmiHdrOutMode						= VIRTUALREG_START+527,
 
     kVRegServicesForceInit                  = VIRTUALREG_START+528,		// set true when power state changes
-    kVRegServicesModeFinal               	= VIRTUALREG_START+529,	
+    kVRegServicesModeFinal               	= VIRTUALREG_START+529,
+	
+	kVRegNTV2VPIDTransferCharacteristics	= VIRTUALREG_START+530,
+	kVRegNTV2VPIDColorimetry				= VIRTUALREG_START+531,
+	kVRegNTV2VPIDLuminance					= VIRTUALREG_START+532,
+	
+	kVRegNTV2VPIDTransferCharacteristics2	= VIRTUALREG_START+533,
+	kVRegNTV2VPIDColorimetry2				= VIRTUALREG_START+534,
+	kVRegNTV2VPIDLuminance2					= VIRTUALREG_START+535,
+	
+	kVRegNTV2VPIDTransferCharacteristics3	= VIRTUALREG_START+536,
+	kVRegNTV2VPIDColorimetry3				= VIRTUALREG_START+537,
+	kVRegNTV2VPIDLuminance3					= VIRTUALREG_START+538,
+	
+	kVRegNTV2VPIDTransferCharacteristics4	= VIRTUALREG_START+539,
+	kVRegNTV2VPIDColorimetry4				= VIRTUALREG_START+540,
+	kVRegNTV2VPIDLuminance4					= VIRTUALREG_START+541,
+	
+	kVRegNTV2VPIDTransferCharacteristics5	= VIRTUALREG_START+542,
+	kVRegNTV2VPIDColorimetry5				= VIRTUALREG_START+543,
+	kVRegNTV2VPIDLuminance5					= VIRTUALREG_START+544,
+	
+	kVRegNTV2VPIDTransferCharacteristics6	= VIRTUALREG_START+545,
+	kVRegNTV2VPIDColorimetry6				= VIRTUALREG_START+546,
+	kVRegNTV2VPIDLuminance6					= VIRTUALREG_START+547,
+	
+	kVRegNTV2VPIDTransferCharacteristics7	= VIRTUALREG_START+548,
+	kVRegNTV2VPIDColorimetry7				= VIRTUALREG_START+549,
+	kVRegNTV2VPIDLuminance7					= VIRTUALREG_START+550,
+	
+	kVRegNTV2VPIDTransferCharacteristics8	= VIRTUALREG_START+551,
+	kVRegNTV2VPIDColorimetry8				= VIRTUALREG_START+552,
+	kVRegNTV2VPIDLuminance8					= VIRTUALREG_START+553,
+	
+	kVRegUserColorimetry					= VIRTUALREG_START+554,
+	kVRegUserTransfer						= VIRTUALREG_START+555,
+	kVRegUserLuminance						= VIRTUALREG_START+556,
+	
+	kVRegHdrColorimetryCh1					= VIRTUALREG_START+557,
+	kVRegHdrTransferCh1						= VIRTUALREG_START+558,
+	kVRegHdrLuminanceCh1					= VIRTUALREG_START+559,
+	kVRegHdrGreenXCh1						= VIRTUALREG_START+560,
+	kVRegHdrGreenYCh1						= VIRTUALREG_START+561,
+	kVRegHdrBlueXCh1						= VIRTUALREG_START+562,
+	kVRegHdrBlueYCh1						= VIRTUALREG_START+563,
+	kVRegHdrRedXCh1							= VIRTUALREG_START+564,
+	kVRegHdrRedYCh1							= VIRTUALREG_START+565,
+	kVRegHdrWhiteXCh1						= VIRTUALREG_START+566,
+	kVRegHdrWhiteYCh1						= VIRTUALREG_START+567,
+	kVRegHdrMasterLumMaxCh1					= VIRTUALREG_START+568,
+	kVRegHdrMasterLumMinCh1					= VIRTUALREG_START+569,
+	kVRegHdrMaxCLLCh1						= VIRTUALREG_START+570,
+	kVRegHdrMaxFALLCh1						= VIRTUALREG_START+571,
+	
+	kVRegHDROverrideState					= VIRTUALREG_START+572,
 
-    kVRegLastAJA							= VIRTUALREG_START+530,		///< @brief	The last AJA virtual register slot
+	kVRegPCIMaxReadRequestSize				= VIRTUALREG_START+573,
+
+	kVRegLastAJA							= VIRTUALREG_START+574,		///< @brief	The last AJA virtual register slot
 	kVRegFirstOEM							= kVRegLastAJA + 1,			///< @brief	The first virtual register slot available for general use
 	kVRegLast								= VIRTUALREG_START + MAX_NUM_VIRTUAL_REGISTERS - 1	///< @brief	Last virtual register slot
 
@@ -491,7 +552,9 @@ typedef enum
 #if !defined(NTV2_DEPRECATE_15_0)
 	#define	kVRegLinuxDriverVersion				VIRTUALREG_START		///< @deprecated	Obsolete in SDK 15.0, use kVRegDriverVersion instead
 #endif
-
+#if !defined(NTV2_DEPRECATE_15_2)
+	#define	kVRegHDMIOutRGBRange				(VIRTUALREG_START+504)	///< @deprecated	Appears to be unused, but easily confused with kVRegHDMIOutRgbRange
+#endif
 #if !defined (NTV2_DEPRECATE_12_7)
 	//	The old virtual register names will be deprecated sometime after SDK 13.0.0
 	#define	kRegLinuxDriverVersion				kVRegLinuxDriverVersion
@@ -672,7 +735,6 @@ typedef enum
 	#define	kRegMacUserModePingLevel			kVRegMacUserModePingLevel
 	#define	kRegMacKernelModePingLevel			kVRegMacKernelModePingLevel
 	#define	kRegLatencyTimerValue				kVRegLatencyTimerValue
-	#define	kRegAudioAVSyncEnable				kVRegAudioAVSyncEnable
 	#define	kRegAudioInputSelect				kVRegAudioInputSelect
 	#define	kSerialSuspended					kVRegSerialSuspended
 	#define	kXilinxProgramming					kVRegXilinxProgramming

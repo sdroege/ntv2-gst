@@ -210,6 +210,21 @@ static bool SetAncInsFidLow (CNTV2Card & inDevice, const UWord inSDIOutput, uint
     return inDevice.WriteRegister(AncInsRegNum(inSDIOutput, regAncInsFieldIDLines), lineNumber, maskInsFieldIDLow, shiftInsFieldIDLow);
 }
 
+static bool SetAncInsRtpPayloadID (CNTV2Card & inDevice, const UWord inSDIOutput, uint32_t payloadID)
+{
+	return inDevice.WriteRegister(AncInsRegNum(inSDIOutput, regAncInsRtpPayloadID), payloadID);
+}
+
+static bool SetAncInsRtpSSRC (CNTV2Card & inDevice, const UWord inSDIOutput, uint32_t ssrc)
+{
+	return inDevice.WriteRegister(AncInsRegNum(inSDIOutput, regAncInsRtpSSRC), ssrc);
+}
+
+static bool SetAncInsIPChannel (CNTV2Card & inDevice, const UWord inSDIOutput, uint32_t channel)
+{
+	return inDevice.WriteRegister(AncInsRegNum(inSDIOutput, regAncInsIpChannel), channel);
+}
+
 static bool GetAncOffsets (CNTV2Card & inDevice, ULWord & outF1Offset, ULWord & outF2Offset)
 {
 	outF1Offset = outF2Offset = 0;
@@ -378,9 +393,21 @@ bool CNTV2Card::AncInsertSetField2ReadParams (const UWord inSDIOutput, const ULW
 	const ULWord	ANCStartMemory (frameLocation - F2Offset);
 	if (ok)	ok = SetAncInsField2StartAddr (*this, inChannel, ANCStartMemory);
 	if (ok)	ok = SetAncInsField2Bytes (*this, inChannel, inF2Size);
-    return true;
+	return ok;
 }
 
+bool CNTV2Card::AncInsertSetIPParams (const UWord inSDIOutput, const UWord ancChannel, const ULWord payloadID, const ULWord ssrc)
+{
+	bool ok(false);
+
+	if (::NTV2DeviceCanDoIP(_boardID))
+	{
+		ok = SetAncInsIPChannel (*this, inSDIOutput, ancChannel);
+		if (ok)	ok = SetAncInsRtpPayloadID (*this, inSDIOutput, payloadID);
+		if (ok)	ok = SetAncInsRtpSSRC (*this, inSDIOutput, ssrc);
+	}
+	return ok;
+}
 
 
 /////////////////////////////////////////////
@@ -638,7 +665,7 @@ bool CNTV2Card::AncExtractSetWriteParams (const UWord inSDIInput, const ULWord i
 	bool			ok					(true);
 	const ULWord	frameNumber			(inFrameNumber + 1);	//	This is so the next calculation will point to the beginning of the next frame - subtract offset for memory start
 	ULWord			endOfFrameLocation	(::NTV2FramesizeToByteCount(theFrameSize) * frameNumber);
-	ULWord			isQuadFormatEnabled	(0);
+	bool			isQuadFormatEnabled	(false);
 	if (ok)	ok = GetQuadFrameEnable (isQuadFormatEnabled, theChannel);
 	if (isQuadFormatEnabled)
 		endOfFrameLocation *= 4;
@@ -681,7 +708,7 @@ bool CNTV2Card::AncExtractSetField2WriteParams (const UWord inSDIInput, const UL
 	bool			ok					(true);
 	const ULWord	frameNumber			(inFrameNumber + 1);	//	This is so the next calculation will point to the beginning of the next frame - subtract offset for memory start
 	ULWord			endOfFrameLocation	(::NTV2FramesizeToByteCount(theFrameSize) * frameNumber);
-	ULWord			isQuadFormatEnabled	(0);
+	bool			isQuadFormatEnabled	(false);
 	if (ok)	ok = GetQuadFrameEnable (isQuadFormatEnabled, theChannel);
 	if (isQuadFormatEnabled)
 		endOfFrameLocation *= 4;
@@ -771,16 +798,21 @@ UWord CNTV2Card::AncExtractGetMaxNumFilterDIDs (void)
 }
 
 
-NTV2DIDSet CNTV2Card::AncExtractGetDefaultDIDs (void)
+NTV2DIDSet CNTV2Card::AncExtractGetDefaultDIDs (const bool inHDAudio)
 {
-	//												SMPTE299 HD Audio Grp 1-4	SMPTE299 HD Audio Ctrl Grp 1-4
-	static const NTV2DID	sDefaultDIDs[]	=	{	0xE7,0xE6,0xE5,0xE4,		0xE3,0xE2,0xE1,0xE0,
-	//												SMPTE299 HD Audio Grp 5-8	SMPTE299 HD Audio Ctrl Grp 5-8
-													0xA7,0xA6,0xA5,0xA4,		0xA3,0xA2,0xA1,0xA0,
-													0x00};
+	//													SMPTE299 HD Aud Grp 1-4		SMPTE299 HD Aud Ctrl Grp 1-4
+	static const NTV2DID	sDefaultHDDIDs[]	=	{	0xE7,0xE6,0xE5,0xE4,		0xE3,0xE2,0xE1,0xE0,
+	//													SMPTE299 HD Aud Grp 5-8		SMPTE299 HD Aud Ctrl Grp 5-8
+														0xA7,0xA6,0xA5,0xA4,		0xA3,0xA2,0xA1,0xA0,	0x00};
+
+	//													SMPTE272 SD Aud Grp 1-4		SMPTE272 SD Aud Ext Grp 1-4
+	static const NTV2DID	sDefaultSDDIDs[]	=	{	0xFF,0xFD,0xFB,0xF9,		0xFE,0xFC,0xFA,0xF8,
+	//													SMPTE272 SD Aud Ctrl Grp 1-4
+														0xEF,0xEE,0xED,0xEC,		0x00};
 	NTV2DIDSet	result;
-	for (unsigned ndx(0);  sDefaultDIDs[ndx];  ndx++)
-		result.insert(sDefaultDIDs[ndx]);
+	const NTV2DID *	pDIDArray (inHDAudio ? sDefaultHDDIDs : sDefaultSDDIDs);
+	for (unsigned ndx(0);  pDIDArray[ndx];  ndx++)
+		result.insert(pDIDArray[ndx]);
 
 	return result;
 }

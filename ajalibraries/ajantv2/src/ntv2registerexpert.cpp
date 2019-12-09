@@ -17,6 +17,7 @@
 #include <iterator>
 #include <iomanip>
 #include <map>
+#include "math.h"
 
 
 using namespace std;
@@ -43,10 +44,13 @@ static const string	gChlClasses[8]	=	{	kRegClass_Channel1,	kRegClass_Channel2,	k
 static const string sSpace(" ");
 static const string sNull;
 
+
 class RegisterExpert;
 typedef AJARefPtr<RegisterExpert>	RegisterExpertPtr;
 static uint32_t						gInstanceTally(0);
 static uint32_t						gLivingInstances(0);
+
+
 
 /**
 	I'm the the root source of register information. I provide answers to the public-facing CNTV2RegisterExpert class.
@@ -188,6 +192,7 @@ private:
 		AJAAutoLock	lock(&mGuardMutex);
 		DefineRegister (kRegGlobalControl,		"",	mDecodeGlobalControlReg,	READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister (kRegGlobalControl2,		"",	mDecodeGlobalControl2,		READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
+		DefineRegister (kRegGlobalControl3,		"",	mDecodeGlobalControl3,		READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister (kRegGlobalControlCh2,	"",	mDecodeGlobalControlChanRegs,READWRITE,	kRegClass_NULL,		kRegClass_Channel2,	kRegClass_NULL);
 		DefineRegister (kRegGlobalControlCh3,	"",	mDecodeGlobalControlChanRegs,READWRITE,	kRegClass_NULL,		kRegClass_Channel3,	kRegClass_NULL);
 		DefineRegister (kRegGlobalControlCh4,	"",	mDecodeGlobalControlChanRegs,READWRITE,	kRegClass_NULL,		kRegClass_Channel4,	kRegClass_NULL);
@@ -536,10 +541,12 @@ private:
 														"",						"",						"",
 														"Analog Act Line Len",	""};
 		static const string	AncInsRegNames []	=	{	"Field Bytes",			"Control",				"F1 Start Address",
-														"F2 Start Address",		"Pixel Delays",			"First Active Lines",
+														"F2 Start Address",		"Pixel Delay",			"Active Start",
 														"Pixels Per Line",		"Lines Per Frame",		"Field ID Lines",
 														"Payload ID Control",	"Payload ID",			"Chroma Blank Lines",
-														"F1 C Blanking Mask",	"F2 C Blanking Mask"	};
+														"F1 C Blanking Mask",	"F2 C Blanking Mask",	"Reserved 14",
+														"Reserved 15",			"RTP Payload ID",		"RTP SSRC",
+														"IP Channel"};
 		static const uint32_t	AncExtPerChlRegBase []	=	{	0x1000,	0x1040,	0x1080,	0x10C0,	0x1100,	0x1140,	0x1180,	0x11C0	};
 		static const uint32_t	AncInsPerChlRegBase []	=	{	0x1200,	0x1240,	0x1280,	0x12C0,	0x1300,	0x1340,	0x1380,	0x13C0	};
 		
@@ -597,9 +604,14 @@ private:
 			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsLinePixels,					"",	mDecodeAncInsValuePairReg,		READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
 			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsFrameLines,					"",	mDefaultRegDecoder,				READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
 			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsFieldIDLines,					"",	mDecodeAncInsValuePairReg,		READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
+			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsPayloadIDControl,				"",	mDefaultRegDecoder,				READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
+			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsPayloadID,						"",	mDefaultRegDecoder,				READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
 			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsBlankCStartLine,				"",	mDecodeAncInsValuePairReg,		READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
 			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsBlankField1CLines,				"",	mDecodeAncInsChromaBlankReg,	READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
 			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsBlankField2CLines,				"",	mDecodeAncInsChromaBlankReg,	READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
+			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsRtpPayloadID,					"",	mDefaultRegDecoder,				READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
+			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsRtpSSRC,						"",	mDefaultRegDecoder,				READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
+			DefineRegister (AncInsPerChlRegBase [ndx] + regAncInsIpChannel,						"",	mDefaultRegDecoder,				READWRITE,	kRegClass_Anc,	kRegClass_Output,	gChlClasses[ndx]);
 		}
 	}	//	SetupAncInsExt
 
@@ -839,14 +851,18 @@ private:
 		DefineRegister	(kRegVidProc3Control,	"",	mVidProcControlRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel5,	kRegClass_Channel6);
 		DefineRegister	(kRegVidProc4Control,	"",	mVidProcControlRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel7,	kRegClass_Channel8);
 		DefineRegister	(kRegSplitControl,		"",	mSplitControlRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_NULL);
-		DefineRegister	(kRegFlatMatteValue,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Color);
-		DefineRegister	(kRegFlatMatte2Value,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Color);
-		DefineRegister	(kRegFlatMatte3Value,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Color);
-		DefineRegister	(kRegFlatMatte4Value,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Color);
-		DefineRegister	(kRegMixer1Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_NULL);
-		DefineRegister	(kRegMixer2Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel2,	kRegClass_NULL);
-		DefineRegister	(kRegMixer3Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel3,	kRegClass_NULL);
-		DefineRegister	(kRegMixer4Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel4,	kRegClass_NULL);
+		DefineRegister	(kRegFlatMatteValue,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Channel2);
+		DefineRegister	(kRegFlatMatte2Value,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel3,	kRegClass_Channel4);
+		DefineRegister	(kRegFlatMatte3Value,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel5,	kRegClass_Channel6);
+		DefineRegister	(kRegFlatMatte4Value,	"",	mFlatMatteValueRegDecoder,	READWRITE,	kRegClass_Mixer,	kRegClass_Channel7,	kRegClass_Channel8);
+			DefineRegClass (kRegFlatMatteValue, kRegClass_Color);
+			DefineRegClass (kRegFlatMatte2Value, kRegClass_Color);
+			DefineRegClass (kRegFlatMatte3Value, kRegClass_Color);
+			DefineRegClass (kRegFlatMatte4Value, kRegClass_Color);
+		DefineRegister	(kRegMixer1Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel1,	kRegClass_Channel2);
+		DefineRegister	(kRegMixer2Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel3,	kRegClass_Channel4);
+		DefineRegister	(kRegMixer3Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel5,	kRegClass_Channel6);
+		DefineRegister	(kRegMixer4Coefficient,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Mixer,	kRegClass_Channel7,	kRegClass_Channel8);
 	}
 
 	void SetupVRegs(void)
@@ -872,6 +888,7 @@ private:
 		DefineRegName	(kVRegLUTType,							"kVRegLUTType");
 		DefineRegName	(kVRegRGB10Range,						"kVRegRGB10Range");
 		DefineRegName	(kVRegRGB10Endian,						"kVRegRGB10Endian");
+		DefineRegName	(kVRegFanControl,						"kVRegFanControl");
 		DefineRegName	(kVRegBitFileDownload,					"kVRegBitFileDownload");
 		DefineRegName	(kVRegSaveRegistersToRegistry,			"kVRegSaveRegistersToRegistry");
 		DefineRegName	(kVRegRecallRegistersFromRegistry,		"kVRegRecallRegistersFromRegistry");
@@ -917,6 +934,8 @@ private:
 		DefineRegName	(kVRegTimeCodeCh8Delay,					"kVRegTimeCodeCh8Delay");
 		DefineRegName	(kVRegTimeCodeIn8Delay,					"kVRegTimeCodeIn8Delay");
 		DefineRegName	(kVRegDebug1,							"kVRegDebug1");
+		DefineRegName	(kVRegDebugLastFormat,					"kVRegDebugLastFormat");
+		DefineRegName	(kVRegDebugIPConfigTimeMS,				"kVRegDebugIPConfigTimeMS");
 		DefineRegName	(kVRegDisplayReferenceSelect,			"kVRegDisplayReferenceSelect");
 		DefineRegName	(kVRegVANCMode,							"kVRegVANCMode");
 		DefineRegName	(kVRegDualStreamTransportType,			"kVRegDualStreamTransportType");
@@ -936,6 +955,8 @@ private:
 		DefineRegName	(kVRegSDIInput2Stereo3DMode,			"kVRegSDIInput2Stereo3DMode");
 		DefineRegName	(kVRegFrameBuffer1RGBRange,				"kVRegFrameBuffer1RGBRange");
 		DefineRegName	(kVRegFrameBuffer1Stereo3DMode,			"kVRegFrameBuffer1Stereo3DMode");
+		DefineRegName	(kVRegHDMIInRgbRange,					"kVRegHDMIInRgbRange");
+		DefineRegName	(kVRegHDMIOutRgbRange,					"kVRegHDMIOutRgbRange");
 		DefineRegName	(kVRegAnalogInBlackLevel,				"kVRegAnalogInBlackLevel");
 		DefineRegName	(kVRegAnalogInputType,					"kVRegAnalogInputType");
 		DefineRegName	(kVRegHDMIOutColorSpaceModeCtrl,		"kVRegHDMIOutColorSpaceModeCtrl");
@@ -985,6 +1006,8 @@ private:
 		DefineRegName	(kVRegForceApplicationCode,				"kVRegForceApplicationCode");
 		DefineRegName	(kVRegIpConfigStreamRefresh,			"kVRegIpConfigStreamRefresh");
 		DefineRegName	(kVRegSDIInput1Raster,					"kVRegSDIInput1Raster");
+		DefineRegName	(kVRegInputChangedCount,				"kVRegInputChangedCount");
+		DefineRegName	(kVReg8kOutputTransportSelection,		"kVReg8kOutputTransportSelection");
 		DefineRegName	(kVRegProcAmpSDRegsInitialized,			"kVRegProcAmpSDRegsInitialized");
 		DefineRegName	(kVRegProcAmpStandardDefBrightness,		"kVRegProcAmpStandardDefBrightness");
 		DefineRegName	(kVRegProcAmpStandardDefContrast,		"kVRegProcAmpStandardDefContrast");
@@ -1027,7 +1050,6 @@ private:
 		DefineRegName	(kVRegMacUserModePingLevel,				"kVRegMacUserModePingLevel");
 		DefineRegName	(kVRegMacKernelModePingLevel,			"kVRegMacKernelModePingLevel");
 		DefineRegName	(kVRegLatencyTimerValue,				"kVRegLatencyTimerValue");
-		DefineRegName	(kVRegAudioAVSyncEnable,				"kVRegAudioAVSyncEnable");
 		DefineRegName	(kVRegAudioInputSelect,					"kVRegAudioInputSelect");
 		DefineRegName	(kVRegSerialSuspended,					"kVRegSerialSuspended");
 		DefineRegName	(kVRegXilinxProgramming,				"kVRegXilinxProgramming");
@@ -1086,6 +1108,8 @@ private:
 		DefineRegName	(kVRegFrameBufferGangCount,				"kVRegFrameBufferGangCount");
 		DefineRegName	(kVRegChannelCrosspointFirst,			"kVRegChannelCrosspointFirst");
 		DefineRegName	(kVRegChannelCrosspointLast,			"kVRegChannelCrosspointLast");
+		DefineRegName	(kVRegMonAncField1Offset,				"kVRegMonAncField1Offset");
+		DefineRegName	(kVRegMonAncField2Offset,				"kVRegMonAncField2Offset");
 		DefineRegName	(kVRegFollowInputFormat,				"kVRegFollowInputFormat");
 		DefineRegName	(kVRegAncField1Offset,					"kVRegAncField1Offset");
 		DefineRegName	(kVRegAncField2Offset,					"kVRegAncField2Offset");
@@ -1197,10 +1221,8 @@ private:
 		DefineRegName	(kVRegKIPNetCfgError,					"kVRegKIPNetCfgError");
 		DefineRegName	(kVRegUseHDMI420Mode,					"kVRegUseHDMI420Mode");
 		DefineRegName	(kVRegUnused501,						"kVRegUnused501");
-        DefineRegName   (kVReg2022_7NetworkPathDiff,            "kVReg2022_7NetworkPathDiff");
 		DefineRegName	(kVRegUserDefinedDBB,					"kVRegUserDefinedDBB");
 		DefineRegName	(kVRegHDMIOutAudioChannels,				"kVRegHDMIOutAudioChannels");
-		DefineRegName	(kVRegHDMIOutRGBRange,					"kVRegHDMIOutRGBRange");
 		DefineRegName	(kVRegZeroHostAncPostCapture,			"kVRegZeroHostAncPostCapture");
 		DefineRegName	(kVRegZeroDeviceAncPostCapture,			"kVRegZeroDeviceAncPostCapture");
 		DefineRegName	(kVRegAudioMonitorChannelSelect,		"kVRegAudioMonitorChannelSelect");
@@ -1220,6 +1242,56 @@ private:
 		DefineRegName	(kVRegSwizzle4kInput,					"kVRegSwizzle4kInput");
 		DefineRegName	(kVRegSwizzle4kOutput,					"kVRegSwizzle4kOutput");
 		DefineRegName	(kVRegAnalogAudioIOConfiguration,		"kVRegAnalogAudioIOConfiguration");
+		DefineRegName	(kVRegHdmiHdrOutChanged,				"kVRegHdmiHdrOutChanged");
+		DefineRegName	(kVRegDisableAutoVPID,					"kVRegDisableAutoVPID");
+		DefineRegName	(kVRegEnableBT2020,						"kVRegEnableBT2020");
+		DefineRegName	(kVRegHdmiHdrOutMode,					"kVRegHdmiHdrOutMode");
+		DefineRegName	(kVRegServicesForceInit,				"kVRegServicesForceInit");
+		DefineRegName	(kVRegServicesModeFinal,				"kVRegServicesModeFinal");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics,	"kVRegNTV2VPIDTransferCharacteristics");
+		DefineRegName	(kVRegNTV2VPIDColorimetry,				"kVRegNTV2VPIDColorimetry");
+		DefineRegName	(kVRegNTV2VPIDLuminance,				"kVRegNTV2VPIDLuminance");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics2,	"kVRegNTV2VPIDTransferCharacteristics2");
+		DefineRegName	(kVRegNTV2VPIDColorimetry2,				"kVRegNTV2VPIDColorimetry2");
+		DefineRegName	(kVRegNTV2VPIDLuminance2,				"kVRegNTV2VPIDLuminance2");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics3,	"kVRegNTV2VPIDTransferCharacteristics3");
+		DefineRegName	(kVRegNTV2VPIDColorimetry3,				"kVRegNTV2VPIDColorimetry3");
+		DefineRegName	(kVRegNTV2VPIDLuminance3,				"kVRegNTV2VPIDLuminance3");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics4,	"kVRegNTV2VPIDTransferCharacteristics4");
+		DefineRegName	(kVRegNTV2VPIDColorimetry4,				"kVRegNTV2VPIDColorimetry4");
+		DefineRegName	(kVRegNTV2VPIDLuminance4,				"kVRegNTV2VPIDLuminance4");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics5,	"kVRegNTV2VPIDTransferCharacteristics5");
+		DefineRegName	(kVRegNTV2VPIDColorimetry5,				"kVRegNTV2VPIDColorimetry5");
+		DefineRegName	(kVRegNTV2VPIDLuminance5,				"kVRegNTV2VPIDLuminance5");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics6,	"kVRegNTV2VPIDTransferCharacteristics6");
+		DefineRegName	(kVRegNTV2VPIDColorimetry6,				"kVRegNTV2VPIDColorimetry6");
+		DefineRegName	(kVRegNTV2VPIDLuminance6,				"kVRegNTV2VPIDLuminance6");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics7,	"kVRegNTV2VPIDTransferCharacteristics7");
+		DefineRegName	(kVRegNTV2VPIDColorimetry7,				"kVRegNTV2VPIDColorimetry7");
+		DefineRegName	(kVRegNTV2VPIDLuminance7,				"kVRegNTV2VPIDLuminance7");
+		DefineRegName	(kVRegNTV2VPIDTransferCharacteristics8,	"kVRegNTV2VPIDTransferCharacteristics8");
+		DefineRegName	(kVRegNTV2VPIDColorimetry8,				"kVRegNTV2VPIDColorimetry8");
+		DefineRegName	(kVRegNTV2VPIDLuminance8,				"kVRegNTV2VPIDLuminance8");
+		DefineRegName	(kVRegUserColorimetry,					"kVRegUserColorimetry");					
+		DefineRegName	(kVRegUserTransfer,						"kVRegUserTransfer");
+		DefineRegName	(kVRegUserLuminance,					"kVRegUserLuminance");
+		DefineRegName	(kVRegHdrColorimetryCh1,				"kVRegHdrColorimetryCh1");
+		DefineRegName	(kVRegHdrTransferCh1,					"kVRegHdrTransferCh1");
+		DefineRegName	(kVRegHdrLuminanceCh1,					"kVRegHdrLuminanceCh1");
+		DefineRegName	(kVRegHdrGreenXCh1,						"kVRegHdrGreenXCh1");
+		DefineRegName	(kVRegHdrGreenYCh1,						"kVRegHdrGreenYCh1");
+		DefineRegName	(kVRegHdrBlueXCh1,						"kVRegHdrBlueXCh1");
+		DefineRegName	(kVRegHdrBlueYCh1,						"kVRegHdrBlueYCh1");
+		DefineRegName	(kVRegHdrRedXCh1,						"kVRegHdrRedXCh1");
+		DefineRegName	(kVRegHdrRedYCh1,						"kVRegHdrRedYCh1");
+		DefineRegName	(kVRegHdrWhiteXCh1,						"kVRegHdrWhiteXCh1");
+		DefineRegName	(kVRegHdrWhiteYCh1,						"kVRegHdrWhiteYCh1");
+		DefineRegName	(kVRegHdrMasterLumMaxCh1,				"kVRegHdrMasterLumMaxCh1");
+		DefineRegName	(kVRegHdrMasterLumMinCh1,				"kVRegHdrMasterLumMinCh1");
+		DefineRegName	(kVRegHdrMaxCLLCh1,						"kVRegHdrMaxCLLCh1");
+		DefineRegName	(kVRegHdrMaxFALLCh1,					"kVRegHdrMaxFALLCh1");
+		DefineRegName	(kVRegHDROverrideState,					"kVRegHDROverrideState");
+		DefineRegName	(kVRegPCIMaxReadRequestSize,			"kVRegPCIMaxReadRequestSize");
 		DefineRegName	(kVRegLastAJA,							"kVRegLastAJA");
 		DefineRegName	(kVRegFirstOEM,							"kVRegFirstOEM");
 
@@ -1240,6 +1312,10 @@ private:
 			DefineRegReadWrite (regNum, READWRITE);
 			DefineRegClass (regNum, kRegClass_Virtual);
 		}
+		DefineRegClass (kVRegMonAncField1Offset, kRegClass_Anc);
+		DefineRegClass (kVRegMonAncField2Offset, kRegClass_Anc);
+		DefineRegClass (kVRegAncField1Offset, kRegClass_Anc);
+		DefineRegClass (kVRegAncField2Offset, kRegClass_Anc);
 	}	//	SetupVRegs
 
 public:
@@ -1269,8 +1345,14 @@ public:
 		RegNumToStringMap::const_iterator	iter	(mRegNumToStringMap.find (inRegNum));
 		if (iter != mRegNumToStringMap.end())
 			return iter->second;
-		ostringstream oss;
-		oss << dec << "Register " << inRegNum << " (0x" << hex << inRegNum << ")";
+
+		ostringstream	oss;	oss << "Reg ";
+		if (inRegNum <= kRegNumRegisters)
+			oss << DEC(inRegNum);
+		else if (inRegNum <= 0x0000FFFF)
+			oss << xHEX0N(inRegNum,4);
+		else
+			oss << xHEX0N(inRegNum,8);
 		return oss.str();
 	}
 	
@@ -1341,12 +1423,13 @@ public:
 			result.insert(regNum);
 
 		AJAAutoLock	lock(&mGuardMutex);
+
 		if (::NTV2DeviceCanDoCustomAnc(inDeviceID))
 		{
 			const NTV2RegNumSet	ancRegs			(GetRegistersForClass(kRegClass_Anc));
-			const UWord			numFrameStores	(::NTV2DeviceGetNumFrameStores(inDeviceID));
+			const UWord			numVideoOutputs	(::NTV2DeviceGetNumVideoOutputs(inDeviceID));
 			NTV2RegNumSet		allChanRegs;	//	For just those channels it supports
-			for (UWord num(0);  num < numFrameStores;  num++)
+			for (UWord num(0);  num < numVideoOutputs;  num++)
 			{
 				const NTV2RegNumSet chRegs (GetRegistersForClass(chanClasses[num]));
 				allChanRegs.insert(chRegs.begin(), chRegs.end());
@@ -1437,9 +1520,11 @@ public:
 			{
 				case CONTAINS:		result.insert(it->second);					break;
 				case STARTSWITH:	if (pos == 0)
-										result.insert(it->second);				break;
+										{result.insert(it->second);}
+									break;
 				case ENDSWITH:		if (pos+nameStrLen == it->first.length())
-										result.insert(it->second);				break;
+										{result.insert(it->second);}
+									break;
 				default:			break;
 			}
 		}
@@ -1582,7 +1667,23 @@ private:
 		}
 		virtual	~DecodeGlobalControl2()	{}
 	}	mDecodeGlobalControl2;
-
+	
+	//	reg 108 aka kRegGlobalControl3
+	struct DecodeGlobalControl3 : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			(void) inDeviceID;
+			ostringstream	oss;
+		    oss	<< "Bidirectional analog 1-4 input: "	<< SetNotset(inRegValue & kRegMaskAnalogIOControl_14 )			<< endl
+				<< "Quad Quad Mode Channel 1-4: "		<< SetNotset(inRegValue & kRegMaskQuadQuadMode)					<< endl
+				<< "Quad Quad Squares Mode 1-4: "		<< SetNotset(inRegValue & kRegMaskQuadQuadSquaresMode)			<< endl;
+			return oss.str();
+		}
+		virtual	~DecodeGlobalControl3()	{}
+	}	mDecodeGlobalControl3;
+	
 	// Regs 377,378,379,380,381,382,383 aka kRegGlobalControlCh2,kRegGlobalControlCh3,kRegGlobalControlCh4,kRegGlobalControlCh5,kRegGlobalControlCh6,kRegGlobalControlCh7,kRegGlobalControlCh8
 	struct DecodeGlobalControlChanReg : public Decoder
 	{
@@ -2254,6 +2355,7 @@ private:
 			ostringstream	oss;
 			oss	<< "Audio Source: "	<< SrcStrs [SrcStrMap [(BIT(0) | BIT(1) | BIT(2) | BIT(3)) & inRegValue]]	<< endl
 				<< "Embedded Source Select: Video Input " << (1 + vidInput)										<< endl
+				<< "AES Sync Mode bit (fib): "	<< EnabDisab(inRegValue & BIT(18))								<< endl
 				<< "PCM disabled: "				<< YesNo(inRegValue & BIT(17))									<< endl
 				<< "Erase head enable: "		<< YesNo(inRegValue & BIT(19))									<< endl
 				<< "Embedded Clock Select: "	<< (inRegValue & BIT(22) ? "Video Input" : "Board Reference")	<< endl
@@ -2342,72 +2444,137 @@ private:
 	}	mDecodePCMControlReg;
 
 	struct DecodeAudioMixerInputSelectReg : public Decoder
-	{
+	{	//	kRegAudioMixerInputSelects
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
-		{
-			(void) inDeviceID;	(void) inRegNum;
-			const UWord	mainInputSelect	((inRegValue     ) & 0x0000000F);
-			const UWord	input1_2Channel	((inRegValue >> 4) & 0x0000000F);
-			const UWord	input2_2Channel	((inRegValue >> 8) & 0x0000000F);
+		{	(void) inDeviceID;	(void) inRegNum;
+			const UWord	mainInputSrc((inRegValue     ) & 0x0000000F);
+			const UWord	aux1InputSrc((inRegValue >> 4) & 0x0000000F);
+			const UWord	aux2InputSrc((inRegValue >> 8) & 0x0000000F);
 			ostringstream	oss;
-			oss	<< "Main: "		<< "Audio System " << (mainInputSelect+1)				<< endl
-				<< "AuxIn1: "	<< "2 chls from Audio System " << (input1_2Channel+1)	<< endl
-				<< "AuxIn2: "	<< "2 chls from Audio System " << (input2_2Channel+1);
+			oss	<< "Main Input Source: "	<< ::NTV2AudioSystemToString(NTV2AudioSystem(mainInputSrc))	<< " (bits 0-3)" << endl
+				<< "Aux Input 1 Source: "	<< ::NTV2AudioSystemToString(NTV2AudioSystem(aux1InputSrc))	<< " (bits 4-7)" << endl
+				<< "Aux Input 2 Source: "	<< ::NTV2AudioSystemToString(NTV2AudioSystem(aux2InputSrc))	<< " (bits 8-11)";
 			return oss.str();
 		}
 		virtual	~DecodeAudioMixerInputSelectReg()	{}
 	}	mAudMxrInputSelDecoder;
 
 	struct DecodeAudioMixerGainRegs : public Decoder
-	{
-		//DefineRegister (kRegAudioMixerMainGain,
-		//DefineRegister (kRegAudioMixerAux1GainCh1,
-		//DefineRegister (kRegAudioMixerAux2GainCh1,				
+	{	//	kRegAudioMixerMainGain,
+		//	kRegAudioMixerAux1GainCh1, kRegAudioMixerAux1GainCh2,
+		//	kRegAudioMixerAux2GainCh1, kRegAudioMixerAux2GainCh2
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
-		{
-            (void) inRegNum;
-            (void) inRegValue;
-			(void) inDeviceID;
-			ostringstream	oss;
+		{	(void)inRegNum;	(void)inDeviceID;
+			static const double	kUnityGain	(0x00010000);
+			const bool			atUnity		(inRegValue == 0x00010000);
+			ostringstream		oss;
+			if (atUnity)
+				oss	<< "Gain: 0 dB (Unity)";
+			else
+			{
+				const double	dValue		(inRegValue);
+				const bool		aboveUnity	(inRegValue >= 0x00010000);
+				const string	plusMinus	(atUnity ? "" : (aboveUnity ? "+" : "-"));
+				const string	aboveBelow	(atUnity ? "at" : (aboveUnity ? "above" : "below"));
+				const uint32_t	unityDiff	(aboveUnity ? inRegValue - 0x00010000 : 0x00010000 - inRegValue);
+				const double	dB			(double(20.0) * ::log10(dValue/kUnityGain));
+				oss	<< "Gain: "	<< dB << " dB, " << plusMinus << xHEX0N(unityDiff,6)
+								<< " (" << plusMinus << DEC(unityDiff) << ") " << aboveBelow << " unity gain";
+			}
 			return oss.str();
 		}
 		virtual	~DecodeAudioMixerGainRegs()	{}
 	}	mAudMxrGainDecoder;
 
 	struct DecodeAudioMixerChannelSelectReg : public Decoder
-	{
+	{	//	kRegAudioMixerChannelSelect
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
-		{
-            (void) inRegNum;
-            (void) inRegValue;
-			(void) inDeviceID;
+		{	(void) inRegNum;	(void) inDeviceID;
 			ostringstream	oss;
+			const uint32_t	mainChanPair((inRegValue & kRegMaskAudioMixerChannelSelect   ) >> kRegShiftAudioMixerChannelSelect   );
+			const uint32_t	powerOfTwo	((inRegValue & kRegMaskAudioMixerLevelSampleCount) >> kRegShiftAudioMixerLevelSampleCount);
+			oss	<< "Main Input Source Channel Pair: "	<< ::NTV2AudioChannelPairToString(NTV2AudioChannelPair(mainChanPair)) << " (bits 0-2)" << endl
+				<< "Level Measurement Sample Count: "	<< DEC(ULWord(1 << powerOfTwo)) << " (bits 8-15)";
 			return oss.str();
 		}
 		virtual	~DecodeAudioMixerChannelSelectReg()	{}
 	}	mAudMxrChanSelDecoder;
 
+
 	struct DecodeAudioMixerMutesReg : public Decoder
-	{
+	{	//	kRegAudioMixerMutes
+		protected:
+			typedef std::bitset<16>	AudioChannelSet16;
+			typedef std::bitset<2>	AudioChannelSet2;
+			static void SplitAudioChannelSet16(const AudioChannelSet16 & inChSet, NTV2StringList & outSet, NTV2StringList & outClear)
+			{
+				outSet.clear();  outClear.clear();
+				for (size_t ndx(0);  ndx < 16;  ndx++)
+				{	ostringstream oss;  oss << DEC(ndx+1);
+					if (inChSet.test(ndx))
+						outSet.push_back(oss.str());
+					else
+						outClear.push_back(oss.str());
+				}
+				if (outSet.empty())		outSet.push_back("<none>");
+				if (outClear.empty())	outClear.push_back("<none>");
+			}
+			static void SplitAudioChannelSet2(const AudioChannelSet2 & inChSet, NTV2StringList & outSet, NTV2StringList & outClear)
+			{
+				outSet.clear();  outClear.clear();  static const string LR[] = {"L", "R"};
+				for (size_t ndx(0);  ndx < 2;  ndx++)
+					if (inChSet.test(ndx))
+						outSet.push_back(LR[ndx]);
+					else
+						outClear.push_back(LR[ndx]);
+				if (outSet.empty())		outSet.push_back("<none>");
+				if (outClear.empty())	outClear.push_back("<none>");
+			}
+		public:
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
-		{
-            (void) inRegNum;
-            (void) inRegValue;
-			(void) inDeviceID;
+		{	(void) inRegNum;	(void) inDeviceID;
+			uint32_t	mainOutputMuteBits	((inRegValue & kRegMaskAudioMixerOutputChannelsMute) >> kRegShiftAudioMixerOutputChannelsMute);	//	Bits 0-15
+			uint32_t	mainInputMuteBits	((inRegValue & kRegMaskAudioMixerMainInputEnable   ) >> kRegShiftAudioMixerMainInputEnable   );	//	Bits 16-17
+			uint32_t	aux1InputMuteBits	((inRegValue & kRegMaskAudioMixerAux1InputEnable   ) >> kRegShiftAudioMixerAux1InputEnable   );	//	Bits 18-19
+			uint32_t	aux2InputMuteBits	((inRegValue & kRegMaskAudioMixerAux2InputEnable   ) >> kRegShiftAudioMixerAux2InputEnable   );	//	Bits 20-21
 			ostringstream	oss;
+			NTV2StringList mutedMainOut, unmutedMainOut, mutedMain, unmutedMain, mutedAux1, unmutedAux1, mutedAux2, unmutedAux2;
+			SplitAudioChannelSet16(AudioChannelSet16(mainOutputMuteBits), mutedMainOut, unmutedMainOut);
+			SplitAudioChannelSet2(AudioChannelSet2(mainInputMuteBits), mutedMain, unmutedMain);
+			SplitAudioChannelSet2(AudioChannelSet2(aux1InputMuteBits), mutedAux1, unmutedAux1);
+			SplitAudioChannelSet2(AudioChannelSet2(aux2InputMuteBits), mutedAux2, unmutedAux2);
+			oss	<< "Main Output Muted/Disabled Channels: "	<< mutedMainOut << endl	//	bits[0:15]
+				<< "Main Output Unmuted/Enabled Channels: "	<< unmutedMainOut << endl;
+			oss	<< "Main Input Muted/Disabled Channels: "	<< mutedMain	<< endl	//	bits[16:17]
+				<< "Main Input Unmuted/Enabled Channels: "	<< unmutedMain	<< endl;
+			oss	<< "Aux Input 1 Muted/Disabled Channels: "	<< mutedAux1	<< endl	//	bits[18:19]
+				<< "Aux Input 1 Unmuted/Enabled Channels: "	<< unmutedAux1	<< endl;
+			oss	<< "Aux Input 2 Muted/Disabled Channels: "	<< mutedAux2	<< endl	//	bits[20-21]
+				<< "Aux Input 2 Unmuted/Enabled Channels: "	<< unmutedAux2;
 			return oss.str();
 		}
 		virtual	~DecodeAudioMixerMutesReg()	{}
 	}	mAudMxrMutesDecoder;
 
 	struct DecodeAudioMixerLevelsReg : public Decoder
-	{
+	{	//	kRegAudioMixerAux1InputLevels, kRegAudioMixerAux2InputLevels,
+		//	kRegAudioMixerMainInputLevelsPair0 thru kRegAudioMixerMainInputLevelsPair7,
+		//	kRegAudioMixerMixedChannelOutputLevels
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
-		{
-            (void) inRegNum;
-            (void) inRegValue;
-			(void) inDeviceID;
+		{	(void) inDeviceID;
+			static const string sLabels[] = {	"Aux Input 1", "Aux Input 2", "Main Input Audio Channels 1|2", "Main Input Audio Channels 3|4",
+												"Main Input Audio Channels 5|6", "Main Input Audio Channels 7|8", "Main Input Audio Channels 9|10",
+												"Main Input Audio Channels 11|12", "Main Input Audio Channels 13|14", "Main Input Audio Channels 15|16",
+												"Main Output (Mixed) Audio"};
+			NTV2_ASSERT(inRegNum >= kRegAudioMixerAux1InputLevels);
+			const uint32_t	labelOffset(inRegNum - kRegAudioMixerAux1InputLevels);
+			NTV2_ASSERT(labelOffset < 12);
+			const string &	label(sLabels[labelOffset]);
+			const uint16_t	leftLevel	((inRegValue & kRegMaskAudioMixerInputLeftLevel) >> kRegShiftAudioMixerInputLeftLevel);
+			const uint16_t	rightLevel	((inRegValue & kRegMaskAudioMixerInputRightLevel) >> kRegShiftAudioMixerInputRightLevel);
 			ostringstream	oss;
+			oss	<< label << " Left Level:"	<< xHEX0N(leftLevel, 4) << " (" << DEC(leftLevel) << ")" << endl	//	bits[0:15]
+				<< label << " Right Level:"	<< xHEX0N(rightLevel,4) << " (" << DEC(rightLevel) << ")";			//	bits[16:31]
 			return oss.str();
 		}
 		virtual	~DecodeAudioMixerLevelsReg()	{}
@@ -2641,7 +2808,7 @@ private:
 			ostringstream	oss;
             static const string	sHDMIStdV1[]	=	{	"1080i",	"720p",	"480i",	"576i",	"1080p",	"SXGA",	""	};
 			static const string	sHDMIStdV2V3[]	=	{	"1080i",	"720p",	"480i",	"576i",	"1080p",	"1556i",	"2Kx1080p",	"2Kx1080i",	"UHD",	"4K",	""	};
-			static const string	sVidRates[]		=	{	"",	"60.00",	"59.94",	"30.00",	"29.97",	"25.00",	"24.00",	"23.98",	"",	"",	""	};
+			static const string	sVidRates[]		=	{	"",	"60.00",	"59.94",	"30.00",	"29.97",	"25.00",	"24.00",	"23.98",	"50.00",	"48.00",	"47.95"	};
 			static const string	sSrcSampling[]	=	{	"YC422",	"RGB",	"YC420",	"Unknown/invalid"	};
 			static const string	sBitDepth[]		=	{	"8",		"10",	"12",		"Unknown/invalid"	};
             const ULWord	hdmiVers		(::NTV2DeviceGetHDMIVersion(inDeviceID));
@@ -2684,17 +2851,17 @@ private:
 			const uint32_t	vidStd	(hdmiVers >= 2 ? (inRegValue & kRegMaskHDMIInV2VideoStd) >> kRegShiftHDMIInputStatusV2Std : (inRegValue & kRegMaskHDMIInStandard) >> kRegShiftInputStatusStd);
 			const uint32_t	rate	((inRegValue & kRegMaskHDMIInFPS) >> kRegShiftInputStatusFPS);
 			static const string	sStds[32] = {"1080i", "720p", "480i", "576i", "1080p", "SXGA", "2K1080p", "2K1080i", "3840p", "4096p"};
-			static const string	sRates[32] = {"invalid", "60.00", "59.94", "30.00", "29.97", "25.00", "24.00", "23.98"};
+			static const string	sRates[32] = {"invalid", "60.00", "59.94", "30.00", "29.97", "25.00", "24.00", "23.98", "50.00", "48.00", "47.95" };
 			oss	<< "HDMI Input: " << (inRegValue & BIT(0) ? "Locked" : "Unlocked")			<< endl
 				<< "HDMI Input: " << (inRegValue & BIT(1) ? "Stable" : "Unstable")			<< endl
 				<< "Color Mode: " << (inRegValue & BIT(2) ? "RGB" : "YCbCr")				<< endl
 				<< "Bitdepth: " << (inRegValue & BIT(3) ? "10-bit" : "8-bit")				<< endl
-				<< "Audio Channels: " << (inRegValue & BIT(12) ? 8 : 2)						<< endl
+				<< "Audio Channels: " << (inRegValue & BIT(12) ? 2 : 8)						<< endl
 				<< "Scan Mode: " << (inRegValue & BIT(13) ? "Progressive" : "Interlaced")	<< endl
 				<< "Standard: " << (inRegValue & BIT(14) ? "SD" : "HD")						<< endl
 				<< "Video Standard: " << sStds[vidStd]										<< endl
 				<< "Protocol: " << (inRegValue & BIT(27) ? "DVI" : "HDMI")					<< endl
-				<< "Video Rate : " << (rate < 8 ? sRates[rate] : string("invalid"));
+				<< "Video Rate : " << (rate < 11 ? sRates[rate] : string("invalid"));
 			return oss.str();
 		}
 		virtual	~DecodeHDMIInputStatus()	{}
@@ -2924,15 +3091,15 @@ private:
 			(void) inDeviceID;
 			ostringstream	oss;
 			static const string	sSplitStds [8]	=	{"1080i", "720p", "480i", "576i", "1080p", "1556i", "?6?", "?7?"};
-			oss	<< "Limiting: "			<< ((inRegValue & BIT(11)) ? "Pass illegal data values" : "Limit to legal SDI")									<< endl
-				<< "Limiting: "			<< ((inRegValue & BIT(12)) ? "Limit" : "Don't limit") << " to legal broadcast data values"						<< endl
+			oss	<< "Mode: "				<< (inRegValue & kRegMaskVidProcMode ? ((inRegValue & BIT(24)) ? "Shaped" : "Unshaped") : "Full Raster")		<< endl
+				<< "FG Control: "		<< (inRegValue & kRegMaskVidProcFGControl ? ((inRegValue & BIT(20)) ? "Shaped" : "Unshaped") : "Full Raster")	<< endl
+				<< "BG Control: "		<< (inRegValue & kRegMaskVidProcBGControl ? ((inRegValue & BIT(22)) ? "Shaped" : "Unshaped") : "Full Raster")	<< endl
 				<< "VANC Pass-Thru: "	<< ((inRegValue & BIT(13)) ? "Background" : "Foreground")														<< endl
 				<< "FG Matte: "			<< EnabDisab(inRegValue & kRegMaskVidProcFGMatteEnable)															<< endl
 				<< "BG Matte: "			<< EnabDisab(inRegValue & kRegMaskVidProcBGMatteEnable)															<< endl
-				<< "FG Control: "		<< (inRegValue & kRegMaskVidProcFGControl ? ((inRegValue & BIT(20)) ? "Shaped" : "Unshaped") : "Full Raster")	<< endl
-				<< "BG Control: "		<< (inRegValue & kRegMaskVidProcBGControl ? ((inRegValue & BIT(22)) ? "Shaped" : "Unshaped") : "Full Raster")	<< endl
-				<< "Input Sync: "		<< "Inputs " << (inRegValue & kRegMaskVidProcSyncFail ? "not in sync" : "in sync")								<< endl
-				<< "Split Video Standard: "	<< sSplitStds[inRegValue & kRegMaskVidProcSplitStd];
+				<< "Input Sync: "		<< (inRegValue & kRegMaskVidProcSyncFail ? "not in sync" : "in sync")								<< endl
+				<< "Limiting: "			<< ((inRegValue & BIT(11)) ? "Off" : ((inRegValue & BIT(12)) ? "Legal Broadcast" : "Legal SDI"))				<< endl
+				<< "Split Video Std: "	<< sSplitStds[inRegValue & kRegMaskVidProcSplitStd];
 			return oss.str();
 		}
 		virtual	~DecodeVidProcControl()	{}
@@ -3279,7 +3446,7 @@ bool RegisterExpert::DisposeInstance(void)
 	AJAAutoLock		locker(&gRegExpertGuardMutex);
 	if (!gpRegExpert)
 		return false;
-	gpRegExpert = NULL;
+	gpRegExpert = AJA_NULL;
 	return true;
 }
 
@@ -3308,7 +3475,17 @@ string CNTV2RegisterExpert::GetDisplayName (const uint32_t inRegNum)
 {
 	AJAAutoLock	locker(&gRegExpertGuardMutex);
 	RegisterExpertPtr pRegExpert(RegisterExpert::GetInstance());
-	return pRegExpert ? pRegExpert->RegNameToString(inRegNum) : string();
+	if (pRegExpert)
+		return pRegExpert->RegNameToString(inRegNum);
+
+	ostringstream	oss;	oss << "Reg ";
+	if (inRegNum <= kRegNumRegisters)
+		oss << DEC(inRegNum);
+	else if (inRegNum <= 0x0000FFFF)
+		oss << xHEX0N(inRegNum,4);
+	else
+		oss << xHEX0N(inRegNum,8);
+	return oss.str();
 }
 
 string CNTV2RegisterExpert::GetDisplayValue (const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID)

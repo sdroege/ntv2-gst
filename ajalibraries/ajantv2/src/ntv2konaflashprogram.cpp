@@ -2454,6 +2454,228 @@ void CNTV2KonaFlashProgram::DisplayData(uint32_t address, uint32_t count)
 	}
 }
 
+void CNTV2KonaFlashProgram::FullProgram(std::vector<uint8_t> & dataBuffer)
+{
+	if (IsOpen ())
+	{
+		uint32_t baseAddress = 0;
+
+		printf("Erasing ROM\n");
+		EraseChip();
+		BankSelect currentBank = BANK_0;
+		SetBankSelect(currentBank);
+
+		uint32_t* bitFilePtr = (uint32_t*)dataBuffer.data();
+		uint32_t twoFixtysixBlockSizeCount = (uint32_t)((dataBuffer.size()+256)/256);
+		int32_t percentComplete = 0;
+        WriteRegister(kVRegFlashState, kProgramStateProgramFlash);
+        WriteRegister(kVRegFlashSize, twoFixtysixBlockSizeCount);
+		for ( uint32_t count = 0; count < twoFixtysixBlockSizeCount; count++, baseAddress += 256, bitFilePtr += 64 )
+		{
+			if (baseAddress == _bankSize)
+			{
+				baseAddress = 0;
+				switch(currentBank)
+				{
+				default:
+				case BANK_0:
+					currentBank = BANK_1;
+					break;
+				case BANK_1:
+					currentBank = BANK_2;
+					break;
+				case BANK_2:
+					currentBank = BANK_3;
+					break;
+				case BANK_3:
+					currentBank = BANK_0;
+					break;
+				}
+				SetBankSelect(currentBank);
+			}
+			FastProgramFlash256(baseAddress, bitFilePtr);
+			percentComplete = (count*100)/twoFixtysixBlockSizeCount;
+
+            WriteRegister(kVRegFlashStatus, count);
+			if(!_bQuiet && (count%100 == 0))
+			{
+				printf("Program status: %i%%\r", percentComplete);
+				fflush(stdout);
+			}
+		}
+		if(!_bQuiet)
+			printf("Program status: 100%%                  \n");
+
+		// Protect Device
+		WriteRegister(kRegXenaxFlashControlStatus, WRITEENABLE_COMMAND);
+		WaitForFlashNOTBusy();
+		WriteRegister(kRegXenaxFlashDIN, 0x1C);
+		WriteRegister(kRegXenaxFlashControlStatus, WRITESTATUS_COMMAND);
+		WaitForFlashNOTBusy();
+
+		SetBankSelect(BANK_0);
+
+		WriteRegister(kRegXenaxFlashControlStatus, WRITEENABLE_COMMAND);
+		WaitForFlashNOTBusy();
+		WriteRegister(kRegXenaxFlashDIN, 0x9C);
+		WriteRegister(kRegXenaxFlashControlStatus, WRITESTATUS_COMMAND);
+		WaitForFlashNOTBusy();
+		SetBankSelect(BANK_0);
+	}
+	else
+		throw "Board Can't be opened";
+	
+	SetWarmBootFirmwareReload(true);
+}
+
+bool CNTV2KonaFlashProgram::CheckAndFixMACs()
+{
+	MacAddr mac1, mac2;
+	ReadMACAddresses(mac1, mac2);
+	if(mac1.mac[1] != 0x0C || mac2.mac[1] != 0x0c)
+	{
+		cout << "Reprogramming the Mac Addresses!" << endl;
+		string serialString;
+		GetSerialNumberString(serialString);
+		MakeMACsFromSerial(serialString.c_str(), &mac1, &mac2);
+		return ProgramMACAddresses(&mac1, &mac2);
+	}
+	return true;
+}
+
+bool CNTV2KonaFlashProgram::MakeMACsFromSerial( const char *sSerialNumber, MacAddr *pMac1, MacAddr *pMac2 ) {
+	// NOTE: We do both auto if either is auto
+	// TODO: Check if this is an IP board, etc etc
+	if (strstr(sSerialNumber, "demo") == sSerialNumber) {
+		// If the serial number begins with demo
+		int demoNum = 0;
+		if (sscanf(sSerialNumber + 4, "%d", &demoNum) != 1)
+			return false;
+		if ((demoNum < 1) || (demoNum > 128)) {
+			printf("WARNING: Outside serial numbers demo0001 to demo0128\n");
+			return false;
+		}
+		pMac2->mac[0] = pMac1->mac[0] = 0x0;
+		pMac2->mac[1] = pMac1->mac[1] = 0x0c;
+		pMac2->mac[2] = pMac1->mac[2] = 0x17;
+		pMac2->mac[3] = pMac1->mac[3] = 0x88;
+		pMac2->mac[4] = pMac1->mac[4] = 0x12;
+		pMac1->mac[5] = (demoNum - 1) * 2;
+		pMac2->mac[5] = pMac1->mac[5] + 1;
+		return true;
+	} else if (strstr(sSerialNumber, "1IP") == sSerialNumber) {
+		// If the serial number begins with 1IP
+		// 00050 to 08241 (qty 8192) maps to A000 to DFFF (16384 addresses)
+		// First 4 bytes are: 00:0c:17:42 and next 2 bytes are computed
+		// as mac1=((serNo - 50)*2 + 0xA000) and 
+		// mac2 = mac1 + 1
+		int serNum = 0;
+		if (sscanf(sSerialNumber + 4, "%d", &serNum) != 1)
+			return false;
+		if ((serNum < 50) || (serNum > 8241)) {
+			printf("WARNING: Outside serial numbers 1IP00050 to 1IP08241\n");
+			return false;
+		}
+
+		int mac16LSBs = (0xA000) + (serNum - 50) * 2;
+
+		pMac2->mac[0] = pMac1->mac[0] = 0x0;
+		pMac2->mac[1] = pMac1->mac[1] = 0x0c;
+		pMac2->mac[2] = pMac1->mac[2] = 0x17;
+		pMac2->mac[3] = pMac1->mac[3] = 0x42;
+		pMac2->mac[4] = pMac1->mac[4] = mac16LSBs >> 8; 
+		pMac2->mac[5] = pMac1->mac[5] = mac16LSBs & 0x0ff;
+		// The above byte will always be same for the second mac
+		// based on above allocation
+		pMac2->mac[5] = pMac1->mac[5] + 1;
+		return true;
+    } else if (strstr(sSerialNumber, "ENG") == sSerialNumber) {
+        // ENG IoIp - if the serial starts with ENG
+
+        // 0000 to 0127 (qty 128) maps to 1B00 to 1BFF (256 addresses)
+        // First 4 bytes are: 00:0c:17:88 and next 2 bytes are computed
+        // as mac1= (0x1B00) + (serNum * 2) and
+        // mac2 = mac1 + 1
+        int serNum = 0;
+        if (sscanf(sSerialNumber + 5, "%d", &serNum) != 1)
+            return false;
+
+        if (serNum > 127)
+        {
+            printf("WARNING: Outside serial numbers ENG00000 to ENG00127\n");
+            return false;
+        }
+
+        int mac16LSBs = (0x1B00) + (serNum * 2);
+
+        pMac2->mac[0] = pMac1->mac[0] = 0x0;
+        pMac2->mac[1] = pMac1->mac[1] = 0x0c;
+        pMac2->mac[2] = pMac1->mac[2] = 0x17;
+        pMac2->mac[3] = pMac1->mac[3] = 0x88;
+        pMac2->mac[4] = pMac1->mac[4] = mac16LSBs >> 8;
+        pMac2->mac[5] = pMac1->mac[5] = mac16LSBs & 0xff;
+        // The above byte will always be same for the second mac
+        // based on above allocation
+        pMac2->mac[5] = pMac1->mac[5] + 1;
+        return true;
+    } else if (strstr(sSerialNumber, "6XT") == sSerialNumber) {
+        // IoIP and DNxIP serial numbers
+        // IoIP  Gen 1  [6XT000250 - 6XT008441]
+        // DNxIP Gen 1  [6XT200250 - 6XT208441]
+        // IoIP  Gen 2  [6XT100250 - 6XT108441]
+        // DNxIP Gen 2  [6XT300250 - 6XT308441]
+
+        int serNum = 0;
+        if (sscanf(sSerialNumber + 4, "%d", &serNum) != 1)
+            return false;
+
+        if ((serNum < 250) || (serNum > 8441))
+        {
+            printf("WARNING: Outside serial numbers range 250 to 8441\n");
+            return false;
+        }
+
+        // 0250 to 8441 (qty 8192) maps to 16384 addresses
+        // First 3 bytes are: 00:0c:17 and next 3 bytes are computed
+        int mac24LSBs = -1;
+        if (strstr(sSerialNumber, "6XT0") == sSerialNumber)
+        {
+            mac24LSBs = (0x48A000) + ((serNum - 250) * 2);
+        }
+        else if (strstr(sSerialNumber, "6XT2") == sSerialNumber)
+        {
+            mac24LSBs = (0x48E000) + ((serNum - 250) * 2);
+        }
+        else if (strstr(sSerialNumber, "6XT1") == sSerialNumber)
+        {
+            mac24LSBs = (0x4B2000) + ((serNum - 250) * 2);
+        }
+        else if (strstr(sSerialNumber, "6XT3") == sSerialNumber)
+        {
+            mac24LSBs = (0x4B6000) + ((serNum - 250) * 2);
+        }
+        else
+        {
+            return false;
+        }
+
+        pMac2->mac[0] = pMac1->mac[0] = 0x0;
+        pMac2->mac[1] = pMac1->mac[1] = 0x0c;
+        pMac2->mac[2] = pMac1->mac[2] = 0x17;
+        pMac2->mac[3] = pMac1->mac[3] = (mac24LSBs & 0xFF0000) >> 16;
+        pMac2->mac[4] = pMac1->mac[4] = (mac24LSBs & 0x00FF00) >>  8;
+        pMac2->mac[5] = pMac1->mac[5] = (mac24LSBs & 0x0000FF) >>  0;
+        // The above byte will always be same for the second mac
+        // based on above allocation
+        pMac2->mac[5] = pMac1->mac[5] + 1;
+        return true;
+	} else {
+		printf("Unrecognized or unspecified serial number '%s'\n", sSerialNumber);
+	}
+	return false;
+}
+
+
 
 #ifdef MSWindows
 #pragma warning(default: 4800)

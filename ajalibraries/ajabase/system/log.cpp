@@ -52,9 +52,6 @@ AJALog::AJALog()
             #if (AJA_LOGTYPE==2)
                 AJADebug::Open();
 
-            #elif (AJA_LOGTYPE==9999)
-                CreateFireLogUserClient();
-
             #endif
         
         #elif defined(AJA_LINUX)
@@ -80,56 +77,158 @@ AJALog::~AJALog()
 
 
 //---------------------------------------------------------------------------------------------------------------------
-//  class AJATimeLog
+// MARK: - AJARunAverage
+//---------------------------------------------------------------------------------------------------------------------
+
+void AJARunAverage::Mark(int64_t val)
+{
+	uint64_t index = _samplesTotal++ % _sampleSize;
+	_samples[index] = val;
+}
+
+int64_t AJARunAverage::MarkAverage(int64_t val)
+{
+	Mark(val);
+	return Average();
+}
+
+int64_t AJARunAverage::LastValue()
+{
+	if (_samplesTotal == 0)
+		return -1;
+	uint64_t lastIndex = ((_samplesTotal-1) % _sampleSize);
+	return _samples[lastIndex];
+}
+
+int64_t AJARunAverage::Average()
+{
+	uint64_t sampleSize = _samplesTotal < _sampleSize ? _samplesTotal : _sampleSize;
+	if (sampleSize == 0)
+		return 0;
+	
+	int64_t average = 0;
+	for (uint64_t i=0; i <sampleSize; i++)
+		average += _samples[i];
+		
+	average = average / sampleSize;
+	return average;
+}
+
+void AJARunAverage::Reset()
+{
+	_samplesTotal = 0; 
+	std::fill(_samples.begin(), _samples.end(), 0);
+}
+
+void AJARunAverage::Resize(uint64_t sampleSize)
+{
+	_sampleSize = sampleSize;
+	_samples.resize(sampleSize);
+	Reset();
+}
+
+
+
+//---------------------------------------------------------------------------------------------------------------------
+// MARK: - AJARunTimeAverage
+// calculates a running average of time deltas
+//---------------------------------------------------------------------------------------------------------------------
+
+AJARunTimeAverage::AJARunTimeAverage(int sampleSize) : AJARunAverage(sampleSize)
+{
+	ResetTime();
+}
+
+void AJARunTimeAverage::Resize(uint64_t sampleSize)
+{
+	AJARunAverage::Resize(sampleSize);
+}
+
+void AJARunTimeAverage::Reset()
+{
+	AJARunAverage::Reset();
+	ResetTime();
+}
+
+void AJARunTimeAverage::ResetTime()
+{
+	_lastTime = (int64_t)AJATime::GetSystemMicroseconds();
+}
+
+// mark current delta-time
+// return delta-time
+int64_t AJARunTimeAverage::MarkDeltaTime()
+{
+    int64_t currTime = (int64_t) AJATime::GetSystemMicroseconds();
+	int64_t deltaTime = currTime - _lastTime;
+	_lastTime = currTime;
+	
+	Mark(deltaTime);
+	return deltaTime;
+}
+
+// mark current delta-time
+// return running average delta-time
+int64_t AJARunTimeAverage::MarkDeltaAverage()
+{
+    int64_t currTime = (int64_t) AJATime::GetSystemMicroseconds();
+	int64_t deltaTime = currTime - _lastTime;
+	_lastTime = currTime;
+	
+	Mark(deltaTime);
+	return Average();
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+//  MARK: - class AJATimeLog
 //---------------------------------------------------------------------------------------------------------------------
 
 AJATimeLog::AJATimeLog()
 {
-    mTag[0] = 0;
+    _tag = "";
+    _unit = AJA_DebugUnit_Critical;
     Reset();
 }
 
-// create with name tag
-AJATimeLog::AJATimeLog(const char* tag)
-{
-#if defined(AJA_MAC)
-    strncpy(mTag, tag, TAG_SIZE);
-#else
-    AJA_UNUSED(tag);
-    mTag[0] = 0;
-#endif
-    
+AJATimeLog::AJATimeLog(const char* tag, int unit)
+{	
+	_unit = unit;
+	_tag = tag;
     Reset();
 }
 
+AJATimeLog::AJATimeLog(const std::string& tag, int unit)
+{	
+	_unit = unit;
+	_tag = tag;
+    Reset();
+}
 
 AJATimeLog::~AJATimeLog()
 {
 }
 
-
 // reset time
 void AJATimeLog::Reset()
 {
-    mTime = AJATime::GetSystemMicroseconds();
+    _time = AJATime::GetSystemMicroseconds();
 }
-
 
 // reset time
 void AJATimeLog::PrintReset()
 {
-	AJA_LOG("%s - Reset\n", mTag);
 	Reset();
+	PrintValue(0, "(** Reset **)");
 }
 
 // print dela time in micro seconds
 void AJATimeLog::PrintDelta(bool bReset)
 {
     uint64_t currTime = AJATime::GetSystemMicroseconds();
-    AJA_LOG("%s = %lld\n", mTag, currTime-mTime);
-    
+    PrintValue(currTime-_time);
     if (bReset)
-        mTime = currTime;
+        _time = currTime;
 }
 
 
@@ -137,22 +236,58 @@ void AJATimeLog::PrintDelta(bool bReset)
 int32_t AJATimeLog::GetDelta(bool bReset)
 {
     uint64_t currTime = AJATime::GetSystemMicroseconds();
-	int32_t delta = (uint32_t)(currTime - mTime);
-    if (bReset)
-        mTime = currTime;
-		
+	int32_t delta = int32_t(currTime - _time);
+	if (bReset)
+		_time = currTime;
 	return delta;
 }
 
-
-// print dela time in micro seconds, use additional tag
-void AJATimeLog::PrintDelta(const char* addTag, bool bReset)
+// print delta time in micro seconds, use additional tag
+void AJATimeLog::PrintDelta(const char* addedTag, bool bReset)
 {
-    AJA_UNUSED(addTag);
-
     uint64_t currTime = AJATime::GetSystemMicroseconds();
-    AJA_LOG("%s-%s = %lld\n", mTag, addTag, currTime-mTime);
-    
+    PrintValue(currTime-_time, addedTag);
     if (bReset)
-        mTime = currTime;
+        _time = currTime;
 }
+
+
+void AJATimeLog::PrintValue(int64_t val)
+{
+    #if defined(AJA_DEBUG) && (AJA_LOGTYPE!=2)
+		if (_unit == AJA_DebugUnit_Critical)
+			AJA_LOG("%s = %lld\n", _tag.c_str(), val);
+	#else
+		if (AJADebug::IsActive(_unit))
+			AJADebug::Report(_unit, AJA_DebugSeverity_Debug, __FILE__, __LINE__, 
+				"%s = %lld\n", _tag.c_str(), val);
+	#endif
+}
+
+
+void AJATimeLog::PrintValue(int64_t val, const char* addedTag)
+{
+    #if defined(AJA_DEBUG) && (AJA_LOGTYPE!=2)
+		if (_unit == AJA_DebugUnit_Critical)
+			AJA_LOG("%s-%s = %lld\n", _tag.c_str(), addedTag, val);
+	#else
+		if (AJADebug::IsActive(_unit))
+			AJADebug::Report(_unit, AJA_DebugSeverity_Debug, __FILE__, __LINE__, 
+				"%s-%s = %lld\n", _tag.c_str(), addedTag, val);
+	#endif
+}
+
+void AJATimeLog::Print(const char* str)
+{
+    #if defined(AJA_DEBUG) && (AJA_LOGTYPE!=2)
+		if (_unit == AJA_DebugUnit_Critical)
+			AJA_LOG("%s-%s\n", _tag.c_str(), str);
+	#else
+		if (AJADebug::IsActive(_unit))
+			AJADebug::Report(_unit, AJA_DebugSeverity_Debug, __FILE__, __LINE__, 
+				"%s-%s\n", _tag.c_str(), str);
+	#endif
+}
+
+
+

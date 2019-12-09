@@ -21,6 +21,26 @@ using namespace std;
 #define	LOGMYINFO(__x__)	AJA_sREPORT(AJA_DebugUnit_AJAAncData, AJA_DebugSeverity_Info,		__FUNCTION__ << ":  " << __x__)
 #define	LOGMYDEBUG(__x__)	AJA_sREPORT(AJA_DebugUnit_AJAAncData, AJA_DebugSeverity_Debug,		__FUNCTION__ << ":  " << __x__)
 
+#define	RCV2110ERR(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Rcv, AJA_DebugSeverity_Error,		__FUNCTION__ << ":  " << __x__)
+#define	RCV2110WARN(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Rcv, AJA_DebugSeverity_Warning,	__FUNCTION__ << ":  " << __x__)
+#define	RCV2110NOTE(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Rcv, AJA_DebugSeverity_Notice,		__FUNCTION__ << ":  " << __x__)
+#define	RCV2110INFO(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Rcv, AJA_DebugSeverity_Info,		__FUNCTION__ << ":  " << __x__)
+#define	RCV2110DBG(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Rcv, AJA_DebugSeverity_Debug,		__FUNCTION__ << ":  " << __x__)
+
+#define	XMT2110ERR(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Xmit, AJA_DebugSeverity_Error,		__FUNCTION__ << ":  " << __x__)
+#define	XMT2110WARN(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Xmit, AJA_DebugSeverity_Warning,	__FUNCTION__ << ":  " << __x__)
+#define	XMT2110NOTE(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Xmit, AJA_DebugSeverity_Notice,	__FUNCTION__ << ":  " << __x__)
+#define	XMT2110INFO(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Xmit, AJA_DebugSeverity_Info,		__FUNCTION__ << ":  " << __x__)
+#define	XMT2110DBG(__x__)	AJA_sREPORT(AJA_DebugUnit_Anc2110Xmit, AJA_DebugSeverity_Debug,		__FUNCTION__ << ":  " << __x__)
+
+//	RCV2110DDBG & XMT2110DDBG are for EXTREMELY detailed debug logging:
+#if 0	// DetailedDebugging
+	#define	RCV2110DDBG(__x__)	RCV2110DBG(__x__)
+	#define	XMT2110DDBG(__x__)	XMT2110DBG(__x__)
+#else
+	#define	RCV2110DDBG(__x__)	
+	#define	XMT2110DDBG(__x__)	
+#endif
 
 #if defined(AJAHostIsBigEndian)
 	//	Host is BigEndian (BE)
@@ -41,11 +61,14 @@ using namespace std;
 #endif
 
 
+static inline uint32_t ENDIAN_32NtoH(const uint32_t inValue)	{return AJA_ENDIAN_32NtoH(inValue);}
+static inline uint32_t ENDIAN_32HtoN(const uint32_t inValue)	{return AJA_ENDIAN_32HtoN(inValue);}
+
+
 const uint32_t AJAAncillaryDataWrapperSize = 7;		// 3 bytes header + DID + SID + DC + Checksum: i.e. everything EXCEPT the payload
 
 //const uint8_t  AJAAncillaryDataAnalogDID = 0x00;		// used in header DID field when ancillary data is "analog"
 //const uint8_t  AJAAncillaryDataAnalogSID = 0x00;		// used in header SID field when ancillary data is "analog"
-static bool	DetailedDebugging	(false);
 
 
 
@@ -80,22 +103,21 @@ void AJAAncillaryData::Init()
 {
 	FreeDataMemory();	// reset all internal data to defaults
 
-	m_DID = 0x00;
-	m_SID = 0x00;
-
-	m_checksum = 0;
-
-	m_coding = AJAAncillaryDataCoding_Digital;
-
-	m_location.SetDataLink(AJAAncillaryDataLink_A);
-	m_location.SetDataStream(AJAAncillaryDataStream_1);
-	m_location.SetDataChannel(AJAAncillaryDataChannel_Y);
-	m_location.SetDataSpace(AJAAncillaryDataSpace_VANC);
-	m_location.SetLineNumber(0);
-	m_location.SetHorizontalOffset(AJAAncillaryDataLocation::AJAAncDataHorizOffset_Default);
-
-	m_ancType	   = AJAAncillaryDataType_Unknown;
-	m_rcvDataValid = false;
+	m_DID			= 0x00;
+	m_SID			= 0x00;
+	m_checksum		= 0;
+	m_frameID		= 0;
+	m_coding		= AJAAncillaryDataCoding_Digital;
+	m_ancType		= AJAAncillaryDataType_Unknown;
+	m_bufferFmt		= AJAAncillaryBufferFormat_Unknown;
+	m_rcvDataValid	= false;
+	//	Default location:
+	m_location.SetDataLink(AJAAncillaryDataLink_A)					//	LinkA
+				.SetDataStream(AJAAncillaryDataStream_1)			//	DS1
+				.SetDataChannel(AJAAncillaryDataChannel_Y)			//	Y channel
+				.SetDataSpace(AJAAncillaryDataSpace_VANC)			//	VANC
+				.SetHorizontalOffset(AJAAncDataHorizOffset_AnyVanc)	//	VANC
+				.SetLineNumber(AJAAncDataLineNumber_Unknown);		//	Unknown line number
 }
 
 
@@ -216,41 +238,40 @@ AJAStatus AJAAncillaryData::SetDataLocation (const AJAAncillaryDataLocation & lo
 	if (AJA_SUCCESS(status))
 		status = SetLocationDataChannel(loc.GetDataChannel());
 	if (AJA_SUCCESS(status))
-		status = SetLocationVideoSpace(loc.GetDataSpace());
+		status = SetLocationHorizOffset(loc.GetHorizontalOffset());
 	if (AJA_SUCCESS(status))
 		status = SetLocationLineNumber(loc.GetLineNumber());
 	return status;
 }
 
 
-//	DEPRECATED
-AJAStatus AJAAncillaryData::GetDataLocation (AJAAncillaryDataLink &			outLink,
-											AJAAncillaryDataVideoStream &	outStream,
-											AJAAncillaryDataSpace &			outAncSpace,
-											uint16_t &						outLineNum)
-{
-	outLink		= m_location.GetDataLink();
-	outStream	= m_location.GetDataChannel();
-	outAncSpace	= m_location.GetDataSpace();
-	outLineNum	= m_location.GetLineNumber();
-	return AJA_STATUS_SUCCESS;
-}
+#if !defined(NTV2_DEPRECATE_15_2)
+	AJAStatus AJAAncillaryData::GetDataLocation (AJAAncillaryDataLink &			outLink,
+												AJAAncillaryDataVideoStream &	outStream,
+												AJAAncillaryDataSpace &			outAncSpace,
+												uint16_t &						outLineNum)
+	{
+		outLink		= m_location.GetDataLink();
+		outStream	= m_location.GetDataChannel();
+		outAncSpace	= m_location.GetDataSpace();
+		outLineNum	= m_location.GetLineNumber();
+		return AJA_STATUS_SUCCESS;
+	}
 
-//-------------
-//
-AJAStatus AJAAncillaryData::SetDataLocation (const AJAAncillaryDataLink inLink, const AJAAncillaryDataChannel inChannel, const AJAAncillaryDataSpace inAncSpace, const uint16_t inLineNum, const AJAAncillaryDataStream inStream)
-{
-	AJAStatus	status	(SetLocationVideoLink(inLink));
-	if (AJA_SUCCESS(status))
-		status = SetLocationDataStream(inStream);
-	if (AJA_SUCCESS(status))
-		status = SetLocationDataChannel(inChannel);
-	if (AJA_SUCCESS(status))
-		status = SetLocationVideoSpace(inAncSpace);
-	if (AJA_SUCCESS(status))
-		status = SetLocationLineNumber(inLineNum);
-	return status;
-}
+	AJAStatus AJAAncillaryData::SetDataLocation (const AJAAncillaryDataLink inLink, const AJAAncillaryDataChannel inChannel, const AJAAncillaryDataSpace inAncSpace, const uint16_t inLineNum, const AJAAncillaryDataStream inStream)
+	{
+		AJAStatus	status	(SetLocationVideoLink(inLink));
+		if (AJA_SUCCESS(status))
+			status = SetLocationDataStream(inStream);
+		if (AJA_SUCCESS(status))
+			status = SetLocationDataChannel(inChannel);
+		if (AJA_SUCCESS(status))
+			status = SetLocationVideoSpace(inAncSpace);
+		if (AJA_SUCCESS(status))
+			status = SetLocationLineNumber(inLineNum);
+		return status;
+	}
+#endif	//	!defined(NTV2_DEPRECATE_15_2)
 
 
 //-------------
@@ -289,23 +310,23 @@ AJAStatus AJAAncillaryData::SetLocationDataChannel (const AJAAncillaryDataChanne
 }
 
 
-//-------------
-//
-AJAStatus AJAAncillaryData::SetLocationVideoSpace (const AJAAncillaryDataSpace inSpace)
-{
-	if (!IS_VALID_AJAAncillaryDataSpace(inSpace))
-		return AJA_STATUS_RANGE;
-
-	m_location.SetDataSpace(inSpace);
-	return AJA_STATUS_SUCCESS;
-}
+#if !defined(NTV2_DEPRECATE_15_2)
+	AJAStatus AJAAncillaryData::SetLocationVideoSpace (const AJAAncillaryDataSpace inSpace)
+	{
+		if (!IS_VALID_AJAAncillaryDataSpace(inSpace))
+			return AJA_STATUS_RANGE;
+	
+		m_location.SetDataSpace(inSpace);
+		return AJA_STATUS_SUCCESS;
+	}
+#endif	//	!defined(NTV2_DEPRECATE_15_2)
 
 
 //-------------
 //
 AJAStatus AJAAncillaryData::SetLocationLineNumber (const uint16_t inLineNum)
 {
-	//	No range checking here because we don't know how big the frame is
+	//	No range checking here because we don't know how tall the frame is
 	m_location.SetLineNumber(inLineNum);
 	return AJA_STATUS_SUCCESS;
 }
@@ -442,10 +463,10 @@ AJAStatus AJAAncillaryData::GetPayloadData (uint8_t * pOutData, const uint32_t i
 }
 
 
-AJAStatus AJAAncillaryData::GetPayloadData (vector<uint16_t> & outUDWs, const bool inAddParity) const
+AJAStatus AJAAncillaryData::GetPayloadData (UWordSequence & outUDWs, const bool inAddParity) const
 {
 	AJAStatus	status	(AJA_STATUS_SUCCESS);
-	const vector<uint16_t>::size_type	origSize	(outUDWs.size());
+	const UWordSequence::size_type	origSize	(outUDWs.size());
 	for (ByteVectorConstIter iter(m_payload.begin());  iter != m_payload.end()  &&  AJA_SUCCESS(status);  ++iter)
 	{
 		const uint16_t	UDW	(inAddParity ? AddEvenParity(*iter) : *iter);
@@ -582,7 +603,8 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const uint8_t *					pInData,
 		m_location.SetDataStream(AJAAncillaryDataStream_1);	//	???	GUMP doesn't tell us the data stream it came from
 		m_location.SetDataChannel(((pInData[1] & 0x20) == 0) ? AJAAncillaryDataChannel_C : AJAAncillaryDataChannel_Y);		// byte 1, bit 5
 		m_location.SetDataSpace(((pInData[1] & 0x10) == 0) ? AJAAncillaryDataSpace_VANC : AJAAncillaryDataSpace_HANC);		// byte 1, bit 4
-		m_location.SetLineNumber(((pInData[1] & 0x0F) << 7) + (pInData[2] & 0x7F));											// byte 1, bits 3:0 + byte 2, bits 6:0
+		m_location.SetLineNumber(uint16_t((pInData[1] & 0x0F) << 7) + uint16_t(pInData[2] & 0x7F));							// byte 1, bits 3:0 + byte 2, bits 6:0
+		SetBufferFormat(AJAAncillaryBufferFormat_SDI);
 		//m_location.SetHorizontalOffset(hOffset);	//	??? GUMP doesn't report the horiz offset of where the packet started in the raster line
 	}
 
@@ -773,10 +795,10 @@ uint8_t AJAAncillaryData::GetGUMPHeaderByte2 (void) const
 }
 
 
-AJAStatus AJAAncillaryData::GenerateTransmitData (vector<uint16_t> & outRawComponents)
+AJAStatus AJAAncillaryData::GenerateTransmitData (UWordSequence & outRawComponents)
 {
-	AJAStatus							status		(GeneratePayloadData());
-	const vector<uint16_t>::size_type	origSize	(outRawComponents.size());
+	AJAStatus						status		(GeneratePayloadData());
+	const UWordSequence::size_type	origSize	(outRawComponents.size());
 
 	if (IsDigital())
 	{
@@ -823,16 +845,16 @@ static const uint32_t	gMasks[]	=	{	0xFFC00000, 0x003FF000, 0x00000FFC, 0x0000000
 											0xC0000000, 0x3FF00000, 0x000FFC00, 0x000003FF	};
 
 
-AJAStatus AJAAncillaryData::GenerateTransmitData (vector<uint32_t> & outData)
+AJAStatus AJAAncillaryData::GenerateTransmitData (ULWordSequence & outData)
 {
-	AJAStatus							status		(GeneratePayloadData());
-	const vector<uint32_t>::size_type	origSize	(outData.size());
-	uint32_t							u32			(0);	//	32-bit value
+	AJAStatus						status		(GeneratePayloadData());
+	const ULWordSequence::size_type	origSize	(outData.size());
+	uint32_t						u32			(0);	//	32-bit value
 
 	if (!IsDigital())
-		{LOGMYWARN("Analog/raw packet skipped/ignored: " << AsString(32));	return AJA_STATUS_SUCCESS;}
+		{XMT2110WARN("Analog/raw packet skipped/ignored: " << AsString(32));	return AJA_STATUS_SUCCESS;}
 	if (GetDC() > 255)
-		{LOGMYERROR("Data count exceeds 255: " << AsString(32));	return AJA_STATUS_RANGE;}
+		{XMT2110ERR("Data count exceeds 255: " << AsString(32));	return AJA_STATUS_RANGE;}
 
 	//////////////////////////////////////////////////
 	//	Prepare an array of 10-bit DID/SID/DC/UDWs/CS values...
@@ -841,7 +863,7 @@ AJAStatus AJAAncillaryData::GenerateTransmitData (vector<uint32_t> & outData)
 		const uint16_t	dc	(AddEvenParity(uint8_t(GetDC())));
 		const uint16_t	cs	(Calculate9BitChecksum());
 
-		vector<uint16_t>	UDW16s;	//	10-bit even-parity words
+		UWordSequence	UDW16s;		//	10-bit even-parity words
 		UDW16s.reserve(GetDC()+4);	//	Reserve DID + SID + DC + UDWs + CS
 		UDW16s.push_back(did);
 		UDW16s.push_back(sid);
@@ -850,17 +872,18 @@ AJAStatus AJAAncillaryData::GenerateTransmitData (vector<uint32_t> & outData)
 		//	Append 8-bit payload data, converting into 10-bit values with even parity added...
 		status = GetPayloadData(UDW16s, true);	//	Append 10-bit even-parity UDWs
 		if (AJA_FAILURE(status))
-			{LOGMYERROR("GetPayloadData failed: " << AsString(32));	return status;}
+			{XMT2110ERR("GetPayloadData failed: " << AsString(32));	return status;}
 		UDW16s.push_back(cs);	//	Checksum is the caboose
 	//	Done -- 10-bit DID/SID/DC/UDWs/CS array is prepared
-	LOGMYDEBUG("From " << UWordSequence(UDW16s) << " " << AsString(32));
+	XMT2110DBG("From " << UWordSequence(UDW16s) << " " << AsString(32));
 	//////////////////////////////////////////////////
 
 	//	Begin writing into "outData" array.
 	//	My first 32-bit longword is the Anc packet header, which contains location info...
 	const AJARTPAncPacketHeader	pktHdr	(GetDataLocation());
-	outData.push_back(pktHdr.GetULWord());
-	if (DetailedDebugging)	LOGMYDEBUG("outU32s[" << DEC(outData.size()-1) << "]=" << xHEX0N(AJA_ENDIAN_32HtoN(pktHdr.GetULWord()),8));
+	const uint32_t				pktHdrWord	(pktHdr.GetULWord());
+	outData.push_back(pktHdrWord);
+//	XMT2110DDBG("outU32s[" << DEC(outData.size()-1) << "]=" << xHEX0N(ENDIAN_32NtoH(pktHdrWord),8) << " (BigEndian)");	//	Byte-Swap it to make BigEndian look right
 
 	//	All subsequent 32-bit longwords come from the array of 10-bit values I built earlier.
 	const size_t	numUDWs	(UDW16s.size());
@@ -876,12 +899,12 @@ AJAStatus AJAAncillaryData::GenerateTransmitData (vector<uint32_t> & outData)
 			const uint32_t	UDW			(isPastEnd  ?  0  :  uint32_t(UDW16s[ndx]));
 			const unsigned	shift		(gShifts[loopNdx]);
 			const uint32_t	mask		(gMasks[loopNdx]);
-			if (!isPastEnd)	if (DetailedDebugging)	LOGMYDEBUG("u16s[" << DEC(ndx) << "]=" << xHEX0N(UDW,3));
+//			if (!isPastEnd)	XMT2110DDBG("u16s[" << DEC(ndx) << "]=" << xHEX0N(UDW,3));
 			if (is4th)
 			{
 				u32 |=  (UDW >> shift) & mask;
-				outData.push_back(AJA_ENDIAN_32HtoN(u32));
-				if (DetailedDebugging)	LOGMYDEBUG("outU32s[" << DEC(outData.size()-1) << "]=" << xHEX0N(u32,8));
+				outData.push_back(ENDIAN_32HtoN(u32));
+//				XMT2110DDBG("outU32s[" << DEC(outData.size()-1) << "]=" << xHEX0N(u32,8) << " (BigEndian)");
 				u32 = 0;	//	Reset, start over
 				if (isPastEnd)
 					break;	//	Done, 32-bit longword aligned
@@ -898,86 +921,88 @@ AJAStatus AJAAncillaryData::GenerateTransmitData (vector<uint32_t> & outData)
 	u32 |= (uint32_t(UDW16s.at( 1)) << 12) & 0x003FF000;	//	0b00001|0x01|01: [ 1] all 10 bits		10+10=20	22-10=12
 	u32 |= (uint32_t(UDW16s.at( 2)) <<  2) & 0x00000FFC;	//	0b00010|0x02|02: [ 2] all 10 bits		20+10=30	12-10=2
 	u32 |= (uint32_t(UDW16s.at( 3)) >>  8) & 0x00000003;	//	0b00011|0x03|03: [ 3] first (MS 2 bits)	30+2=32					10-2=8
-	outData.push_back(AJA_ENDIAN_32HtoN(u32));
+	outData.push_back(ENDIAN_32HtoN(u32));
 	u32 =  (uint32_t(UDW16s.at( 3)) << 24) & 0xFF000000;	//	0b00100|0x04|04: [ 3] last (LS 8 bits)	0+8=8		32-8=24
 	u32 |= (uint32_t(UDW16s.at( 4)) << 14) & 0x00FFC000;	//	0b00101|0x05|05: [ 4] all 10 bits		8+10=18		24-10=14
 	u32 |= (uint32_t(UDW16s.at( 5)) <<  4) & 0x00003FF0;	//	0b00110|0x06|06: [ 5] all 10 bits		18+10=28	14-10=4
 	u32 |= (uint32_t(UDW16s.at( 6)) >>  6) & 0x0000000F;	//	0b00111|0x07|07: [ 6] first (MS 4 bits)	28+4=32					10-4=6
-	outData.push_back(AJA_ENDIAN_32HtoN(u32));
+	outData.push_back(ENDIAN_32HtoN(u32));
 	u32 =  (uint32_t(UDW16s.at( 6)) << 26) & 0xFC000000;	//	0b01000|0x08|08: [ 6] last (LS 6 bits)	0+6=6		32-6=26
 	u32 |= (uint32_t(UDW16s.at( 7)) << 16) & 0x03FF0000;	//	0b01001|0x09|09: [ 7] all 10 bits		6+10=16		26-10=16
 	u32 |= (uint32_t(UDW16s.at( 8)) <<  6) & 0x0000FFC0;	//	0b01010|0x0A|10: [ 8] all 10 bits		16+10=26	16-10=6
 	u32 |= (uint32_t(UDW16s.at( 9)) >>  4) & 0x0000003F;	//	0b01011|0x0B|11: [ 9] first (MS 6 bits)	26+6=32					10-6=4
-	outData.push_back(AJA_ENDIAN_32HtoN(u32));
+	outData.push_back(ENDIAN_32HtoN(u32));
 	u32 =  (uint32_t(UDW16s.at( 9)) << 28) & 0xF0000000;	//	0b01100|0x0C|12: [ 9] last (LS 4 bits)	0+4=4		32-4=28
 	u32 |= (uint32_t(UDW16s.at(10)) << 18) & 0x0FFC0000;	//	0b01101|0x0D|13: [10] all 10 bits		4+10=14		28-10=18
 	u32 |= (uint32_t(UDW16s.at(11)) <<  8) & 0x0003FF00;	//	0b01110|0x0E|14: [11] all 10 bits		14+10=24	18-10=8
 	u32 |= (uint32_t(UDW16s.at(12)) >>  2) & 0x000000FF;	//	0b01111|0x0F|15: [12] first (MS 8 bits)	24+8=32					10-8=2
-	outData.push_back(AJA_ENDIAN_32HtoN(u32));
+	outData.push_back(ENDIAN_32HtoN(u32));
 	u32 =  (uint32_t(UDW16s.at(12)) << 30) & 0xC0000000;	//	0b10000|0x10|16: [12] last (LS 2 bits)	0+2=2		32-2=30
 	u32 |= (uint32_t(UDW16s.at(13)) << 20) & 0x3FF00000;	//	0b10001|0x11|17: [13] all 10 bits		2+10=12		30-10=20
 	u32 |= (uint32_t(UDW16s.at(14)) << 10) & 0x000FFC00;	//	0b10010|0x12|18: [14] all 10 bits		12+10=22	20-10=10
 	u32 |= (uint32_t(UDW16s.at(15)) >>  0) & 0x000003FF;	//	0b10011|0x13|19: [15] all 10 bits		22+10=32				10-10=0
-	outData.push_back(AJA_ENDIAN_32HtoN(u32));	*/
+	outData.push_back(ENDIAN_32HtoN(u32));	*/
 
-if (true)	{
+#if defined(_DEBUG)
+{
 	ostringstream	oss;
-	oss << (origSize ? "Appended " : "Generated ") << (outData.size() - origSize)  << " 32-bit words:";
-	for (size_t ndx(origSize);  ndx < outData.size();  ndx++)
-		oss << " " << HEX0N(AJA_ENDIAN_32NtoH(outData[ndx]),8);
-	oss << " from " << AsString(32);
-	LOGMYDEBUG(oss.str());
-} else
-	LOGMYDEBUG((origSize ? "Appended " : "Generated ")
+	oss << (origSize ? "Appended " : "Generated ") << (outData.size() - origSize)  << " U32s:";
+	for (size_t ndx(origSize);  ndx < outData.size();  ndx++)	//	outData is in Network Byte Order
+		oss << " " << HEX0N(ENDIAN_32NtoH(outData[ndx]),8);		//	so byte-swap to make it look right in the log
+	oss << " BigEndian from " << AsString(32);
+	XMT2110DBG(oss.str());
+}
+#else
+	XMT2110DBG((origSize ? "Appended " : "Generated ")
 					<< (outData.size() - origSize)  << " 32-bit words from " << AsString(32));
-
+#endif
 	return AJA_STATUS_SUCCESS;
 }	//	GenerateTransmitData
 
 
-AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32s, uint16_t & inOutU32Ndx)
+AJAStatus AJAAncillaryData::InitWithReceivedData (const ULWordSequence & inU32s, uint16_t & inOutU32Ndx, const bool inIgnoreChecksum)
 {
 	const size_t	numU32s	(inU32s.size());
 
 	Clear();	//	Reset me -- start over
 
 	if (inOutU32Ndx >= numU32s)
-		{LOGMYERROR("Index error: [" << DEC(inOutU32Ndx) << "] past end of [" << DEC(numU32s) << "] element buffer");  return AJA_STATUS_RANGE;}
+		{RCV2110ERR("Index error: [" << DEC(inOutU32Ndx) << "] past end of [" << DEC(numU32s) << "] element buffer");  return AJA_STATUS_RANGE;}
 
 	AJARTPAncPacketHeader	ancPktHeader;
 	if (!ancPktHeader.ReadFromULWordVector(inU32s, inOutU32Ndx))
-		{LOGMYERROR("AJARTPAncPacketHeader::ReadFromULWordVector failed at [" << DEC(inOutU32Ndx) << "]");	return AJA_STATUS_FAIL;}
+		{RCV2110ERR("AJARTPAncPacketHeader::ReadFromULWordVector failed at [" << DEC(inOutU32Ndx) << "]");	return AJA_STATUS_FAIL;}
 
 	const AJAAncillaryDataLocation	dataLoc	(ancPktHeader.AsDataLocation());
-	if (DetailedDebugging)	LOGMYDEBUG("u32=" << xHEX0N(AJA_ENDIAN_32NtoH(inU32s.at(inOutU32Ndx)),8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "] AncPktHdr: " << ancPktHeader << " -- AncDataLoc: " << dataLoc);
+	RCV2110DDBG("u32=" << xHEX0N(ENDIAN_32NtoH(inU32s.at(inOutU32Ndx)),8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "] AncPktHdr: " << ancPktHeader << " -- AncDataLoc: " << dataLoc);
 
 	if (++inOutU32Ndx >= numU32s)
-		{LOGMYERROR("Index error: [" << DEC(inOutU32Ndx) << "] past end of [" << DEC(numU32s) << "] element buffer");  return AJA_STATUS_RANGE;}
+		{RCV2110ERR("Index error: [" << DEC(inOutU32Ndx) << "] past end of [" << DEC(numU32s) << "] element buffer");  return AJA_STATUS_RANGE;}
 
 	//	Set location info...
 	AJAStatus result;
 	result = SetLocationVideoLink(dataLoc.GetDataLink());
-	if (AJA_FAILURE(result))	{LOGMYERROR("SetLocationVideoLink failed, dataLoc: " << dataLoc);	return result;}
+	if (AJA_FAILURE(result))	{RCV2110ERR("SetLocationVideoLink failed, dataLoc: " << dataLoc);	return result;}
 
 	result = SetLocationDataStream(dataLoc.GetDataStream());
-	if (AJA_FAILURE(result))	{LOGMYERROR("SetLocationDataStream failed, dataLoc: " << dataLoc);	return result;}
+	if (AJA_FAILURE(result))	{RCV2110ERR("SetLocationDataStream failed, dataLoc: " << dataLoc);	return result;}
 
 	result = SetLocationDataChannel(dataLoc.GetDataChannel());
-	if (AJA_FAILURE(result))	{LOGMYERROR("SetLocationDataChannel failed, dataLoc: " << dataLoc);	return result;}
+	if (AJA_FAILURE(result))	{RCV2110ERR("SetLocationDataChannel failed, dataLoc: " << dataLoc);	return result;}
 
-	result = SetLocationVideoSpace(dataLoc.GetDataSpace());
-	if (AJA_FAILURE(result))	{LOGMYERROR("SetLocationVideoSpace failed, dataLoc: " << dataLoc);	return result;}
+	result = SetLocationHorizOffset(dataLoc.GetHorizontalOffset());
+	if (AJA_FAILURE(result))	{RCV2110ERR("SetLocationHorizOffset failed, dataLoc: " << dataLoc);	return result;}
 
 	result = SetLocationLineNumber(dataLoc.GetLineNumber());
-	if (AJA_FAILURE(result))	{LOGMYERROR("SetLocationLineNumber failed, dataLoc: " << dataLoc);	return result;}
+	if (AJA_FAILURE(result))	{RCV2110ERR("SetLocationLineNumber failed, dataLoc: " << dataLoc);	return result;}
 
 	//	Unpack this anc packet...
-	vector<uint16_t>	u16s;	//	10-bit even-parity words
-	bool				gotChecksum		(false);
-	size_t				dataCount		(0);
-	uint32_t			u32				(AJA_ENDIAN_32NtoH(inU32s.at(inOutU32Ndx)));
-	const size_t		startU32Ndx		(inOutU32Ndx);
-	if (DetailedDebugging)	LOGMYDEBUG("u32=" << xHEX0N(u32,8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "]");
+	UWordSequence	u16s;	//	10-bit even-parity words
+	bool			gotChecksum	(false);
+	size_t			dataCount	(0);
+	uint32_t		u32			(ENDIAN_32NtoH(inU32s.at(inOutU32Ndx)));
+	const size_t	startU32Ndx	(inOutU32Ndx);
+	RCV2110DDBG("u32=" << xHEX0N(u32,8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "]");
 	do
 	{
 		uint16_t	u16	(0);
@@ -994,34 +1019,34 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 				//	Grab next u32 value...
 				if (++inOutU32Ndx >= numU32s)
 				{
-					u16s.push_back(u16);	if (DetailedDebugging)	LOGMYDEBUG("u16s[" << DEC(u16s.size()-1) << "]=" << xHEX0N(u16,3) << " (Past end)");
+					u16s.push_back(u16);	//	RCV2110DDBG("u16s[" << DEC(u16s.size()-1) << "]=" << xHEX0N(u16,3) << " (Past end)");
 					break;	//	Past end
 				}
-				u32 = AJA_ENDIAN_32NtoH(inU32s.at(inOutU32Ndx));
-				if (DetailedDebugging)	LOGMYDEBUG("u32=" << xHEX0N(u32,8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "], u16=" << xHEX0N(u16,3)
+				u32 = ENDIAN_32NtoH(inU32s.at(inOutU32Ndx));
+				RCV2110DDBG("u32=" << xHEX0N(u32,8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "], u16=" << xHEX0N(u16,3)
 										<< " from " << DEC(loopNdx) << "(" << xHEX0N(inU32s.at(inOutU32Ndx-1),8) << " & " << xHEX0N(mask,8) << ") << " << DEC(shift));
 				if (shift)
 					continue;	//	go around
 			}
 			else if (is1st)
 			{
-				if (DetailedDebugging)	LOGMYDEBUG("u16s[" << DEC(u16s.size()) << "]=" << xHEX0N(u16,3) << " | " << xHEX0N(uint16_t((u32 & mask) >> shift),3)
-													<< " = " << xHEX0N(u16 | uint16_t((u32 & mask) >> shift),3));
+//				RCV2110DDBG("u16s[" << DEC(u16s.size()) << "]=" << xHEX0N(u16,3) << " | " << xHEX0N(uint16_t((u32 & mask) >> shift),3)
+//							<< " = " << xHEX0N(u16 | uint16_t((u32 & mask) >> shift),3));
 				u16 |= uint16_t((u32 & mask) >> shift);
 			}
 			else
 			{
 				u16 = uint16_t((u32 & mask) >> shift);
-				if (DetailedDebugging)	LOGMYDEBUG("u16s[" << DEC(u16s.size()) << "]=" << xHEX0N(u16,3));
+//				RCV2110DDBG("u16s[" << DEC(u16s.size()) << "]=" << xHEX0N(u16,3));
 			}
-			u16s.push_back(u16);	if (DetailedDebugging)	LOGMYDEBUG("u16s[" << DEC(u16s.size()-1) << "]=" << xHEX0N(u16,3));
+			u16s.push_back(u16);	//	RCV2110DDBG("u16s[" << DEC(u16s.size()-1) << "]=" << xHEX0N(u16,3));
 			switch(u16s.size())
 			{
 				case 1:		SetDID(uint8_t(u16));				break;	//	Got DID
 				case 2:		SetSID(uint8_t(u16));				break;	//	Got SID
 				case 3:		dataCount = size_t(u16 & 0x0FF);	break;	//	Got DC
 				default:	if (u16s.size() == (dataCount + 4))
-								{gotChecksum = true; if (DetailedDebugging)	LOGMYDEBUG("Got checksum");}	//	Got CS
+								{gotChecksum = true; RCV2110DDBG("Got checksum, DC=" << xHEX0N(dataCount,2) << " CS=" << xHEX0N(u16s.back(),3));}	//	Got CS
 							break;
 			}
 		}	//	loop 20 times (or until gotChecksum)
@@ -1029,7 +1054,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 				break;
 	} while (inOutU32Ndx < numU32s);
 
-	LOGMYDEBUG("Consumed " << DEC(inOutU32Ndx - startU32Ndx + 1) << " ULWord(s), unpacked " << u16s);
+	RCV2110DBG("Consumed " << DEC(inOutU32Ndx - startU32Ndx + 1) << " ULWord(s), unpacked " << u16s);
 	if (inOutU32Ndx < numU32s)
 		inOutU32Ndx++;	//	Bump to next Anc packet, if any
 
@@ -1039,11 +1064,17 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 
 	result = SetChecksum(uint8_t(u16s.at(u16s.size()-1)), true /*validate*/);
 	if (AJA_FAILURE(result))
-		{LOGMYERROR("SetChecksum=" << xHEX0N(u16s.at(u16s.size()-1),3) << " failed, calculated=" << xHEX0N(Calculate9BitChecksum(),3));	return result;}
-	LOGMYDEBUG(AsString(64));
+	{
+		if (inIgnoreChecksum)
+			{RCV2110WARN("SetChecksum=" << xHEX0N(u16s.at(u16s.size()-1),3) << " failed, calculated=" << xHEX0N(Calculate9BitChecksum(),3));  result = AJA_STATUS_SUCCESS;}
+		else
+			{RCV2110ERR("SetChecksum=" << xHEX0N(u16s.at(u16s.size()-1),3) << " failed, calculated=" << xHEX0N(Calculate9BitChecksum(),3));  return result;}
+	}
+	SetBufferFormat(AJAAncillaryBufferFormat_RTP);
+	RCV2110DBG(AsString(64));
 
 	/*	The Pattern:  (unrolling the above loop):
-		u32 = AJA_ENDIAN_32NtoH(inU32s.at(0));
+		u32 = ENDIAN_32NtoH(inU32s.at(0));
 		u16  = uint16_t((u32 & 0xFFC00000) >> 22);		//	all 10 bits				0
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x003FF000) >> 12);		//	all 10 bits				1
@@ -1052,7 +1083,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x00000003) <<  8);		//	first (MS 2 bits)		3
 
-		u32 = AJA_ENDIAN_32NtoH(inU32s.at(1));
+		u32 = ENDIAN_32NtoH(inU32s.at(1));
 		u16 |= uint16_t((u32 & 0xFF000000) >> 24);		//	last (LS 8 bits)		4
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x00FFC000) >> 14);		//	all 10 bits				5
@@ -1061,7 +1092,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x0000000F) <<  6);		//	first (MS 4 bits)		7
 
-		u32 = AJA_ENDIAN_32NtoH(inU32s.at(2));
+		u32 = ENDIAN_32NtoH(inU32s.at(2));
 		u16 |= uint16_t((u32 & 0xFC000000) >> 26);		//	last (LS 6 bits)		8
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x03FF0000) >> 16);		//	all 10 bits				9
@@ -1070,7 +1101,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x0000003F) <<  4);		//	first (MS 6 bits)		11
 
-		u32 = AJA_ENDIAN_32NtoH(inU32s.at(3));
+		u32 = ENDIAN_32NtoH(inU32s.at(3));
 		u16 |= uint16_t((u32 & 0xF0000000) >> 28);		//	last (LS 4 bits)		12
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x0FFC0000) >> 18);		//	all 10 bits				13
@@ -1079,7 +1110,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x000000FF) <<  2);		//	first (MS 8 bits)		15
 
-		u32 = AJA_ENDIAN_32NtoH(inU32s.at(4));
+		u32 = ENDIAN_32NtoH(inU32s.at(4));
 		u16 |= uint16_t((u32 & 0xC0000000) >> 30);		//	last (LS 2 bits)		16
 		u16s.push_back(u16);
 		u16  = uint16_t((u32 & 0x3FF00000) >> 20);		//	all 10 bits				17
@@ -1090,7 +1121,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const vector<uint32_t> & inU32
 		u16s.push_back(u16);
 */
 	return result;
-}	//	InitWithReceivedData (const vector<uint32_t>&,uint16_t&)
+}	//	InitWithReceivedData (const ULWordSequence&,uint16_t&)
 
 
 static const string		gEmptyString;
@@ -1133,32 +1164,63 @@ const string & AJAAncillaryDataSpaceToString (const AJAAncillaryDataSpace inValu
 }
 
 
+string AJAAncLineNumberToString (const uint16_t inValue)
+{
+	ostringstream	oss;
+	if (inValue == AJAAncDataLineNumber_AnyVanc)
+		oss	<< "VANC";
+	else if (inValue == AJAAncDataLineNumber_Anywhere)
+		oss	<< "UNSP";	//	Unspecified -- anywhere
+	else if (inValue == AJAAncDataLineNumber_Future)
+		oss	<< "OVFL";	//	Overflow
+	else if (inValue == AJAAncDataLineNumber_Unknown)
+		oss	<< "UNKN";
+	else
+		oss << "L" << DEC(inValue);
+	return oss.str();
+}
+
+
+string AJAAncHorizOffsetToString (const uint16_t inValue)
+{
+	ostringstream	oss;
+	if (inValue == AJAAncDataHorizOffset_AnyHanc)
+		oss	<< "HANC";
+	else if (inValue == AJAAncDataHorizOffset_AnyVanc)
+		oss	<< "VANC";
+	else if (inValue == AJAAncDataHorizOffset_Anywhere)
+		oss	<< "UNSP";
+	else if (inValue == AJAAncDataHorizOffset_Future)
+		oss	<< "OVFL";
+	else if (inValue == AJAAncDataHorizOffset_Unknown)
+		oss	<< "UNKN";
+	else
+		oss << "+" << DEC(inValue);
+	return oss.str();
+}
+
+
+ostream & AJAAncillaryDataLocation::Print (ostream & oss, const bool inCompact) const
+{
+	oss	<< ::AJAAncillaryDataLinkToString(GetDataLink(), inCompact)
+		<< "|" << ::AJAAncillaryDataStreamToString(GetDataStream(), inCompact)
+		<< "|" << ::AJAAncillaryDataChannelToString(GetDataChannel(), inCompact)
+		<< "|" << ::AJAAncLineNumberToString(GetLineNumber())
+		<< "|" << ::AJAAncHorizOffsetToString(GetHorizontalOffset());
+	return oss;
+}
+
+
 string AJAAncillaryDataLocationToString (const AJAAncillaryDataLocation & inValue, const bool inCompact)
 {
 	ostringstream	oss;
-	oss	<< ::AJAAncillaryDataLinkToString(inValue.GetDataLink(), inCompact)
-		<< "|" << ::AJAAncillaryDataStreamToString(inValue.GetDataStream(), inCompact)
-		<< "|" << ::AJAAncillaryDataChannelToString(inValue.GetDataChannel(), inCompact)
-		<< "|" << ::AJAAncillaryDataSpaceToString(inValue.GetDataSpace(), inCompact)
-		<< "|L" << DEC(inValue.GetLineNumber());
-	if (inValue.GetHorizontalOffset() != AJAAncillaryDataLocation::AJAAncDataHorizOffset_Default)
-	{
-		oss	<< "|";
-		if (inValue.GetHorizontalOffset() == AJAAncillaryDataLocation::AJAAncDataHorizOffset_AnyHanc)
-			oss	<< "EAV*";
-		else if (inValue.GetHorizontalOffset() == AJAAncillaryDataLocation::AJAAncDataHorizOffset_Anywhere)
-			oss	<< "SAV*";
-		else
-			oss << "SAV+" << DEC(inValue.GetHorizontalOffset());
-	}
-	//else oss << DEC(inValue.GetHorizontalOffset());	//	DON'T SHOW ANYTHING FOR ZERO (DEFAULT)
-	return oss.str ();
+	inValue.Print(oss, inCompact);
+	return oss.str();
 }
 
 ostream & operator << (ostream & inOutStream, const AJAAncillaryDataLocation & inValue)
 {
-	inOutStream	<< ::AJAAncillaryDataLocationToString(inValue, true);
-	return inOutStream;
+	return inValue.Print(inOutStream, true);
 }
 
 
@@ -1171,15 +1233,28 @@ const string & AJAAncillaryDataCodingToString (const AJAAncillaryDataCoding inVa
 }
 
 
+const string &	AJAAncillaryBufferFormatToString (const AJAAncillaryBufferFormat inValue, const bool inCompact)
+{
+	static const string		gAncBufFmtToStr []	= {"UNK", "FBVANC", "SDI", "RTP", ""};
+	static const string		gDAncBufFmtToStr []	= {"AJAAncillaryBufferFormat_Unknown", "AJAAncillaryBufferFormat_FBVANC",
+													"AJAAncillaryBufferFormat_SDI", "AJAAncillaryBufferFormat_RTP", ""};
+
+	return IS_VALID_AJAAncillaryBufferFormat (inValue) ? (inCompact ? gAncBufFmtToStr[inValue] : gDAncBufFmtToStr[inValue]) : gEmptyString;
+}
+
+
 const string & AJAAncillaryDataTypeToString (const AJAAncillaryDataType inValue, const bool inCompact)
 {
 	static const string		gAncDataTypeToStr []			= {	"Unknown", "SMPTE 2016-3 AFD", "SMPTE 12-M RP188", "SMPTE 12-M VITC",
 																"SMPTE 334 CEA708", "SMPTE 334 CEA608", "CEA608 Line21", "SMPTE 352 VPID",
-																"SMPTE 2051 2 Frame Marker", "524D Frame Status", "5251 Frame Status", "?"};
+																"SMPTE 2051 2 Frame Marker", "524D Frame Status", "5251 Frame Status",
+																"HDR SDR", "HDR10", "HDR HLG", "?"};
+
 	static const string		gDAncDataTypeToStr []			= {	"AJAAncillaryDataType_Unknown", "AJAAncillaryDataType_Smpte2016_3", "AJAAncillaryDataType_Timecode_ATC",
 																"AJAAncillaryDataType_Timecode_VITC", "AJAAncillaryDataType_Cea708", "AJAAncillaryDataType_Cea608_Vanc",
 																"AJAAncillaryDataType_Cea608_Line21", "AJAAncillaryDataType_Smpte352", "AJAAncillaryDataType_Smpte2051",
-																"AJAAncillaryDataType_FrameStatusInfo524D", "AJAAncillaryDataType_FrameStatusInfo5251", "?"};
+																"AJAAncillaryDataType_FrameStatusInfo524D", "AJAAncillaryDataType_FrameStatusInfo5251",
+																"AJAAncillaryDataType_HDR_SDR", "AJAAncillaryDataType_HDR_HDR10", "AJAAncillaryDataType_HDR_HLG", "?"};
 
 	return inValue < AJAAncillaryDataType_Size ? (inCompact ? gAncDataTypeToStr[inValue] : gDAncDataTypeToStr[inValue]) : gEmptyString;
 }
@@ -1187,13 +1262,15 @@ const string & AJAAncillaryDataTypeToString (const AJAAncillaryDataType inValue,
 
 ostream & AJAAncillaryData::Print (ostream & inOutStream, const bool inDumpPayload) const
 {
-	inOutStream << "Type:\t\t"	<< AJAAncillaryData::DIDSIDToString(m_DID, m_SID)	<< endl	//	::AJAAncillaryDataTypeToString (GetAncillaryDataType ()) << endl
-				<< "DID:\t\t"	<< xHEX0N(uint32_t(m_DID),2)						<< endl
-				<< "SID:\t\t"	<< xHEX0N(uint32_t(m_SID),2)						<< endl
-				<< "DC:\t\t"	<< DEC(GetDC())										<< endl
-				<< "CS:\t\t"	<< xHEX0N(uint32_t(m_checksum),2)					<< endl
-				<< "Loc:\t\t"	<< m_location										<< endl
-				<< "Coding:\t\t"<< ::AJAAncillaryDataCodingToString(m_coding)		<< endl
+	inOutStream << "Type:\t\t"	<< AJAAncillaryData::DIDSIDToString(m_DID, m_SID)			<< endl
+				<< "DID:\t\t"	<< xHEX0N(uint32_t(m_DID),2)								<< endl
+				<< "SID:\t\t"	<< xHEX0N(uint32_t(m_SID),2)								<< endl
+				<< "DC:\t\t"	<< DEC(GetDC())												<< endl
+				<< "CS:\t\t"	<< xHEX0N(uint32_t(m_checksum),2)							<< endl
+				<< "Loc:\t\t"	<< m_location												<< endl
+				<< "Coding:\t\t"<< ::AJAAncillaryDataCodingToString(m_coding)				<< endl
+				<< "Frame:\t\t"	<< xHEX0N(GetFrameID(),8)									<< endl
+				<< "Format:\t\t"<< ::AJAAncillaryBufferFormatToString(GetBufferFormat())	<< endl
 				<< "Valid:\t\t"	<< (m_rcvDataValid ? "Yes" : "No");
 	if (inDumpPayload)
 		{inOutStream << endl;  DumpPayload (inOutStream);}
@@ -1205,7 +1282,12 @@ string AJAAncillaryData::AsString (const uint16_t inMaxBytes) const
 {
 	ostringstream	oss;
 	oss	<< "[" << ::AJAAncillaryDataCodingToString(GetDataCoding())
-		<< "|" << ::AJAAncillaryDataLocationToString(GetDataLocation()) << "|" << GetDIDSIDPair() << "|CS=" << xHEX0N(uint16_t(GetChecksum()),2) << "|DC=" << DEC(GetDC());
+		<< "|" << ::AJAAncillaryDataLocationToString(GetDataLocation())
+		<< "|" << GetDIDSIDPair() << "|CS" << HEX0N(uint16_t(GetChecksum()),2) << "|DC=" << DEC(GetDC());
+	if (m_frameID)
+		oss	<< "|FRx" << HEX0N(GetFrameID(),8);
+	if (IS_KNOWN_AJAAncillaryBufferFormat(m_bufferFmt))
+		oss	<< "|" << ::AJAAncillaryBufferFormatToString(GetBufferFormat());
 	const string	typeStr	(AJAAncillaryData::DIDSIDToString(m_DID, m_SID));
 	if (!typeStr.empty())
 		oss << "|" << typeStr;
@@ -1227,7 +1309,7 @@ string AJAAncillaryData::AsString (const uint16_t inMaxBytes) const
 
 ostream & operator << (ostream & inOutStream, const AJAAncillaryDIDSIDPair & inData)
 {
-	inOutStream << "ID=" << xHEX0N(uint16_t(inData.first), 2) << "/" << xHEX0N(uint16_t(inData.second), 2);
+	inOutStream << "x" << HEX0N(uint16_t(inData.first), 2) << "x" << HEX0N(uint16_t(inData.second), 2);
 	return inOutStream;
 }
 
@@ -1425,10 +1507,10 @@ static bool CheckAncParityAndChecksum (const AJAAncillaryData::U16Packet &	inYUV
 }	//	CheckAncParityAndChecksum
 
 
-bool AJAAncillaryData::GetAncPacketsFromVANCLine (const vector<uint16_t> &			inYUV16Line,
+bool AJAAncillaryData::GetAncPacketsFromVANCLine (const UWordSequence &				inYUV16Line,
 													const AncChannelSearchSelect	inChanSelect,
 													U16Packets &					outRawPackets,
-													vector<uint16_t> &				outWordOffsets)
+													UWordSequence &					outWordOffsets)
 {
 	const UWord	wordCountMax	(UWord(inYUV16Line.size ()));
 
@@ -1498,7 +1580,7 @@ bool AJAAncillaryData::GetAncPacketsFromVANCLine (const vector<uint16_t> &			inY
 
 
 bool AJAAncillaryData::Unpack8BitYCbCrToU16sVANCLine (const void * pInYUV8Line,
-														vector<uint16_t> & outU16YUVLine,
+														UWordSequence & outU16YUVLine,
 														const uint32_t inNumPixels)
 {
 	const UByte *	pInYUV8Buffer	(reinterpret_cast <const UByte *> (pInYUV8Line));
@@ -1656,8 +1738,7 @@ string AJAAncillaryData::DIDSIDToString (const uint8_t inDID, const uint8_t inSI
 					else if (inSID == 0xDD)	return "ARIB STD-B37 Analog Captions";
 					else if (inSID == 0xDC)	return "ARIB STD-B37 Mobile Captions";
 					else if ((inSID & 0xF0) == 0xD0)	return "ARIB STD-B37 ??? Captions";
-					else					return "ARIB STD-B37 ???";
-					break;
+					return "ARIB STD-B37 ???";
 		case 0x60:	if (inSID == 0x60)		return "SMPTE-12M ATC Timecode";
 					break;
 		case 0x61:	if (inSID == 0x01)		return "SMPTE-334 HD CEA-708 CC";
@@ -1714,6 +1795,18 @@ string AJAAncillaryData::DIDSIDToString (const uint8_t inDID, const uint8_t inSI
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //	AJARTPAncPayloadHeader
 
+
+bool AJARTPAncPayloadHeader::BufferStartsWithRTPHeader (const NTV2_POINTER & inBuffer)
+{
+	if (inBuffer.IsNULL())
+		return false;
+	//	Peek in buffer and see if it starts with an RTP header...
+	AJARTPAncPayloadHeader	hdr;
+	if (!hdr.ReadFromBuffer(inBuffer))
+		return false;
+	return hdr.IsValid();
+}
+
 AJARTPAncPayloadHeader::AJARTPAncPayloadHeader()
 	:	mVBits			(2),		//	Playout: don't care -- hardware sets this
 		mPBit			(false),	//	Playout: don't care -- hardware sets this
@@ -1724,13 +1817,13 @@ AJARTPAncPayloadHeader::AJARTPAncPayloadHeader()
 		mSequenceNumber	(0),		//	Playout: don't care -- hardware sets this
 		mTimeStamp		(0),		//	Playout: don't care -- hardware sets this
 		mSyncSourceID	(0),		//	Playout: client sets this
-		mPacketLength	(0),		//	Playout: WriteIPAncData sets this
+		mPayloadLength	(0),		//	Playout: WriteIPAncData sets this
 		mAncCount		(0),		//	Playout: WriteIPAncData sets this
 		mFieldSignal	(0)			//	Playout: WriteIPAncData sets this
 {
 }
 
-bool AJARTPAncPayloadHeader::GetULWordAtIndex (const unsigned inIndex0, uint32_t & outULWord) const
+bool AJARTPAncPayloadHeader::GetPacketHeaderULWordForIndex (const unsigned inIndex0, uint32_t & outULWord) const
 {
 	switch (inIndex0)
 	{
@@ -1744,24 +1837,33 @@ bool AJARTPAncPayloadHeader::GetULWordAtIndex (const unsigned inIndex0, uint32_t
 			u32 |= uint32_t(IsEndOfFieldOrFrame() ? 1 : 0) << 23;
 			u32 |= uint32_t(GetPayloadType() & 0x0000007F) << 16;
 			u32 |= uint32_t(GetSequenceNumber() & 0x0000FFFF);
-			outULWord = AJA_ENDIAN_32HtoN(u32);
+			outULWord = ENDIAN_32HtoN(u32);
 			break;
 		}
-		case 1:		outULWord = AJA_ENDIAN_32HtoN(GetTimeStamp());		break;
-		case 2:		outULWord = AJA_ENDIAN_32HtoN(GetSyncSourceID());	break;
+
+		case 1:
+			outULWord = ENDIAN_32HtoN(GetTimeStamp());
+			break;
+
+		case 2:
+			outULWord = ENDIAN_32HtoN(GetSyncSourceID());
+			break;
+
 		case 3:
 		{
-			const uint32_t	u32	((GetSequenceNumber() & 0xFFFF0000) | (GetPacketLength()));
-			outULWord = AJA_ENDIAN_32HtoN(u32);
+			const uint32_t	u32	((GetSequenceNumber() & 0xFFFF0000) | (GetPayloadLength()));
+			outULWord = ENDIAN_32HtoN(u32);
 			break;
 		}
+
 		case 4:
 		{
 			uint32_t u32(uint32_t(GetAncPacketCount() & 0x000000FF) << 24);
 			u32 |= uint32_t(GetFieldSignal() & 0x00000003) << 22;
-			outULWord = AJA_ENDIAN_32HtoN(u32);
+			outULWord = ENDIAN_32HtoN(u32);
 			break;
 		}
+
 		default:
 			outULWord = 0;
 			return false;
@@ -1769,9 +1871,9 @@ bool AJARTPAncPayloadHeader::GetULWordAtIndex (const unsigned inIndex0, uint32_t
 	return true;
 }
 
-bool AJARTPAncPayloadHeader::SetULWordAtIndex(const unsigned inIndex0, const uint32_t inULWord)
+bool AJARTPAncPayloadHeader::SetFromPacketHeaderULWordAtIndex(const unsigned inIndex0, const uint32_t inULWord)
 {
-	const uint32_t	u32	(AJA_ENDIAN_32NtoH(inULWord));
+	const uint32_t	u32	(ENDIAN_32NtoH(inULWord));
 	switch (inIndex0)
 	{
 		case 0:		mVBits = uint8_t(u32 >> 30);
@@ -1790,7 +1892,7 @@ bool AJARTPAncPayloadHeader::SetULWordAtIndex(const unsigned inIndex0, const uin
 					break;
 
 		case 3:		mSequenceNumber = (u32 & 0xFFFF0000) | (mSequenceNumber & 0x0000FFFF);	//	Replace MS 16 bits
-					mPacketLength = uint16_t(u32 & 0x0000FFFF);
+					mPayloadLength = uint16_t(u32 & 0x0000FFFF);
 					break;
 
 		case 4:		mAncCount = uint8_t((u32 & 0xFF000000) >> 24);
@@ -1802,47 +1904,46 @@ bool AJARTPAncPayloadHeader::SetULWordAtIndex(const unsigned inIndex0, const uin
 	return true;
 }
 
-bool AJARTPAncPayloadHeader::WriteULWordVector(std::vector<uint32_t> & outVector, const bool inReset) const
+bool AJARTPAncPayloadHeader::WriteToULWordVector (ULWordSequence & outVector, const bool inReset) const
 {
 	if (inReset)
 		outVector.clear();
 	while (outVector.size() < 5)
 		outVector.push_back(0);
 	for (unsigned ndx(0);  ndx < 5;  ndx++)
-		outVector[ndx] = GetULWordAtIndex(ndx);
+		outVector[ndx] = GetPacketHeaderULWordForIndex(ndx);
 	return true;
 }
 
-bool AJARTPAncPayloadHeader::WriteBuffer(NTV2_POINTER & outBuffer) const
+bool AJARTPAncPayloadHeader::WriteToBuffer (NTV2_POINTER & outBuffer, const ULWord inU32Offset) const
 {
-	if (outBuffer.IsNULL())
-		return false;
-	if (outBuffer.GetByteCount() < GetHeaderByteCount())
-		return false;	//	Too small
-	uint32_t *	pU32s	(reinterpret_cast <uint32_t *> (outBuffer.GetHostPointer()));
+	const ULWord	startingByteOffset	(inU32Offset * sizeof(uint32_t));
+	if ((startingByteOffset + ULWord(GetHeaderByteCount())) > outBuffer.GetByteCount())
+		return false;	//	Buffer too small
+	uint32_t *	pU32s	(reinterpret_cast<uint32_t*>(outBuffer.GetHostAddress(startingByteOffset)));
 	for (unsigned ndx(0);  ndx < 5;  ndx++)
-		pU32s[ndx] = GetULWordAtIndex(ndx);
+		pU32s[ndx] = GetPacketHeaderULWordForIndex(ndx);
 	return true;
 }
 
-bool AJARTPAncPayloadHeader::ReadULWordVector(const std::vector<uint32_t> & inVector)
+bool AJARTPAncPayloadHeader::ReadFromULWordVector (const ULWordSequence & inVector)
 {
 	//	Note: uint32_t's are assumed to be in network byte order
 	if (inVector.size() < 5)
 		return false;	//	Too small
 	for (unsigned ndx(0);  ndx < 5;  ndx++)
-		if (!SetULWordAtIndex(ndx, inVector[ndx]))
+		if (!SetFromPacketHeaderULWordAtIndex(ndx, inVector[ndx]))
 			return false;
 	return true;
 }
 
-bool AJARTPAncPayloadHeader::ReadBuffer(const NTV2_POINTER & inBuffer)
+bool AJARTPAncPayloadHeader::ReadFromBuffer(const NTV2_POINTER & inBuffer)
 {
 	if (inBuffer.GetByteCount() < GetHeaderByteCount())
 		return false;	//	Too small
 	const uint32_t *	pU32s	(reinterpret_cast <const uint32_t *> (inBuffer.GetHostPointer()));
 	for (unsigned ndx(0);  ndx < 5;  ndx++)
-		if (!SetULWordAtIndex(ndx, pU32s[ndx]))
+		if (!SetFromPacketHeaderULWordAtIndex(ndx, pU32s[ndx]))
 			return false;
 	return true;
 }
@@ -1864,21 +1965,21 @@ bool AJARTPAncPayloadHeader::operator == (const AJARTPAncPayloadHeader & inRHS) 
 		&&  mSequenceNumber	== inRHS.mSequenceNumber
 		&&  mTimeStamp		== inRHS.mTimeStamp
 		&&  mSyncSourceID	== inRHS.mSyncSourceID
-		&&  mPacketLength	== inRHS.mPacketLength
+		&&  mPayloadLength	== inRHS.mPayloadLength
 		&&  mAncCount		== inRHS.mAncCount
 		&&  mFieldSignal	== inRHS.mFieldSignal;
 }
 
 ostream & AJARTPAncPayloadHeader::Print (ostream & inOutStream) const
 {	//	Translate back to host byte order before printing:
-	const uint32_t	word0	(AJA_ENDIAN_32NtoH(GetULWordAtIndex(0)));
+	const uint32_t	word0	(ENDIAN_32NtoH(GetPacketHeaderULWordForIndex(0)));
 	inOutStream << xHEX0N(word0,8)
 //				<< "|" << bBIN032(word0)
 				<< ": V=" << DEC(uint16_t(mVBits))
 				<< " P=" << mPBit << " X=" << mXBit << " CC=" << DEC(uint16_t(mCCBits))
 				<< " M=" << (IsEndOfFieldOrFrame()?"EOF":"0") << " PT=" << xHEX0N(uint16_t(GetPayloadType()),2)
 				<< " Seq#=" << xHEX0N(GetSequenceNumber(),8) << " TS=" << xHEX0N(GetTimeStamp(),8)
-				<< " SSRC=" << xHEX0N(GetSyncSourceID(),8) << " PktLen=" << DEC(GetPacketLength())
+				<< " SSRC=" << xHEX0N(GetSyncSourceID(),8) << " PayLen=" << DEC(GetPayloadLength())
 				<< " AncCnt=" << DEC(uint16_t(GetAncPacketCount())) << " F=" << FieldSignalToString(GetFieldSignal())
 				<< (IsValid() ? "" : " (invalid)");
 	return inOutStream;
@@ -1886,7 +1987,7 @@ ostream & AJARTPAncPayloadHeader::Print (ostream & inOutStream) const
 
 bool AJARTPAncPayloadHeader::IsNULL(void) const
 {	//	Return TRUE if all of my fields are zero...
-	return !(mVBits || mPBit || mXBit || mCCBits || mMarkerBit || mPayloadType || mSequenceNumber || mTimeStamp || mSyncSourceID || mPacketLength || mAncCount || mFieldSignal);
+	return !(mVBits || mPBit || mXBit || mCCBits || mMarkerBit || mPayloadType || mSequenceNumber || mTimeStamp || mSyncSourceID || mPayloadLength || mAncCount || mFieldSignal);
 }
 
 bool AJARTPAncPayloadHeader::IsValid(void) const
@@ -1927,18 +2028,19 @@ uint32_t AJARTPAncPacketHeader::GetULWord (void) const
 	//	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	//	|C|   Line_Number       |   Horizontal_Offset   |S|  StreamNum  |
 	//	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-	uint32_t	u32(0);
-	u32 |= (uint32_t(GetLineNumber()) & 0x000007FF) << 20;
+	uint32_t	u32(0);	//	Build little-endian 32-bit ULWord with this
+	u32 |= (uint32_t(GetLineNumber()) & 0x000007FF) << 20;	//	11-bit line number
 	u32 |= (IsCBitSet() ? 0x80000000 : 0x00000000);
-	u32 |= (uint32_t(GetHorizOffset()) & 0x00000FFF) << 8;
-	u32 |= uint32_t(GetStreamNumber() & 0x7F);
-	u32 |= IsSBitSet() ? 0x00000080 : 0x00000000;
-	return AJA_ENDIAN_32HtoN(u32);
+	u32 |= (uint32_t(GetHorizOffset()) & 0x00000FFF) << 8;	//	12-bit horiz offset
+	u32 |= IsSBitSet() ? 0x00000080 : 0x00000000;			//	Data Stream flag
+	if (IsSBitSet())
+		u32 |= uint32_t(GetStreamNumber() & 0x7F);			//	7-bit StreamNum
+	return ENDIAN_32HtoN(u32);	//	Convert to big-endian
 }
 
 bool AJARTPAncPacketHeader::SetFromULWord (const uint32_t inULWord)
 {
-	const uint32_t	u32	(AJA_ENDIAN_32NtoH(inULWord));
+	const uint32_t	u32	(ENDIAN_32NtoH(inULWord));
 	//	 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
 	//	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	//	|C|   Line_Number       |   Horizontal_Offset   |S|  StreamNum  |
@@ -1954,7 +2056,7 @@ bool AJARTPAncPacketHeader::SetFromULWord (const uint32_t inULWord)
 	return true;
 }
 
-bool AJARTPAncPacketHeader::WriteToULWordVector(std::vector<uint32_t> & outVector, const bool inReset) const
+bool AJARTPAncPacketHeader::WriteToULWordVector (ULWordSequence & outVector, const bool inReset) const
 {
 	if (inReset)
 		outVector.clear();
@@ -1962,7 +2064,7 @@ bool AJARTPAncPacketHeader::WriteToULWordVector(std::vector<uint32_t> & outVecto
 	return true;
 }
 
-bool AJARTPAncPacketHeader::ReadFromULWordVector(const vector<uint32_t> & inVector, const unsigned inIndex0)
+bool AJARTPAncPacketHeader::ReadFromULWordVector (const ULWordSequence & inVector, const unsigned inIndex0)
 {
 	if (inIndex0 >= inVector.size())
 		return false;	//	Bad index -- out of range
@@ -1971,20 +2073,18 @@ bool AJARTPAncPacketHeader::ReadFromULWordVector(const vector<uint32_t> & inVect
 
 AJAAncillaryDataLocation AJARTPAncPacketHeader::AsDataLocation(void) const
 {
-	AJAAncillaryDataSpace	dataSpace (AJAAncillaryDataSpace_VANC);
-	switch (GetHorizOffset())
+	AJAAncillaryDataLocation	result;
+	result.SetLineNumber(GetLineNumber()).SetHorizontalOffset(GetHorizOffset())
+			.SetDataChannel(IsCBitSet() ? AJAAncillaryDataChannel_C : AJAAncillaryDataChannel_Y)
+			.SetDataLink(AJAAncillaryDataLink_A).SetDataStream(AJAAncillaryDataStream_1);
+	if (IsSBitSet())
 	{
-		case AJAAncillaryDataLocation::AJAAncDataHorizOffset_Default:	break;
-		case AJAAncillaryDataLocation::AJAAncDataHorizOffset_Anywhere:	break;
-		case AJAAncillaryDataLocation::AJAAncDataHorizOffset_AnyHanc:	dataSpace = AJAAncillaryDataSpace_HANC;	break;
-		default:	break;	//	Depends on video standard / frame geometry
+		//	e.g. SMPTE ST 425-3 DL 3Gbps, data streams are numbered 1-4, so DS1/DS2 on linkA, DS3/DS4 on linkB
+		result.SetDataStream(AJAAncillaryDataStream(GetStreamNumber()));
+		if (IS_LINKB_AJAAncillaryDataStream(result.GetDataStream()))
+			result.SetDataLink(AJAAncillaryDataLink_B);
 	}
-	return AJAAncillaryDataLocation(IsSBitSet() ? AJAAncillaryDataLink_A : AJAAncillaryDataLink_Unknown,
-									IsCBitSet() ? AJAAncillaryDataChannel_C : AJAAncillaryDataChannel_Y,
-									dataSpace,
-									GetLineNumber(),
-									GetHorizOffset(),
-									IsSBitSet() ? AJAAncillaryDataStream(GetStreamNumber()) : AJAAncillaryDataStream_1);
+	return result;
 }
 
 AJARTPAncPacketHeader &	AJARTPAncPacketHeader::SetFrom(const AJAAncillaryDataLocation & inLoc)
@@ -2015,6 +2115,7 @@ AJARTPAncPacketHeader &	AJARTPAncPacketHeader::SetFrom(const AJAAncillaryDataLoc
 
 	mLineNum = inLoc.GetLineNumber();
 	mHOffset = inLoc.GetHorizontalOffset();
+
 	return *this;
 }
 
@@ -2024,24 +2125,4 @@ ostream & AJARTPAncPacketHeader::Print (ostream & inOutStream) const
 				<< " Line=" << DEC(GetLineNumber()) << " HOff=" << DEC(GetHorizOffset())
 				<< " S=" << (IsSBitSet() ? "1" : "0") << " Strm=" << DEC(uint16_t(GetStreamNumber()));
 	return inOutStream;
-}
-
-
-string PrintULWordsBE (const ULWordSequence & inData, const unsigned inMaxNum)
-{
-	ostringstream	oss;
-	unsigned		numPrinted (0);
-	oss << DEC(inData.size()) << " ULWords: ";
-	for (ULWordSequenceConstIter iter(inData.begin());  iter != inData.end();  )
-	{
-		oss << HEX0N(AJA_ENDIAN_32NtoH(*iter),8);
-		numPrinted++;
-		if (++iter != inData.end())
-		{
-			if (numPrinted > inMaxNum)
-				{oss << "...";	break;}
-			oss << " ";
-		}
-	}
-	return oss.str();
 }

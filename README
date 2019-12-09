@@ -4,11 +4,10 @@ and uncompressed PCM audio (x-raw S16LE, S32LE).
 
 This code is provided under a LGPL license [1].
 
-The elements need to link with static builds of ajabase and ajantv2.
+The elements need to link with static builds of ajantv2.
 
-Build ajabase and ajantv2:
+Build ajantv2:
 
-    make -C ajalibraries/ajabase
     make -C ajalibraries/ajantv2
 
 Build the gst plugin:

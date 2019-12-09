@@ -141,7 +141,7 @@ Word CNTV2Card::GetPCIFPGAVersion (void)
 
 string CNTV2Card::GetPCIFPGAVersionString (void)
 {
-	const UWord		version	(GetPCIFPGAVersion ());
+	const UWord		version	(static_cast<UWord>(GetPCIFPGAVersion()));
 	ostringstream	oss;
 	oss << hex << version;
 	return oss.str ();
@@ -150,12 +150,15 @@ string CNTV2Card::GetPCIFPGAVersionString (void)
 
 string CNTV2Card::GetDriverVersionString (void)
 {
-	stringstream	oss;
-	static const string	sDriverBuildTypes [] = {"", "b", "a", "d"};
-	UWord	versions[4]	= {0, 0, 0, 0};
-	ULWord	versBits(0);
+	static const string	sDriverBuildTypes []	= {"", "b", "a", "d"};
+	UWord				versions[4]				= {0, 0, 0, 0};
+	ULWord				versBits(0);
+	stringstream		oss;
+	if (!GetDriverVersionComponents (versions[0], versions[1], versions[2], versions[3]))
+		return string();	//	fail
+
 	ReadRegister (kVRegDriverVersion, versBits);
-	const string & dabr (sDriverBuildTypes[versBits >> 30]);	//	Bits 31:30 == build type
+	const string & dabr (versBits ? sDriverBuildTypes[versBits >> 30] : "");	//	Bits 31:30 == build type
 	GetDriverVersionComponents (versions[0], versions[1], versions[2], versions[3]);
 	if (dabr.empty())
 		oss << DEC(versions[0]) << "." << DEC(versions[1]) << "." << DEC(versions[2]) << "." << DEC(versions[3]);
@@ -173,10 +176,50 @@ bool CNTV2Card::GetDriverVersionComponents (UWord & outMajor, UWord & outMinor, 
 	if (!ReadRegister (kVRegDriverVersion, driverVersionULWord))
 		return false;
 
+	#if defined(MSWindows)
+		if (!driverVersionULWord)	//	If zero --- pre-15.0 Win driver?
+			if (ReadRegister(10002, driverVersionULWord))	//	Try reg 10002
+				if (driverVersionULWord)					//	Valid?
+				{	//	Decode pre-15.0 Win driver version info...
+					outMajor = (driverVersionULWord >>  4) & 0x000F;
+					outMinor = (driverVersionULWord      ) & 0x000F;
+					outPoint = (driverVersionULWord >>  8) & 0x000F;
+					outBuild = (driverVersionULWord >> 16) & 0xFFFF;
+					return true;
+				}
+	#elif defined(AJAMac)
+		if (!driverVersionULWord)	//	Zero? Pre-15.0 Mac driver?
+		{	//	The Mac DeviceMap keeps the driver's version
+			driverVersionULWord = GetMacRawDriverVersion();	//	Get DeviceMap's driver version
+			outMajor = UWord(driverVersionULWord >> 24) & 0x00FF;	//	major
+			outMinor = UWord(driverVersionULWord >> 16) & 0x00FF;	//	minor
+			outPoint = UWord(driverVersionULWord >>  8) & 0x00FF;	//	point
+			outBuild = UWord(driverVersionULWord      ) & 0x00FF;	//	build
+			return true;
+		}
+	#else
+	#endif
+
+	//	The normal 15.0+ way of decoding the 32-bit driver version value:
 	outMajor = UWord(NTV2DriverVersionDecode_Major(driverVersionULWord));
 	outMinor = UWord(NTV2DriverVersionDecode_Minor(driverVersionULWord));
 	outPoint = UWord(NTV2DriverVersionDecode_Point(driverVersionULWord));
 	outBuild = UWord(NTV2DriverVersionDecode_Build(driverVersionULWord));
+
+	#if defined(AJALinux)
+		const UWord	oldMajor	((driverVersionULWord >>  4) & 0x0000000F);
+		const UWord	oldMinor	((driverVersionULWord      ) & 0x0000000F);
+		const UWord	oldPoint	((driverVersionULWord >>  8) & 0x0000003F);
+		const UWord	oldBuild	((driverVersionULWord >> 16) & 0x0000FFFF);
+		if (!outMajor  &&  !outMinor  &&  outBuild)		//	Pre-15.0 Lin driver?
+		{	//	Decode pre-15.0 Linux driver version:
+			outMajor = oldMajor;
+			outMinor = oldMinor;
+			outPoint = oldPoint;
+			outBuild = oldBuild;
+		}
+	#endif
+
 	return true;
 }
 
@@ -237,14 +280,14 @@ string CNTV2Card::SerialNum64ToString (const uint64_t inSerialNumber)	//	Class m
 	const ULWord	serialNumLow	(inSerialNumber & 0x00000000FFFFFFFF);
     char			serialNum [9];
 
-	serialNum[0] = ((serialNumLow  & 0x000000FF)      );
-	serialNum[1] = ((serialNumLow  & 0x0000FF00) >>  8);
-	serialNum[2] = ((serialNumLow  & 0x00FF0000) >> 16);
-	serialNum[3] = ((serialNumLow  & 0xFF000000) >> 24);
-	serialNum[4] = ((serialNumHigh & 0x000000FF)      );
-	serialNum[5] = ((serialNumHigh & 0x0000FF00) >>  8);
-	serialNum[6] = ((serialNumHigh & 0x00FF0000) >> 16);
-	serialNum[7] = ((serialNumHigh & 0xFF000000) >> 24);
+	serialNum[0] = char((serialNumLow  & 0x000000FF)      );
+	serialNum[1] = char((serialNumLow  & 0x0000FF00) >>  8);
+	serialNum[2] = char((serialNumLow  & 0x00FF0000) >> 16);
+	serialNum[3] = char((serialNumLow  & 0xFF000000) >> 24);
+	serialNum[4] = char((serialNumHigh & 0x000000FF)      );
+	serialNum[5] = char((serialNumHigh & 0x0000FF00) >>  8);
+	serialNum[6] = char((serialNumHigh & 0x00FF0000) >> 16);
+	serialNum[7] = char((serialNumHigh & 0xFF000000) >> 24);
 	serialNum[8] = '\0';
 
 	for (unsigned ndx (0);  ndx < 8;  ndx++)
@@ -325,6 +368,9 @@ bool CNTV2Card::IsFailSafeBitfileLoaded (bool & outIsSafeBoot)
 bool CNTV2Card::CanWarmBootFPGA (bool & outCanWarmBoot)
 {
 	outCanWarmBoot = false;	//	Definitely can't
+	if (!::NTV2DeviceCanDoWarmBootFPGA(_boardID))
+		return false;
+
 	ULWord	version(0);
 	if (!ReadRegister(kRegCPLDVersion, version, BIT(0)|BIT(1)))
 		return false;	//	Fail
@@ -400,7 +446,8 @@ NTV2BreakoutType CNTV2Card::GetBreakoutHardware (void)
 			case DEVICE_ID_KONA4:
 			case DEVICE_ID_KONA4UFC:
 			case DEVICE_ID_KONA5:
-            case DEVICE_ID_KONA5_12G:
+            case DEVICE_ID_KONA5_8KMK:
+			case DEVICE_ID_KONA5_8K:
 				//	Do we have a K3G-Box?
 				if ((audioCtlReg & kK2RegMaskKBoxDetect) || bPhonyKBox)
 					result = NTV2_K3GBox;

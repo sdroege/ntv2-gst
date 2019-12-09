@@ -118,6 +118,8 @@ public:
 	}
 	std::string & GetMCSInfo()
 	{
+		std::string::size_type f = _mcsInfo.find("\xFF\xFF");
+		_mcsInfo = _mcsInfo.substr(0, f);
 		return _mcsInfo;
 	}
 
@@ -130,6 +132,7 @@ public:
 	bool ReadLicenseInfo(std::string& licenseString);
 	void DisplayData(uint32_t address, uint32_t len);
 	bool ProgramInfoFromString(std::string infoString);
+	void FullProgram(std::vector<uint8_t> & dataBuffer);
 
     int32_t  NextMcsStep() {return ++_mcsStep;}
 
@@ -153,28 +156,14 @@ public:
 	{
 		switch ( flashBlockNumber )
 		{
-		default:
-		case MAIN_FLASHBLOCK:
-			return _mainOffset;
-			break;
-		case FAILSAFE_FLASHBLOCK:
-			return _failSafeOffset;
-			break;
-		case SOC1_FLASHBLOCK:
-			return _soc1Offset;
-			break;
-		case SOC2_FLASHBLOCK:
-			return _soc2Offset;
-			break;
-		case MAC_FLASHBLOCK:
-			return _macOffset;
-			break;
-		case MCS_INFO_BLOCK:
-			return _mcsInfoOffset;
-			break;
-		case LICENSE_BLOCK:
-			return _licenseOffset;
-			break;
+			default:
+			case MAIN_FLASHBLOCK:		return _mainOffset;
+			case FAILSAFE_FLASHBLOCK:	return _failSafeOffset;
+			case SOC1_FLASHBLOCK:		return _soc1Offset;
+			case SOC2_FLASHBLOCK:		return _soc2Offset;
+			case MAC_FLASHBLOCK:		return _macOffset;
+			case MCS_INFO_BLOCK:		return _mcsInfoOffset;
+			case LICENSE_BLOCK:			return _licenseOffset;
 		}
 
 	}
@@ -183,32 +172,20 @@ public:
 	{
 		switch ( flashBlockNumber )
 		{
-		default:
-		case MAIN_FLASHBLOCK:
-			return _numSectorsMain;
-			break;
-		case FAILSAFE_FLASHBLOCK:
-			return _numSectorsFailSafe;
-			break;
-		case SOC1_FLASHBLOCK:
-			return _numSectorsSOC1;
-			break;
-		case SOC2_FLASHBLOCK:
-			return _numSectorsSOC2;
-			break;
-		case MAC_FLASHBLOCK:
-			return 1;
-			break;
-		case MCS_INFO_BLOCK:
-			return 1;
-			break;
-		case LICENSE_BLOCK:
-			return 1;
-			break;
+			default:
+			case MAIN_FLASHBLOCK:		return _numSectorsMain;
+			case FAILSAFE_FLASHBLOCK:	return _numSectorsFailSafe;
+			case SOC1_FLASHBLOCK:		return _numSectorsSOC1;
+			case SOC2_FLASHBLOCK:		return _numSectorsSOC2;
+			case MAC_FLASHBLOCK:		return 1;
+			case MCS_INFO_BLOCK:		return 1;
+			case LICENSE_BLOCK:			return 1;
 		}
-
 	}
+
 	bool VerifySOCPartition(FlashBlockID flashID, uint32_t FlashBlockOffset);
+	bool CheckAndFixMACs();
+	bool MakeMACsFromSerial( const char *sSerialNumber, MacAddr *pMac1, MacAddr *pMac2 );
 
 	uint8_t*	  _bitFileBuffer;
 	uint8_t*	  _customFileBuffer;

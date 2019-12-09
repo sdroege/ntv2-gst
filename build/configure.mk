@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2004 - 2018 AJA Video Systems, Inc.
+# Copyright (C) 2004 - 2019 AJA Video Systems, Inc.
 # Proprietary and Confidential information.
 # All righs reserved
 #
@@ -147,28 +147,4 @@ endif
 LIB_OR_LIB64 := $(LIB)
 X11LIBDIR := $(X11LIBDIR)/$(LIB)
 export X11LIBDIR 
-
-#.PHONY : setup_vars
-#setup_vars: 
-#   @echo "Building for LINUX_DISTRO $(LINUX_DISTRO)"
-#	@echo "             CPU          $(A_ARCH)"
-#	@echo "             LIB          $(LIB)"
-#	@echo "             X11LIBDIR    $(X11LIBDIR)"
-#	@echo "             QTLIBDIR     $(QTLIBDIR)"
-#	@echo "             A_NONAJA_FLTK_LIB_PATH   $(A_NONAJA_FLTK_LIB_PATH)"
-#	export LINUX_DISTRO CPU LIB X11LIBDIR QTLIBDIR A_NONAJA_FLTK_LIB_PATH
-
-
-#.PHONY: get_dist
-#get_dist:
-#   @echo "IS_REDHAT = $(IS_REDHAT)"
-#   @echo "RH_REL    = $(RH_REL)"
-#   @echo "RHEL      = $(RHEL)"
-#   @echo "RHEL_REL  = $(RHEL_REL)"
-
-#.PHONY: get_qt_libdir
-#get_qt_libdir:
-
-
-# get_x11_libdir:
 

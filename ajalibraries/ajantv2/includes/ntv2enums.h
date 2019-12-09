@@ -16,10 +16,10 @@
     The next several macro values are patched when the SDK is built by AJA.
 **/
 #define AJA_NTV2_SDK_VERSION_MAJOR		15			///< @brief	The SDK major version number, an unsigned decimal integer.
-#define AJA_NTV2_SDK_VERSION_MINOR		1			///< @brief	The SDK minor version number, an unsigned decimal integer.
+#define AJA_NTV2_SDK_VERSION_MINOR		5			///< @brief	The SDK minor version number, an unsigned decimal integer.
 #define AJA_NTV2_SDK_VERSION_POINT		0			///< @brief	The SDK "point" release version, an unsigned decimal integer.
-#define AJA_NTV2_SDK_BUILD_NUMBER		2			///< @brief	The SDK build number, an unsigned decimal integer.
-#define AJA_NTV2_SDK_BUILD_DATETIME		"Fri Mar 01 19:17:02 UTC 2019"		///< @brief	The date and time the SDK was built, in this format: "MM/DD/YYYY +8:hh:mm:ss"
+#define AJA_NTV2_SDK_BUILD_NUMBER		4			///< @brief	The SDK build number, an unsigned decimal integer.
+#define AJA_NTV2_SDK_BUILD_DATETIME		"Thu Nov 14 18:20:30 UTC 2019"		///< @brief	The date and time the SDK was built, in this format: "MM/DD/YYYY +8:hh:mm:ss"
 #define AJA_NTV2_SDK_BUILD_TYPE			""			///< @brief	The SDK build type, where "a"=alpha, "b"=beta, "d"=development, ""=release.
 
 #define	AJA_NTV2_SDK_VERSION	((AJA_NTV2_SDK_VERSION_MAJOR << 24) | (AJA_NTV2_SDK_VERSION_MINOR << 16) | (AJA_NTV2_SDK_VERSION_POINT << 8) | (AJA_NTV2_SDK_BUILD_NUMBER))
@@ -61,6 +61,8 @@ typedef enum
     DEVICE_ID_CORVID24					= 0x10402100,	///< @brief	See \ref corvid24
     DEVICE_ID_CORVID3G					= 0x10294900,	///< @brief	See \ref corvid1corvid3g
     DEVICE_ID_CORVID44					= 0x10565400,	///< @brief	See \ref corvid44
+	DEVICE_ID_CORVID44_8KMK				= 0x10832400,	///< @brief	See \ref corvid4412g
+	DEVICE_ID_CORVID44_8K				= 0X10832401,	///< @brief	See \ref corvid4412g
     DEVICE_ID_CORVID88					= 0x10538200,	///< @brief	See \ref corvid88
     DEVICE_ID_CORVIDHBR					= 0x10668200,	///< @brief	See \ref corvidhbr
     DEVICE_ID_CORVIDHEVC				= 0x10634500,	///< @brief	See \ref corvidhevc
@@ -76,6 +78,9 @@ typedef enum
     DEVICE_ID_KONA3GQUAD				= 0x10322950,	///< @brief	See \ref kona3gquad
     DEVICE_ID_KONA4						= 0x10518400,	///< @brief	See \ref kona4quad
     DEVICE_ID_KONA4UFC					= 0x10518450,	///< @brief	See \ref kona4ufc
+    DEVICE_ID_KONA5						= 0x10798400,	///< @brief	See \ref kona5
+	DEVICE_ID_KONA5_8KMK				= 0x10798401,	///< @brief	See \ref kona5
+	DEVICE_ID_KONA5_8K					= 0x10798402,	///< @brief	See \ref kona5
     DEVICE_ID_KONAHDMI                  = 0x10767400,	///< @brief	See \ref konahdmi
     DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K	= 0x10646702,	///< @brief	See \ref konaip
 	DEVICE_ID_KONAIP_1RX_1TX_2110		= 0x10646705,	///< @brief	See \ref konaip
@@ -88,9 +93,6 @@ typedef enum
     DEVICE_ID_KONALHI					= 0x10266400,	///< @brief	See \ref konalhi
     DEVICE_ID_KONALHIDVI				= 0x10266401,	///< @brief	See \ref konalhi
     DEVICE_ID_TTAP						= 0x10416000,	///< @brief	See \ref ttap
-    DEVICE_ID_KONA5						= 0x10798400,	///< @brief	See \ref kona5
-    DEVICE_ID_KONA5_12G					= 0x10798401,	///< @brief	See \ref kona5
-	DEVICE_ID_CORVID44_12G				= 0x00000001,	///< @brief	See \ref corvid412g
 #if !defined (NTV2_DEPRECATE_12_6)
     DEVICE_ID_CORVIDHDBT			= DEVICE_ID_CORVIDHBR,		//	Will deprecate in 12.6
 #endif	//	NTV2_DEPRECATE_12_6
@@ -106,6 +108,9 @@ typedef enum
     DEVICE_ID_NOTFOUND				= -1
 
 } NTV2DeviceID;
+
+#define DEVICE_ID_CORVID44_12G DEVICE_ID_CORVID44_8KMK
+#define DEVICE_ID_KONA5_4X12G DEVICE_ID_KONA5_8K
 
 #if !defined (NTV2_DEPRECATE)
     typedef NTV2DeviceID	NTV2BoardID;	///< @deprecated	Use NTV2DeviceID instead. Identifiers with "board" in them are being phased out.
@@ -132,13 +137,17 @@ typedef enum
     NTV2_STANDARD_525,			///< @brief	Identifies SMPTE SD 525i
     NTV2_STANDARD_625,			///< @brief	Identifies SMPTE SD 625i
     NTV2_STANDARD_1080p,		///< @brief	Identifies SMPTE HD 1080p
-    NTV2_STANDARD_2K,			///< @brief	Identifies SMPTE HD 2048x1556psf (1.35 full-aperture film)
+    NTV2_STANDARD_2K,			///< @brief	Identifies SMPTE HD 2048x1556psf (1.35 full-aperture film, obsolete in SDK 15.0 and later)
     NTV2_STANDARD_2Kx1080p,		///< @brief	Identifies SMPTE HD 2K1080p
     NTV2_STANDARD_2Kx1080i,		///< @brief	Identifies SMPTE HD 2K1080psf
     NTV2_STANDARD_3840x2160p,	///< @brief	Identifies Ultra-High-Definition (UHD)
     NTV2_STANDARD_4096x2160p,	///< @brief	Identifies 4K
     NTV2_STANDARD_3840HFR,		///< @brief	Identifies high frame-rate UHD
     NTV2_STANDARD_4096HFR,		///< @brief	Identifies high frame-rate 4K
+	NTV2_STANDARD_7680,			///< @brief	Identifies UHD2
+	NTV2_STANDARD_8192,			///< @brief	Identifies 8K
+	NTV2_STANDARD_3840i,		///< @brief	Identifies Ultra-High-Definition (UHD) psf
+    NTV2_STANDARD_4096i,		///< @brief	Identifies 4K psf
     NTV2_NUM_STANDARDS,
     NTV2_STANDARD_UNDEFINED	= NTV2_NUM_STANDARDS,
     NTV2_STANDARD_INVALID	= NTV2_NUM_STANDARDS
@@ -169,12 +178,21 @@ typedef enum
                                                     ||	(__s__) == NTV2_STANDARD_3840x2160p		\
                                                     ||	(__s__) == NTV2_STANDARD_4096x2160p		\
                                                     ||	(__s__) == NTV2_STANDARD_3840HFR		\
-                                                    ||	(__s__) == NTV2_STANDARD_4096HFR	)
+                                                    ||	(__s__) == NTV2_STANDARD_4096HFR		\
+													||	(__s__) == NTV2_STANDARD_7680			\
+													||	(__s__) == NTV2_STANDARD_8192	)
 #define NTV2_IS_SD_STANDARD(__s__)				((__s__) == NTV2_STANDARD_525 || (__s__) == NTV2_STANDARD_625)
-#define NTV2_IS_UHD_STANDARD(__s__)				((__s__) == NTV2_STANDARD_3840x2160p || (__s__) == NTV2_STANDARD_3840HFR)
-#define NTV2_IS_4K_STANDARD(__s__)				((__s__) == NTV2_STANDARD_4096x2160p || (__s__) == NTV2_STANDARD_4096HFR)
+#define NTV2_IS_UHD_STANDARD(__s__)				((__s__) == NTV2_STANDARD_3840x2160p	\
+													|| (__s__) == NTV2_STANDARD_3840HFR	\
+													|| (__s__) == NTV2_STANDARD_3840i)
+#define NTV2_IS_4K_STANDARD(__s__)				((__s__) == NTV2_STANDARD_4096x2160p	\
+													|| (__s__) == NTV2_STANDARD_4096HFR	\
+													|| (__s__) == NTV2_STANDARD_4096i)
 #define NTV2_IS_QUAD_STANDARD(__s__)			(NTV2_IS_UHD_STANDARD(__s__) || NTV2_IS_4K_STANDARD(__s__))
 #define NTV2_IS_2K1080_STANDARD(__s__)			((__s__) == NTV2_STANDARD_2Kx1080p || (__s__) == NTV2_STANDARD_2Kx1080i)
+#define NTV2_IS_UHD2_STANDARD(__s__)			((__s__) == NTV2_STANDARD_7680)
+#define NTV2_IS_8K_STANDARD(__s__)				((__s__) == NTV2_STANDARD_8192)
+#define NTV2_IS_QUAD_QUAD_STANDARD(__s__)		(NTV2_IS_UHD2_STANDARD(__s__) || NTV2_IS_8K_STANDARD(__s__))
 
 #if !defined (NTV2_DEPRECATE)
     typedef NTV2Standard	NTV2V2Standard;		///< @deprecated	Use NTV2Standard instead.
@@ -209,7 +227,7 @@ typedef enum
 	,NTV2_FBF_10BIT_YCBCRA								///< @brief	10-Bit YCbCrA
 	,NTV2_FBF_10BIT_DPX_LE								///< @brief	10-Bit DPX Little-Endian
 	,NTV2_FBF_48BIT_RGB									///< @brief	See \ref fbformats48bitrgb
-	,NTV2_FBF_PRORES									///< @brief	Apple ProRes
+	,NTV2_FBF_12BIT_RGB_PACKED							///< @brief	See \ref fbformats12bitpackedrgb
 	,NTV2_FBF_PRORES_DVCPRO								///< @brief	Apple ProRes DVC Pro
 	,NTV2_FBF_PRORES_HDV								///< @brief	Apple ProRes HDV
 	,NTV2_FBF_10BIT_RGB_PACKED							///< @brief	10-Bit Packed RGB
@@ -228,7 +246,6 @@ typedef enum
 	,NTV2_FBF_NUMFRAMEBUFFERFORMATS	= NTV2_FBF_LAST
 	,NTV2_FBF_INVALID				= NTV2_FBF_NUMFRAMEBUFFERFORMATS
 } NTV2FrameBufferFormat;
-
 
 #if !defined(NTV2_DEPRECATE_14_0)
 	NTV2_DEPRECATED_vi(const NTV2FrameBufferFormat NTV2_FBF_8BIT_QREZ,					NTV2_FBF_8BIT_YCBCR_420PL3);		///< @deprecated	Use NTV2_FBF_8BIT_YCBCR_420PL3 instead.
@@ -262,8 +279,7 @@ typedef NTV2FrameBufferFormat	NTV2PixelFormat;	///< @brief	An alias for NTV2Fram
 
 #define	NTV2_IS_VALID_PLANAR_FRAME_BUFFER_FORMAT(__s__)		(NTV2_IS_FBF_PLANAR(__s__))
 
-#define NTV2_IS_FBF_PRORES(__fbf__) 	(		(__fbf__) == NTV2_FBF_PRORES					\
-                                            ||	(__fbf__) == NTV2_FBF_PRORES_DVCPRO				\
+#define NTV2_IS_FBF_PRORES(__fbf__) 	(		(__fbf__) == NTV2_FBF_PRORES_DVCPRO				\
                                             ||	(__fbf__) == NTV2_FBF_PRORES_HDV				\
                                         )
 
@@ -331,12 +347,17 @@ typedef enum
     NTV2_FG_720x612 	= 15,	///< @brief	720x576, for PAL 625i, ::NTV2_VANCMODE_TALLER
     NTV2_FG_4x1920x1080 = 16,	///< @brief	3840x2160, for UHD, ::NTV2_VANCMODE_OFF
     NTV2_FG_4x2048x1080 = 17,	///< @brief	4096x2160, for 4K, ::NTV2_VANCMODE_OFF
+	NTV2_FG_4x3840x2160	= 18,	///< @brief	7680x4320, for UHD2, ::NTV2_VANCMODE_OFF
+	NTV2_FG_4x4096x2160	= 19,	///< @brief	8192x4320, for 8K, ::NTV2_VANCMODE_OFF
     NTV2_FG_NUMFRAMEGEOMETRIES,
     NTV2_FG_INVALID	= NTV2_FG_NUMFRAMEGEOMETRIES
 } NTV2FrameGeometry;
 
 #define	NTV2_IS_VALID_NTV2FrameGeometry(__s__)	((__s__) >= NTV2_FG_1920x1080 && (__s__) < NTV2_FG_NUMFRAMEGEOMETRIES)
 
+#define NTV2_IS_QUAD_QUAD_FRAME_GEOMETRY(geom) \
+	(geom == NTV2_FG_4x3840x2160 || geom == NTV2_FG_4x4096x2160)
+	
 #define NTV2_IS_QUAD_FRAME_GEOMETRY(geom) \
     ( geom >= NTV2_FG_4x1920x1080 && geom <= NTV2_FG_4x2048x1080 )
 
@@ -419,7 +440,7 @@ typedef enum
 
 
 // IMPORTANT When adding to the NTV2VideoFormat enum, don't forget to:
-//		Add a corresponding case to GetNTV2FrameGeometryFromVideoFormat in ntv2deviceservices.cpp
+//		Add a corresponding case to GetNTV2FrameGeometryFromVideoFormat in r2deviceservices.cpp
 //		Add a corresponding case to GetNTV2QuarterSizedVideoFormat in ntv2utils.cpp
 //		Add a corresponding case to GetNTV2StandardFromVideoFormat in ntv2utils.cpp
 //		Add a corresponding case to GetActiveVideoSize in ntv2utils.cpp
@@ -457,6 +478,8 @@ typedef enum _NTV2VideoFormat
     ,NTV2_FORMAT_FIRST_UHD_TSI_DEF_FORMAT       = 200
     ,NTV2_FORMAT_FIRST_4K_TSI_DEF_FORMAT        = 250
 	,NTV2_FORMAT_FIRST_4K_DEF_FORMAT2			= 300
+	,NTV2_FORMAT_FIRST_UHD2_DEF_FORMAT			= 350
+	,NTV2_FORMAT_FIRST_UHD2_FULL_DEF_FORMAT		= 400
 
 	,NTV2_FORMAT_1080i_5000					= NTV2_FORMAT_FIRST_HIGH_DEF_FORMAT
 	,NTV2_FORMAT_1080i_5994
@@ -601,8 +624,38 @@ typedef enum _NTV2VideoFormat
 	,NTV2_FORMAT_4x2048x1080p_4795_B
 	,NTV2_FORMAT_4x2048x1080p_4800_B
 	,NTV2_FORMAT_END_4K_DEF_FORMATS2
+		
+	,NTV2_FORMAT_4x3840x2160p_2398		= NTV2_FORMAT_FIRST_UHD2_DEF_FORMAT
+	,NTV2_FORMAT_4x3840x2160p_2400
+	,NTV2_FORMAT_4x3840x2160p_2500
+	,NTV2_FORMAT_4x3840x2160p_2997
+	,NTV2_FORMAT_4x3840x2160p_3000
+	,NTV2_FORMAT_4x3840x2160p_5000
+	,NTV2_FORMAT_4x3840x2160p_5994
+	,NTV2_FORMAT_4x3840x2160p_6000
+	,NTV2_FORMAT_4x3840x2160p_5000_B
+	,NTV2_FORMAT_4x3840x2160p_5994_B
+	,NTV2_FORMAT_4x3840x2160p_6000_B
+	,NTV2_FORMAT_END_UHD2_DEF_FORMATS
 
-	,NTV2_MAX_NUM_VIDEO_FORMATS = NTV2_FORMAT_END_4K_DEF_FORMATS2
+	,NTV2_FORMAT_4x4096x2160p_2398		= NTV2_FORMAT_FIRST_UHD2_FULL_DEF_FORMAT
+	,NTV2_FORMAT_4x4096x2160p_2400
+	,NTV2_FORMAT_4x4096x2160p_2500
+	,NTV2_FORMAT_4x4096x2160p_2997
+	,NTV2_FORMAT_4x4096x2160p_3000
+	,NTV2_FORMAT_4x4096x2160p_4795
+	,NTV2_FORMAT_4x4096x2160p_4800
+	,NTV2_FORMAT_4x4096x2160p_5000
+	,NTV2_FORMAT_4x4096x2160p_5994
+	,NTV2_FORMAT_4x4096x2160p_6000
+	,NTV2_FORMAT_4x4096x2160p_4795_B
+	,NTV2_FORMAT_4x4096x2160p_4800_B
+	,NTV2_FORMAT_4x4096x2160p_5000_B
+	,NTV2_FORMAT_4x4096x2160p_5994_B
+	,NTV2_FORMAT_4x4096x2160p_6000_B
+	,NTV2_FORMAT_END_UHD2_FULL_DEF_FORMATS
+
+	,NTV2_MAX_NUM_VIDEO_FORMATS = NTV2_FORMAT_END_UHD2_FULL_DEF_FORMATS
 } NTV2VideoFormat;
 
 
@@ -628,7 +681,8 @@ typedef enum _NTV2VideoFormat
         NTV2_IS_SD_VIDEO_FORMAT(__f__)		||						\
         NTV2_IS_2K_VIDEO_FORMAT(__f__)		||						\
         NTV2_IS_2K_1080_VIDEO_FORMAT(__f__)	||						\
-        NTV2_IS_4K_VIDEO_FORMAT(__f__)		)
+        NTV2_IS_4K_VIDEO_FORMAT(__f__)		||						\
+		NTV2_IS_QUAD_QUAD_FORMAT(__f__)	)
 
 #define NTV2_IS_PAL_VIDEO_FORMAT(__f__)								\
     (	(__f__) == NTV2_FORMAT_1080i_5000	||						\
@@ -696,11 +750,34 @@ typedef enum _NTV2VideoFormat
         (__f__) <= NTV2_FORMAT_4096x2160p_12000)                    \
     )
 
+#define NTV2_IS_QUAD_HFR_VIDEO_FORMAT(__f__)						\
+    (	((__f__) >= NTV2_FORMAT_4x1920x1080p_5000	&&				\
+        (__f__) <= NTV2_FORMAT_4x2048x1080p_12000	)   ||          \
+        ((__f__) >= NTV2_FORMAT_3840x2160p_5000     &&              \
+        (__f__) <= NTV2_FORMAT_3840x2160p_6000      )   ||          \
+        ((__f__) >= NTV2_FORMAT_4096x2160p_5000     &&              \
+        (__f__) <= NTV2_FORMAT_4096x2160p_12000)                    \
+    )
+
 #define NTV2_IS_QUAD_FRAME_FORMAT(__f__)							\
     (	((__f__) >= NTV2_FORMAT_FIRST_4K_DEF_FORMAT &&				\
         (__f__) < NTV2_FORMAT_END_4K_DEF_FORMATS	)   ||          \
         ((__f__) >= NTV2_FORMAT_FIRST_UHD_TSI_DEF_FORMAT    &&      \
         (__f__) < NTV2_FORMAT_END_4K_DEF_FORMATS2    )           \
+    )
+	
+#define NTV2_IS_QUAD_QUAD_FORMAT(__f__)								\
+	(	((__f__) >= NTV2_FORMAT_FIRST_UHD2_DEF_FORMAT &&			\
+        (__f__) < NTV2_FORMAT_END_UHD2_DEF_FORMATS	)   ||          \
+        ((__f__) >= NTV2_FORMAT_FIRST_UHD2_FULL_DEF_FORMAT    &&    \
+        (__f__) < NTV2_FORMAT_END_UHD2_FULL_DEF_FORMATS    )         \
+    )
+
+#define NTV2_IS_QUAD_QUAD_HFR_VIDEO_FORMAT(__f__)					\
+    (	((__f__) >= NTV2_FORMAT_4x3840x2160p_5000	&&				\
+        (__f__) <= NTV2_FORMAT_4x3840x2160p_6000_B	)   ||          \
+        ((__f__) >= NTV2_FORMAT_4x4096x2160p_4795     &&			\
+        (__f__) <= NTV2_FORMAT_4x4096x2160p_6000_B      )			\
     )
 
 #define NTV2_IS_4K_4096_VIDEO_FORMAT(__f__)							\
@@ -749,6 +826,21 @@ typedef enum _NTV2VideoFormat
 		(__f__) == NTV2_FORMAT_4x1920x1080p_6000_B	||              \
         ((__f__) >= NTV2_FORMAT_FIRST_UHD_TSI_DEF_FORMAT    &&      \
         (__f__) < NTV2_FORMAT_FIRST_4K_TSI_DEF_FORMAT   )           \
+    )
+	
+#define NTV2_IS_UHD2_VIDEO_FORMAT(__f__)								\
+    (   ((__f__) >= NTV2_FORMAT_FIRST_UHD2_DEF_FORMAT &&        \
+        (__f__) < NTV2_FORMAT_END_UHD2_DEF_FORMATS)				\
+    )
+
+#define NTV2_IS_UHD2_FULL_VIDEO_FORMAT(__f__)								\
+    (   ((__f__) >= NTV2_FORMAT_FIRST_UHD2_FULL_DEF_FORMAT &&			\
+        (__f__) < NTV2_FORMAT_END_UHD2_FULL_DEF_FORMATS)			\
+    )
+
+#define NTV2_IS_8K_VIDEO_FORMAT(__f__)								\
+    (   ((__f__) >= NTV2_FORMAT_FIRST_UHD2_DEF_FORMAT &&			\
+        (__f__) < NTV2_FORMAT_END_UHD2_FULL_DEF_FORMATS)			\
     )
 
 #define NTV2_IS_372_DUALLINK_FORMAT(__f__)							\
@@ -806,22 +898,26 @@ typedef enum _NTV2VideoFormat
         (__f__) == NTV2_FORMAT_4x2048x1080p_12000	||              \
         ((__f__) >= NTV2_FORMAT_3840x2160p_5000 &&                  \
         (__f__) <= NTV2_FORMAT_3840x2160p_6000)     ||              \
-        ((__f__) >= NTV2_FORMAT_4096x2160p_5000 &&                  \
-        (__f__) <= NTV2_FORMAT_4096x2160p_12000 )                   \
+        ((__f__) >= NTV2_FORMAT_4096x2160p_4795 &&                  \
+        (__f__) <= NTV2_FORMAT_4096x2160p_12000)   ||               \
+        ((__f__) >= NTV2_FORMAT_4x3840x2160p_5000 &&                \
+        (__f__) <= NTV2_FORMAT_4x3840x2160p_6000)  ||               \
+        ((__f__) >= NTV2_FORMAT_4x4096x2160p_4795 &&                \
+        (__f__) <= NTV2_FORMAT_4x4096x2160p_6000)                   \
     )
 
 #define NTV2_IS_6G_FORMAT(__f__)									\
-    (	((__f__) >= NTV2_FORMAT_3840x2160psf_2398 &&                  \
-        (__f__) <= NTV2_FORMAT_3840x2160psf_3000)     ||              \
-        ((__f__) >= NTV2_FORMAT_4096x2160psf_2398 &&                  \
-        (__f__) <= NTV2_FORMAT_4096x2160psf_3000 )                   \
+    (	((__f__) >= NTV2_FORMAT_3840x2160psf_2398 &&                \
+        (__f__) <= NTV2_FORMAT_3840x2160psf_3000)     ||            \
+        ((__f__) >= NTV2_FORMAT_4096x2160psf_2398 &&                \
+        (__f__) <= NTV2_FORMAT_4096x2160psf_3000 )                  \
     )
 
 #define NTV2_IS_12G_FORMAT(__f__)									\
     (	((__f__) >= NTV2_FORMAT_3840x2160p_5000 &&                  \
-        (__f__) <= NTV2_FORMAT_3840x2160p_6000_B)     ||              \
+        (__f__) <= NTV2_FORMAT_3840x2160p_6000_B)     ||            \
         ((__f__) >= NTV2_FORMAT_4096x2160p_5000 &&                  \
-        (__f__) <= NTV2_FORMAT_4096x2160p_6000_B )                   \
+        (__f__) <= NTV2_FORMAT_4096x2160p_6000_B )                  \
     )
 
 #define NTV2_IS_3Gb_FORMAT(__f__)									\
@@ -848,7 +944,16 @@ typedef enum _NTV2VideoFormat
 		(__f__) == NTV2_FORMAT_4x2048x1080p_5994_B	||					\
 		(__f__) == NTV2_FORMAT_4x2048x1080p_6000_B	||					\
 		(__f__) == NTV2_FORMAT_4x2048x1080p_4795_B	||					\
-		(__f__) == NTV2_FORMAT_4x2048x1080p_4800_B	)
+		(__f__) == NTV2_FORMAT_4x2048x1080p_4800_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_5000_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_5994_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_6000_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_4795_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_4800_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_5000_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_5994_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_6000_B						\
+	)
 
 #define NTV2_IS_WIRE_FORMAT(__f__)									\
     (	(__f__) != NTV2_FORMAT_525_2398 &&							\
@@ -920,7 +1025,15 @@ typedef enum _NTV2VideoFormat
         (__f__) == NTV2_FORMAT_4096x2160p_4800 ||					\
         (__f__) == NTV2_FORMAT_4096x2160p_5000 ||					\
         (__f__) == NTV2_FORMAT_4096x2160p_5994 ||					\
-        (__f__) == NTV2_FORMAT_4096x2160p_6000                      \
+        (__f__) == NTV2_FORMAT_4096x2160p_6000 ||                   \
+        (__f__) == NTV2_FORMAT_4x3840x2160p_5000 ||                    \
+        (__f__) == NTV2_FORMAT_4x3840x2160p_5994 ||                    \
+        (__f__) == NTV2_FORMAT_4x3840x2160p_6000 ||                    \
+        (__f__) == NTV2_FORMAT_4x4096x2160p_4795 ||                    \
+        (__f__) == NTV2_FORMAT_4x4096x2160p_4800 ||                    \
+        (__f__) == NTV2_FORMAT_4x4096x2160p_5000 ||                    \
+        (__f__) == NTV2_FORMAT_4x4096x2160p_5994 ||                    \
+        (__f__) == NTV2_FORMAT_4x4096x2160p_6000                      \
     )
 
 #define NTV2_VIDEO_FORMAT_IS_B(__f__)								\
@@ -947,7 +1060,16 @@ typedef enum _NTV2VideoFormat
 		(__f__) == NTV2_FORMAT_4x2048x1080p_5994_B	||					\
 		(__f__) == NTV2_FORMAT_4x2048x1080p_6000_B	||					\
 		(__f__) == NTV2_FORMAT_4x2048x1080p_4795_B	||					\
-		(__f__) == NTV2_FORMAT_4x2048x1080p_4800_B	)
+		(__f__) == NTV2_FORMAT_4x2048x1080p_4800_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_5000_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_5994_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_6000_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_4795_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_4800_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_5000_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_5994_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_6000_B						\
+	)
 
 #define NTV2_VIDEO_FORMAT_IS_J2K_SUPPORTED(__f__)					\
     (	(__f__) == NTV2_FORMAT_525_5994 ||                          \
@@ -982,13 +1104,17 @@ typedef enum _NTV2VideoFormat
         (__f__) < NTV2_FORMAT_FIRST_4K_TSI_DEF_FORMAT   ) 	)
 
 
-#define NTV2_IS_SQUARE_DIVISION_FORMAT(__f__)									\
-    (	((__f__) >= NTV2_FORMAT_FIRST_4K_DEF_FORMAT    &&      \
-        (__f__) < NTV2_FORMAT_END_4K_DEF_FORMATS   )	||		\
-		((__f__) >= NTV2_FORMAT_FIRST_4K_DEF_FORMAT2    &&      \
-		(__f__) < NTV2_FORMAT_END_4K_DEF_FORMATS2   )	)
+#define NTV2_IS_SQUARE_DIVISION_FORMAT(__f__)						\
+    (	((__f__) >= NTV2_FORMAT_FIRST_4K_DEF_FORMAT    &&           \
+        (__f__) < NTV2_FORMAT_END_4K_DEF_FORMATS   )	||		    \
+		((__f__) >= NTV2_FORMAT_FIRST_4K_DEF_FORMAT2    &&          \
+		(__f__) < NTV2_FORMAT_END_4K_DEF_FORMATS2   )   ||          \
+        ((__f__) >= NTV2_FORMAT_FIRST_UHD2_DEF_FORMAT    &&         \
+        (__f__) < NTV2_FORMAT_END_UHD2_DEF_FORMATS   )  ||          \
+        ((__f__) >= NTV2_FORMAT_FIRST_UHD2_FULL_DEF_FORMAT    &&    \
+        (__f__) < NTV2_FORMAT_END_UHD2_FULL_DEF_FORMATS   )     )
 	
-#define NTV2_VIDEO_FORMAT_NEEDS_CONVERSION(__f__)									\
+#define NTV2_VIDEO_FORMAT_NEEDS_CONVERSION(__f__)						\
     (	(__f__) == NTV2_FORMAT_3840x2160p_5000_B	||					\
 		(__f__) == NTV2_FORMAT_3840x2160p_5994_B	||					\
 		(__f__) == NTV2_FORMAT_3840x2160p_6000_B	||					\
@@ -1004,7 +1130,16 @@ typedef enum _NTV2VideoFormat
 		(__f__) == NTV2_FORMAT_4x2048x1080p_5994_B	||					\
 		(__f__) == NTV2_FORMAT_4x2048x1080p_6000_B	||					\
 		(__f__) == NTV2_FORMAT_4x2048x1080p_4795_B	||					\
-		(__f__) == NTV2_FORMAT_4x2048x1080p_4800_B	)
+		(__f__) == NTV2_FORMAT_4x2048x1080p_4800_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_5000_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_5994_B	||					\
+		(__f__) == NTV2_FORMAT_4x3840x2160p_6000_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_4795_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_4800_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_5000_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_5994_B	||					\
+		(__f__) == NTV2_FORMAT_4x4096x2160p_6000_B						\
+	)
 
 /**
 	@brief		Identifies the mode of a frame store, either Capture (Input) or Display (Output).
@@ -1251,6 +1386,7 @@ typedef enum
     NTV2_ANC3_STREAM        = 10,
     NTV2_ANC4_STREAM        = 11,
 	NTV2_VIDEO4K_STREAM		= 12,
+	NTV2_MAX_NUM_SINGLE_STREAMS = NTV2_VIDEO4K_STREAM,
 	NTV2_MAX_NUM_STREAMS    = 13,
     NTV2_STREAM_INVALID = NTV2_MAX_NUM_STREAMS
 } NTV2Stream;
@@ -1273,6 +1409,8 @@ typedef enum
 
 #define NTV2_IS_VALID_RX_STREAM(__x__)					((__x__) >= NTV2_VIDEO1_STREAM && (__x__) < NTV2_MAX_NUM_STREAMS)
 #define NTV2_IS_VALID_TX_STREAM(__x__)					((__x__) >= NTV2_VIDEO1_STREAM && (__x__) < NTV2_MAX_NUM_STREAMS)
+#define NTV2_IS_VALID_RX_SINGLE_STREAM(__x__)			((__x__) >= NTV2_VIDEO1_STREAM && (__x__) < NTV2_MAX_NUM_SINGLE_STREAMS)
+#define NTV2_IS_VALID_TX_SINGLE_STREAM(__x__)			((__x__) >= NTV2_VIDEO1_STREAM && (__x__) < NTV2_MAX_NUM_SINGLE_STREAMS)
 
 /**
 	@brief		These enum values identify a specific source for the device's (output) reference clock.
@@ -1604,6 +1742,8 @@ typedef enum
     NTV2MIXERINPUTCONTROL_INVALID
 } NTV2MixerKeyerInputControl;
 
+#define	NTV2_IS_VALID_MIXERINPUTCONTROL(__x__)		((__x__) >= NTV2MIXERINPUTCONTROL_FULLRASTER  &&  (__x__) < NTV2MIXERINPUTCONTROL_INVALID)
+
 #if !defined (NTV2_DEPRECATE)
     typedef NTV2MixerKeyerInputControl	Xena2VidProcInputControl;
     #define	XENA2VIDPROCINPUTCONTROL_FULLRASTER		NTV2MIXERINPUTCONTROL_FULLRASTER
@@ -1857,16 +1997,6 @@ typedef enum
 
 #define	NTV2_IS_VALID_AUDIO_LOOPBACK(_x_)		((_x_) >= NTV2_AUDIO_LOOPBACK_OFF  &&  (_x_) < NTV2_AUDIO_LOOPBACK_INVALID)
 
-
-typedef enum
-{
-    NTV2_AUDIOLEVEL_24dBu,
-    NTV2_AUDIOLEVEL_18dBu,
-    NTV2_AUDIOLEVEL_12dBu,
-    NTV2_AUDIOLEVEL_15dBu,
-    NTV2_MAX_NUM_AudioLevels
-} NTV2AudioLevel;
-
 /**
     @brief	Determines the order that raster lines are written into, or read out of, frame buffer memory on the device.
 **/
@@ -2016,6 +2146,7 @@ typedef enum
 } NTV2LHIVideoDACMode;
 
 
+// GetAnalogInputADCMode
 typedef enum
 {
     NTV2_480iADCComponentBeta,			//	0
@@ -2039,6 +2170,112 @@ typedef enum
 } NTV2LSVideoADCMode;
 
 
+// Up/Down/Cross Converter modes
+typedef enum
+{
+    NTV2_UpConvertAnamorphic,
+    NTV2_UpConvertPillarbox4x3,
+    NTV2_UpConvertZoom14x9,
+    NTV2_UpConvertZoomLetterbox,
+    NTV2_UpConvertZoomWide,
+    NTV2_MAX_NUM_UpConvertModes
+} NTV2UpConvertMode;
+
+
+typedef enum
+{
+	NTV2_AnalogAudioIO_8Out,
+	NTV2_AnalogAudioIO_4In_4Out,
+	NTV2_AnalogAudioIO_4Out_4In,
+	NTV2_AnalogAudioIO_8In
+} NTV2AnalogAudioIO;
+
+
+typedef enum
+{
+    NTV2_DownConvertLetterbox,
+    NTV2_DownConvertCrop,
+    NTV2_DownConvertAnamorphic,
+    NTV2_DownConvert14x9,
+    NTV2_MAX_NUM_DownConvertModes
+} NTV2DownConvertMode;
+
+
+typedef enum
+{
+    NTV2_IsoLetterBox,
+    NTV2_IsoHCrop,
+    NTV2_IsoPillarBox,
+    NTV2_IsoVCrop,
+    NTV2_Iso14x9,
+    NTV2_IsoPassThrough,
+    NTV2_MAX_NUM_IsoConvertModes
+} NTV2IsoConvertMode;
+
+
+// This specifies the range of levels for 10-bit RGB (aka DualLink)
+typedef enum
+{
+    NTV2_RGB10RangeFull,		//	Levels are 0 - 1023 (Full)
+    NTV2_RGB10RangeSMPTE,		//	Levels are 64 - 940 (SMPTE)
+    NTV2_MAX_NUM_RGB10Ranges
+} NTV2RGB10Range;
+
+
+#if !defined(R2_DEPRECATE)
+
+/**
+    @brief	This is a user-pref control (currently only used on the Mac) that allows the user
+            to specify which gamma-correction function to use when converting between RGB and YUV
+**/
+typedef enum
+{
+    NTV2_GammaNone,				// don't change LUTs for gamma (aka "Custom")
+    NTV2_GammaAuto,				// switch between Rec 601 for SD and Rec 709 for HD
+    NTV2_GammaMac,				// 1.8 "Macintosh" Power-function gamma
+    NTV2_GammaRec601,			// 2.2 Rec 601 Power-function gamma
+    NTV2_GammaRec709,			// 2.22.. Rec 709 gamma
+    NTV2_GammaPC,				// 2.5 "PC" Power-function gamma
+    NTV2_MAX_NUM_GammaTypes
+} NTV2GammaType;
+
+
+/**
+    @brief	This is a user-pref control (currently only used on the Mac) that allows the user
+            to specify which Color Space
+**/
+typedef enum
+{
+    NTV2_ColorSpaceModeAuto,		// Auto Select
+    NTV2_ColorSpaceModeYCbCr,		// YCbCr (TBD, add 420, 444 options)
+    NTV2_ColorSpaceModeRgb,			// RGB
+    NTV2_MAX_NUM_ColorSpaceModes
+} NTV2ColorSpaceMode;
+
+
+/**
+    @brief	This is a user-pref control (currently only used on the Mac) that allows the user
+    to specify which RTB range of CSC function to use when converting between RGB and YUV
+**/
+typedef enum
+{
+    NTV2_RGBRangeAuto,				// don't change LUTs for gamma (aka "Custom")
+    NTV2_RGBRangeFull,				// Levels are 0 - 1023 (Full)
+    NTV2_RGBRangeSMPTE,				// Levels are 64 - 940 (SMPTE)
+    NTV2_MAX_NUM_RGBRangeModes
+} NTV2RGBRangeMode;
+
+
+typedef enum
+{
+    NTV2_AUDIOLEVEL_24dBu,
+    NTV2_AUDIOLEVEL_18dBu,
+    NTV2_AUDIOLEVEL_12dBu,
+    NTV2_AUDIOLEVEL_15dBu,
+    NTV2_MAX_NUM_AudioLevels
+} NTV2AudioLevel;
+
+
 typedef enum
 {
     NTV2_AnlgComposite,			// Composite or Composite
@@ -2059,29 +2296,6 @@ typedef enum
 } NTV2AnalogBlackLevel;
 
 
-typedef enum					// used in Virtual Register: kVRegInputSelect
-{
-    NTV2_Input1Select,
-    NTV2_Input2Select,
-    NTV2_Input3Select,
-    NTV2_Input4Select,
-    NTV2_Input5Select,
-    NTV2_Input2xDLHDSelect,
-    NTV2_Input2x4kSelect,
-    NTV2_Input4x4kSelect,
-    NTV2_InputAutoSelect,
-    NTV2_MAX_NUM_InputVideoSelectEnums
-} NTV2InputVideoSelect;
-
-
-typedef enum
-{
-    NTV2_DeviceUnavailable		= -1,
-    NTV2_DeviceNotInitialized	= 0,
-    NTV2_DeviceInitialized		= 1
-} NTV2DeviceInitialized;
-
-
 #if !defined(NTV2_DEPRECATE_15_1)
 	typedef enum
 	{
@@ -2091,6 +2305,15 @@ typedef enum
 		NTV2_NUM_SDIInputFormats
 	} NTV2SDIInputFormatSelect;
 #endif	//	!defined(NTV2_DEPRECATE_15_1)
+
+
+typedef enum
+{
+    NTV2_DeviceUnavailable		= -1,
+    NTV2_DeviceNotInitialized	= 0,
+    NTV2_DeviceInitialized		= 1
+} NTV2DeviceInitialized;
+
 
 typedef enum
 {
@@ -2125,7 +2348,6 @@ typedef enum
     NTV2_MAX_NUM_AudioMapSelectEnums
 } NTV2AudioMapSelect;
 
-
 typedef enum
 {
     NTV2_PrimaryOutputSelect,
@@ -2144,7 +2366,7 @@ typedef enum
 } NTV2OutputVideoSelect;
 
 
-typedef enum
+typedef enum								// Deprecated
 {
     NTV2_SDITransport_Off,					// transport disabled, disconnected
     NTV2_SDITransport_1_5,					// Single Link, 1 wire 1.5G
@@ -2159,21 +2381,91 @@ typedef enum
     NTV2_SDITransport_12G,					// 12G see Oct Link
     NTV2_MAX_NUM_SDITransportTypes,			// last
 	NTV2_SDITransport_Auto					// auto mode
-		=NTV2_MAX_NUM_SDITransportTypes				
-
+		=NTV2_MAX_NUM_SDITransportTypes	
 } NTV2SDITransportType;
 
 
-typedef enum
+typedef enum								// Deprecated
 {
-    NTV2_4kTransport_Auto,        			 // auto
-    NTV2_4kTransport_Quadrants_2wire,        // quads 2x wire
-    NTV2_4kTransport_Quadrants_4wire,        // quads 4x wire
-    NTV2_4kTransport_PixelInterleave,		 // SMPTE 425-5 & 425-3
-    NTV2_4kTransport_Quarter_1wire,          // quarter size
-	NTV2_4kTransport_12g_6g_1wire,		     // 12G / 6G 1wire
+    NTV2_4kTransport_Auto,					// auto
+    NTV2_4kTransport_Quadrants_2wire,		// quads 2x wire
+    NTV2_4kTransport_Quadrants_4wire,		// quads 4x wire
+    NTV2_4kTransport_PixelInterleave,		// SMPTE 425-5 & 425-3
+    NTV2_4kTransport_Quarter_1wire,			// quarter size
+	NTV2_4kTransport_12g_6g_1wire,			// 12G / 6G 1wire
     NTV2_MAX_NUM_4kTransportTypes
 } NTV24kTransportType;
+
+
+typedef enum					// used in Virtual Register: kVRegInputSelect
+{
+    NTV2_Input1Select,
+    NTV2_Input2Select,
+    NTV2_Input3Select,
+    NTV2_Input4Select,
+    NTV2_Input5Select,
+    NTV2_Input2xDLHDSelect,
+    NTV2_Input2x4kSelect,
+    NTV2_Input4x4kSelect,
+    NTV2_Input2x8kSelect,
+    NTV2_Input4x8kSelect,
+    NTV2_InputAutoSelect,
+    NTV2_MAX_NUM_InputVideoSelectEnums
+} NTV2InputVideoSelect;
+
+
+typedef enum								// Deprecated
+{
+    NTV2_PanModeOff,
+    NTV2_PanModeReserved,
+    NTV2_PanMode2Kx1080,
+    NTV2_PanMode1920x1080,
+    NTV2_MAX_NUM_PanModes
+} NTV2PanMode;
+
+
+#if !defined(NTV2_DEPRECATE_15_1)
+	// note: Pause Mode is a "software" feature - not performed in hardware
+	typedef enum
+	{
+		NTV2_PauseOnFrame,
+		NTV2_PauseOnField
+	} NTV2PauseModeType;
+
+	// note: 24 fps <-> 30 fps Pulldown is a "software" feature - not performed in hardware
+	typedef enum
+	{
+		NTV2_Pulldown2323,
+		NTV2_Pulldown2332,
+		NTV2_Pulldown2224
+	} NTV2PulldownPatternType;
+#endif	//	!defined(NTV2_DEPRECATE_15_1)
+
+
+//	NOTE:	Timecode Burn-In Mode is a "software" feature - not performed in hardware
+typedef enum							// Deprecated
+{
+    NTV2_TimecodeBurnInOff,				//	no burn-in
+    NTV2_TimecodeBurnInTC,				//	display current timecode
+    NTV2_TimecodeBurnInUB,				//	display current user bits
+    NTV2_TimecodeBurnInFrameCount,		//	display current frame count
+    NTV2_TimecodeBurnInQuickTime,		//	(like frame count, but shows Mac QuickTime frame time)
+    NTV2_MAX_NUM_TimecodeBurnInModeTypes
+} NTV2TimecodeBurnInModeType;
+
+
+// not in use?
+//	This specifies the endian 10-bit RGB (aka DualLink)
+typedef enum
+{
+    NTV2_RGB10LittleEndian,		//	Little Endian
+    NTV2_RGB10BigEndian,		//	Big Endian
+    NTV2_MAX_NUM_RGB10EndianEnums
+} NTV2RGB10Endian;
+
+#endif // R2_DEPRECATE
+
+
 
 #if !defined (NTV2_DEPRECATE)
     // Audio Channel Mapping and Channel Gain/Phase controls used in FS1
@@ -2229,40 +2521,6 @@ typedef enum
         NTV2_AUDIOCHANNELMAPPING_EMB2CH16
     } NTV2AudioChannelMapping;
 #endif	//	!defined (NTV2_DEPRECATE)
-
-
-// Up/Down/Cross Converter modes
-typedef enum
-{
-    NTV2_UpConvertAnamorphic,
-    NTV2_UpConvertPillarbox4x3,
-    NTV2_UpConvertZoom14x9,
-    NTV2_UpConvertZoomLetterbox,
-    NTV2_UpConvertZoomWide,
-    NTV2_MAX_NUM_UpConvertModes
-} NTV2UpConvertMode;
-
-
-typedef enum
-{
-    NTV2_DownConvertLetterbox,
-    NTV2_DownConvertCrop,
-    NTV2_DownConvertAnamorphic,
-    NTV2_DownConvert14x9,
-    NTV2_MAX_NUM_DownConvertModes
-} NTV2DownConvertMode;
-
-
-typedef enum
-{
-    NTV2_IsoLetterBox,
-    NTV2_IsoHCrop,
-    NTV2_IsoPillarBox,
-    NTV2_IsoVCrop,
-    NTV2_Iso14x9,
-    NTV2_IsoPassThrough,
-    NTV2_MAX_NUM_IsoConvertModes
-} NTV2IsoConvertMode;
 
 
 #if !defined (NTV2_DEPRECATE)
@@ -2330,16 +2588,6 @@ typedef enum
 #define	NTV2_IS_VALID_EncodeAsPSF(__x__)		((__x__) == NTV2_NoPSF || (__x__) == NTV2_IsPSF)
 
 
-typedef enum
-{
-    NTV2_PanModeOff,
-    NTV2_PanModeReserved,
-    NTV2_PanMode2Kx1080,
-    NTV2_PanMode1920x1080,
-    NTV2_MAX_NUM_PanModes
-} NTV2PanMode;
-
-
 /**
     @brief	Identifies a widget output, a signal source, that potentially can drive
 			another widget's input (identified by ::NTV2InputCrosspointID).
@@ -2352,6 +2600,7 @@ typedef enum NTV2OutputCrosspointID
     NTV2_XptSDIIn2						= 0x02,
     NTV2_XptLUT1YUV						= 0x04,	//	Obsolete?
     NTV2_XptLUT1RGB						= NTV2_XptLUT1YUV | 0x80,
+	NTV2_XptLUT1Out						= NTV2_XptLUT1RGB,
     NTV2_XptCSC1VidYUV					= 0x05,
     NTV2_XptCSC1VidRGB					= NTV2_XptCSC1VidYUV | 0x80,
     NTV2_XptConversionModule			= 0x06,
@@ -2469,22 +2718,22 @@ typedef enum NTV2OutputCrosspointID
     NTV2_Xpt425Mux4ARGB					= NTV2_Xpt425Mux4AYUV | 0x80,
     NTV2_Xpt425Mux4BYUV					= 0x6F,
     NTV2_Xpt425Mux4BRGB					= NTV2_Xpt425Mux4BYUV | 0x80,
-    NTV2_XptFrameBuffer1_425YUV			= 0x70,
-    NTV2_XptFrameBuffer1_425RGB			= NTV2_XptFrameBuffer1_425YUV | 0x80,
-    NTV2_XptFrameBuffer2_425YUV			= 0x71,
-    NTV2_XptFrameBuffer2_425RGB			= NTV2_XptFrameBuffer2_425YUV | 0x80,
-    NTV2_XptFrameBuffer3_425YUV			= 0x72,
-    NTV2_XptFrameBuffer3_425RGB			= NTV2_XptFrameBuffer3_425YUV | 0x80,
-    NTV2_XptFrameBuffer4_425YUV			= 0x73,
-    NTV2_XptFrameBuffer4_425RGB			= NTV2_XptFrameBuffer4_425YUV | 0x80,
-    NTV2_XptFrameBuffer5_425YUV			= 0x74,
-    NTV2_XptFrameBuffer5_425RGB			= NTV2_XptFrameBuffer5_425YUV | 0x80,
-    NTV2_XptFrameBuffer6_425YUV			= 0x75,
-    NTV2_XptFrameBuffer6_425RGB			= NTV2_XptFrameBuffer6_425YUV | 0x80,
-    NTV2_XptFrameBuffer7_425YUV			= 0x76,
-    NTV2_XptFrameBuffer7_425RGB			= NTV2_XptFrameBuffer7_425YUV | 0x80,
-    NTV2_XptFrameBuffer8_425YUV			= 0x77,
-    NTV2_XptFrameBuffer8_425RGB			= NTV2_XptFrameBuffer8_425YUV | 0x80,
+	NTV2_XptFrameBuffer1_DS2YUV			= 0x70,
+	NTV2_XptFrameBuffer1_DS2RGB			= NTV2_XptFrameBuffer1_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer2_DS2YUV			= 0x71,
+	NTV2_XptFrameBuffer2_DS2RGB			= NTV2_XptFrameBuffer2_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer3_DS2YUV			= 0x72,
+    NTV2_XptFrameBuffer3_DS2RGB			= NTV2_XptFrameBuffer3_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer4_DS2YUV			= 0x73,
+    NTV2_XptFrameBuffer4_DS2RGB			= NTV2_XptFrameBuffer4_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer5_DS2YUV			= 0x74,
+    NTV2_XptFrameBuffer5_DS2RGB			= NTV2_XptFrameBuffer5_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer6_DS2YUV			= 0x75,
+    NTV2_XptFrameBuffer6_DS2RGB			= NTV2_XptFrameBuffer6_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer7_DS2YUV			= 0x76,
+    NTV2_XptFrameBuffer7_DS2RGB			= NTV2_XptFrameBuffer7_DS2YUV | 0x80,
+	NTV2_XptFrameBuffer8_DS2YUV			= 0x77,
+    NTV2_XptFrameBuffer8_DS2RGB			= NTV2_XptFrameBuffer8_DS2YUV | 0x80,
     NTV2_XptHDMIIn2						= 0x78,
     NTV2_XptHDMIIn2RGB					= NTV2_XptHDMIIn2 | 0x80,
     NTV2_XptHDMIIn2Q2					= 0x79,
@@ -2499,6 +2748,7 @@ typedef enum NTV2OutputCrosspointID
     NTV2_XptHDMIIn4RGB					= NTV2_XptHDMIIn4 | 0x80,
     NTV2_XptDuallinkIn1					= 0x83,
     NTV2_XptLUT2RGB						= 0x8D,
+	NTV2_XptLUT2Out						= NTV2_XptLUT2RGB,
     NTV2_XptWaterMarkerRGB				= 0x94,
     NTV2_XptIICTRGB						= 0x95,
     NTV2_XptHDMIIn1RGB					= 0x97,
@@ -2520,6 +2770,25 @@ typedef enum NTV2OutputCrosspointID
     NTV2_XptRuntimeCalc					= 0xFF,
     NTV2_LAST_OUTPUT_CROSSPOINT			= 0xFF,
     NTV2_OUTPUT_CROSSPOINT_INVALID		= 0xFF
+	#if !defined(NTV2_DEPRECATE_15_3)
+		,
+		NTV2_XptFrameBuffer1_425YUV		= NTV2_XptFrameBuffer1_DS2YUV,
+		NTV2_XptFrameBuffer1_425RGB		= NTV2_XptFrameBuffer1_DS2RGB,
+		NTV2_XptFrameBuffer2_425YUV		= NTV2_XptFrameBuffer2_DS2YUV,
+		NTV2_XptFrameBuffer2_425RGB		= NTV2_XptFrameBuffer2_DS2RGB,
+		NTV2_XptFrameBuffer3_425YUV		= NTV2_XptFrameBuffer3_DS2YUV,
+		NTV2_XptFrameBuffer3_425RGB		= NTV2_XptFrameBuffer3_DS2RGB,
+		NTV2_XptFrameBuffer4_425YUV		= NTV2_XptFrameBuffer4_DS2YUV,
+		NTV2_XptFrameBuffer4_425RGB		= NTV2_XptFrameBuffer4_DS2RGB,
+		NTV2_XptFrameBuffer5_425YUV		= NTV2_XptFrameBuffer5_DS2YUV,
+		NTV2_XptFrameBuffer5_425RGB		= NTV2_XptFrameBuffer5_DS2RGB,
+		NTV2_XptFrameBuffer6_425YUV		= NTV2_XptFrameBuffer6_DS2YUV,
+		NTV2_XptFrameBuffer6_425RGB		= NTV2_XptFrameBuffer6_DS2RGB,
+		NTV2_XptFrameBuffer7_425YUV		= NTV2_XptFrameBuffer7_DS2YUV,
+		NTV2_XptFrameBuffer7_425RGB		= NTV2_XptFrameBuffer7_DS2RGB,
+		NTV2_XptFrameBuffer8_425YUV		= NTV2_XptFrameBuffer8_DS2YUV,
+		NTV2_XptFrameBuffer8_425RGB		= NTV2_XptFrameBuffer8_DS2RGB
+	#endif
     #if !defined(NTV2_DEPRECATE_14_3)
 		,
 		NTV2_XptHDMIIn					= NTV2_XptHDMIIn1,
@@ -2559,21 +2828,21 @@ typedef enum NTV2InputCrosspointID
 {
     NTV2_FIRST_INPUT_CROSSPOINT		= 0x01,
     NTV2_XptFrameBuffer1Input		= 0x01,
-    NTV2_XptFrameBuffer1BInput		= 0x02,
+    NTV2_XptFrameBuffer1DS2Input	= 0x02,
     NTV2_XptFrameBuffer2Input		= 0x03,
-    NTV2_XptFrameBuffer2BInput		= 0x04,
+    NTV2_XptFrameBuffer2DS2Input	= 0x04,
     NTV2_XptFrameBuffer3Input		= 0x05,
-    NTV2_XptFrameBuffer3BInput		= 0x06,
+    NTV2_XptFrameBuffer3DS2Input	= 0x06,
     NTV2_XptFrameBuffer4Input		= 0x07,
-    NTV2_XptFrameBuffer4BInput		= 0x08,
+    NTV2_XptFrameBuffer4DS2Input	= 0x08,
     NTV2_XptFrameBuffer5Input		= 0x09,
-    NTV2_XptFrameBuffer5BInput		= 0x0A,
+    NTV2_XptFrameBuffer5DS2Input	= 0x0A,
     NTV2_XptFrameBuffer6Input		= 0x0B,
-    NTV2_XptFrameBuffer6BInput		= 0x0C,
+    NTV2_XptFrameBuffer6DS2Input	= 0x0C,
     NTV2_XptFrameBuffer7Input		= 0x0D,
-    NTV2_XptFrameBuffer7BInput		= 0x0E,
+    NTV2_XptFrameBuffer7DS2Input	= 0x0E,
     NTV2_XptFrameBuffer8Input		= 0x0F,
-    NTV2_XptFrameBuffer8BInput		= 0x10,
+    NTV2_XptFrameBuffer8DS2Input	= 0x10,
     NTV2_XptCSC1VidInput			= 0x11,
     NTV2_XptCSC1KeyInput			= 0x12,
     NTV2_XptCSC2VidInput			= 0x13,
@@ -2693,6 +2962,17 @@ typedef enum NTV2InputCrosspointID
     NTV2_XptFrameSync1Input			= 0x84,	//	deprecate?
     NTV2_LAST_INPUT_CROSSPOINT		= 0x84,
     NTV2_INPUT_CROSSPOINT_INVALID	= 0xFFFFFFFF
+	#if !defined(NTV2_DEPRECATE_15_3)
+		,
+		NTV2_XptFrameBuffer1BInput = NTV2_XptFrameBuffer1DS2Input,
+		NTV2_XptFrameBuffer2BInput = NTV2_XptFrameBuffer2DS2Input,
+		NTV2_XptFrameBuffer3BInput = NTV2_XptFrameBuffer3DS2Input,
+		NTV2_XptFrameBuffer4BInput = NTV2_XptFrameBuffer4DS2Input,
+		NTV2_XptFrameBuffer5BInput = NTV2_XptFrameBuffer5DS2Input,
+		NTV2_XptFrameBuffer6BInput = NTV2_XptFrameBuffer6DS2Input,
+		NTV2_XptFrameBuffer7BInput = NTV2_XptFrameBuffer7DS2Input,
+		NTV2_XptFrameBuffer8BInput = NTV2_XptFrameBuffer8DS2Input
+	#endif
 } NTV2InputCrosspointID, NTV2InputXptID;
 
 #define	NTV2_IS_VALID_InputCrosspointID(__s__)			((__s__) >= NTV2_FIRST_INPUT_CROSSPOINT && (__s__) <= NTV2_LAST_INPUT_CROSSPOINT)
@@ -2986,6 +3266,23 @@ typedef enum
 #define	NTV2_IS_AUDIO_MIXER_CHANNELS_1_OR_2(__p__)		((__p__) >= NTV2_AudioMixerChannel1	&& (__p__) <= NTV2_AudioMixerChannel2)
 
 /**
+    @brief	Identifies the Audio Mixer's audio inputs.
+    @see	See \ref audiomixer
+**/
+typedef enum
+{
+	NTV2_AudioMixerInputMain,	///< @brief	This selects the Audio Mixer's Main (primary) input
+	NTV2_AudioMixerInputAux1,	///< @brief	This selects the Audio Mixer's 1st Auxiliary input
+	NTV2_AudioMixerInputAux2,	///< @brief	This selects the Audio Mixer's 2nd Auxiliary input
+	NTV2_MAX_NUM_AudioMixerInput,
+	NTV2_AUDIO_MIXER_INPUT_INVALID	=	NTV2_MAX_NUM_AudioMixerInput
+} NTV2AudioMixerInput;
+
+#define	NTV2_IS_VALID_AUDIO_MIXER_INPUT(__p__)		((__p__) >= NTV2_AudioMixerInputMain	&& (__p__) < NTV2_AUDIO_MIXER_INPUT_INVALID)
+#define	NTV2_IS_AUDIO_MIXER_INPUT_MAIN(__p__)		((__p__) == NTV2_AudioMixerInputMain)
+
+
+/**
     @brief	Identifies a contiguous, adjacent group of four audio channels.
     @see	CNTV2Card::GetAESOutputSource, CNTV2Card::SetAESOutputSource, \ref audiooperation
 **/
@@ -3148,8 +3445,10 @@ typedef enum
     NTV2_BITFILE_KONA1				= 54,
     NTV2_BITFILE_KONAHDMI           = 55,
 	NTV2_BITFILE_KONA5_MAIN			= 56,
-    NTV2_BITFILE_KONA5_12G_MAIN     = 57,
-	NTV2_BITFILE_CORVID44_12G_MAIN	= 58,
+    NTV2_BITFILE_KONA5_8KMK_MAIN     = 57,
+	NTV2_BITFILE_CORVID44_8KMK_MAIN	= 58,
+	NTV2_BITFILE_KONA5_8K_MAIN		= 59,
+	NTV2_BITFILE_CORVID44_8K_MAIN	= 60,
 	NTV2_BITFILE_NUMBITFILETYPES
 } NTV2BitfileType;
 
@@ -3247,24 +3546,6 @@ typedef enum
 } NTV2DSKAudioMode;
 
 
-#if !defined(NTV2_DEPRECATE_15_1)
-	// note: Pause Mode is a "software" feature - not performed in hardware
-	typedef enum
-	{
-		NTV2_PauseOnFrame,
-		NTV2_PauseOnField
-	} NTV2PauseModeType;
-
-	// note: 24 fps <-> 30 fps Pulldown is a "software" feature - not performed in hardware
-	typedef enum
-	{
-		NTV2_Pulldown2323,
-		NTV2_Pulldown2332,
-		NTV2_Pulldown2224
-	} NTV2PulldownPatternType;
-#endif	//	!defined(NTV2_DEPRECATE_15_1)
-
-
 // This is a user-pref control (currently only used on the Mac) that allows the user
 // to specify which color-space matrix to use when converting between RGB and YUV
 typedef enum
@@ -3274,35 +3555,6 @@ typedef enum
     NTV2_ColorSpaceTypeRec709,		// always use Rec 709 matrix
     NTV2_MAX_NUM_ColorSpaceTypes
 } NTV2ColorSpaceType;
-
-
-/**
-    @brief	This is a user-pref control (currently only used on the Mac) that allows the user
-            to specify which gamma-correction function to use when converting between RGB and YUV
-**/
-typedef enum
-{
-    NTV2_GammaNone,				// don't change LUTs for gamma (aka "Custom")
-    NTV2_GammaAuto,				// switch between Rec 601 for SD and Rec 709 for HD
-    NTV2_GammaMac,				// 1.8 "Macintosh" Power-function gamma
-    NTV2_GammaRec601,			// 2.2 Rec 601 Power-function gamma
-    NTV2_GammaRec709,			// 2.22.. Rec 709 gamma
-    NTV2_GammaPC,				// 2.5 "PC" Power-function gamma
-    NTV2_MAX_NUM_GammaTypes
-} NTV2GammaType;
-
-
-/**
-    @brief	This is a user-pref control (currently only used on the Mac) that allows the user
-    to specify which RTB range of CSC function to use when converting between RGB and YUV
-**/
-typedef enum
-{
-    NTV2_RGBRangeAuto,				// don't change LUTs for gamma (aka "Custom")
-    NTV2_RGBRangeFull,				// Levels are 0 - 1023 (Full)
-    NTV2_RGBRangeSMPTE,				// Levels are 64 - 940 (SMPTE)
-    NTV2_MAX_NUM_RGBRangeModes
-} NTV2RGBRangeMode;
 
 
 /**
@@ -3317,19 +3569,6 @@ typedef enum
     NTV2_Stereo3DDualStream,		// Two independant streams
     NTV2_MAX_NUM_Stereo3DModes
 } NTV2Stereo3DMode;
-
-
-/**
-    @brief	This is a user-pref control (currently only used on the Mac) that allows the user
-            to specify which Color Space
-**/
-typedef enum
-{
-    NTV2_ColorSpaceModeAuto,		// Auto Select
-    NTV2_ColorSpaceModeYCbCr,		// YCbCr (TBD, add 420, 444 options)
-    NTV2_ColorSpaceModeRgb,			// RGB
-    NTV2_MAX_NUM_ColorSpaceModes
-} NTV2ColorSpaceMode;
 
 
 // The Mac implementation of color-space conversion uses the two LUT banks for holding
@@ -3372,6 +3611,35 @@ typedef enum
 
 
 /**
+    @brief	This specifies HDMI Color Space I/O
+**/
+typedef enum
+{
+    NTV2_HDMIColorSpaceAuto,	//	Auto Select
+    NTV2_HDMIColorSpaceRGB,		//	RGB
+    NTV2_HDMIColorSpaceYCbCr,	//	YCbCr
+    NTV2_MAX_NUM_HDMIColorSpaces,
+    NTV2_INVALID_HDMI_COLORSPACE	= NTV2_MAX_NUM_HDMIColorSpaces
+} NTV2HDMIColorSpace;
+
+#define	NTV2_IS_VALID_HDMI_COLORSPACE(__x__)		((__x__) > NTV2_HDMIColorSpaceAuto  &&  (__x__) < NTV2_MAX_NUM_HDMIColorSpaces)
+
+
+/**
+    @brief	This specifies the HDMI protocol to be used.
+**/
+typedef enum
+{
+    NTV2_HDMIProtocolHDMI,		//	HDMI Protocol
+    NTV2_HDMIProtocolDVI,		//	DVI Protocol
+    NTV2_MAX_NUM_HDMIProtocols,
+    NTV2_INVALID_HDMI_PROTOCOL	= NTV2_MAX_NUM_HDMIProtocols
+} NTV2HDMIProtocol;
+
+#define	NTV2_IS_VALID_HDMI_PROTOCOL(__x__)	((__x__) >= NTV2_HDMIProtocolHDMI  &&  (__x__) < NTV2_MAX_NUM_HDMIProtocols)
+
+
+/**
     @brief	This specifies the range of HDMI
 **/
 typedef enum
@@ -3398,22 +3666,6 @@ typedef enum
 
 #define	NTV2_IS_VALID_HDMI_AUDIO_CHANNELS(__x__)	((__x__) >= NTV2_HDMIAudio2Channels)  &&  ((__x__) < NTV2_INVALID_HDMI_AUDIO_CHANNELS)
 
-
-/**
-    @brief	This specifies HDMI Color Space I/O
-**/
-typedef enum
-{
-    NTV2_HDMIColorSpaceAuto,	//	Auto Select
-    NTV2_HDMIColorSpaceRGB,		//	RGB
-    NTV2_HDMIColorSpaceYCbCr,	//	YCbCr
-    NTV2_MAX_NUM_HDMIColorSpaces,
-    NTV2_INVALID_HDMI_COLORSPACE	= NTV2_MAX_NUM_HDMIColorSpaces
-} NTV2HDMIColorSpace;
-
-#define	NTV2_IS_VALID_HDMI_COLORSPACE(__x__)		((__x__) > NTV2_HDMIColorSpaceAuto  &&  (__x__) < NTV2_MAX_NUM_HDMIColorSpaces)
-
-
 // LHI version HDMI Color Space I/O
 typedef enum
 {
@@ -3424,20 +3676,6 @@ typedef enum
 } NTV2LHIHDMIColorSpace;
 
 #define	NTV2_IS_VALID_LHI_HDMI_COLORSPACE(__x__)	((__x__) < NTV2_MAX_NUM_LHIHDMIColorSpaces)
-
-
-/**
-    @brief	This specifies the HDMI protocol to be used.
-**/
-typedef enum
-{
-    NTV2_HDMIProtocolHDMI,		//	HDMI Protocol
-    NTV2_HDMIProtocolDVI,		//	DVI Protocol
-    NTV2_MAX_NUM_HDMIProtocols,
-    NTV2_INVALID_HDMI_PROTOCOL	= NTV2_MAX_NUM_HDMIProtocols
-} NTV2HDMIProtocol;
-
-#define	NTV2_IS_VALID_HDMI_PROTOCOL(__x__)	((__x__) >= NTV2_HDMIProtocolHDMI  &&  (__x__) < NTV2_MAX_NUM_HDMIProtocols)
 
 
 // Bit depth on HDMI interface
@@ -3453,24 +3691,6 @@ typedef enum
 #define	NTV2_IS_VALID_HDMI_BITDEPTH(__x__)	((__x__) < NTV2_MAX_NUM_HDMIBitDepths)
 
 
-// This specifies the range of levels for 10-bit RGB (aka DualLink)
-typedef enum
-{
-    NTV2_RGB10RangeFull,		//	Levels are 0 - 1023 (Full)
-    NTV2_RGB10RangeSMPTE,		//	Levels are 64 - 940 (SMPTE)
-    NTV2_MAX_NUM_RGB10Ranges
-} NTV2RGB10Range;
-
-
-//	This specifies the endian 10-bit RGB (aka DualLink)
-typedef enum
-{
-    NTV2_RGB10LittleEndian,		//	Little Endian
-    NTV2_RGB10BigEndian,		//	Big Endian
-    NTV2_MAX_NUM_RGB10EndianEnums
-} NTV2RGB10Endian;
-
-
 // This specifies the output selection for the LH board
 typedef enum
 {
@@ -3479,18 +3699,6 @@ typedef enum
     NTV2LHOutputSelect_VidProc2,
     NTV2_MAX_NUM_LHOutputSelectEnums
 } NTV2LHOutputSelect;
-
-
-//	NOTE:	Timecode Burn-In Mode is a "software" feature - not performed in hardware
-typedef enum
-{
-    NTV2_TimecodeBurnInOff,				//	no burn-in
-    NTV2_TimecodeBurnInTC,				//	display current timecode
-    NTV2_TimecodeBurnInUB,				//	display current user bits
-    NTV2_TimecodeBurnInFrameCount,		//	display current frame count
-    NTV2_TimecodeBurnInQuickTime,		//	(like frame count, but shows Mac QuickTime frame time)
-    NTV2_MAX_NUM_TimecodeBurnInModeTypes
-} NTV2TimecodeBurnInModeType;
 
 
 #if !defined (NTV2_DEPRECATE)
@@ -3568,8 +3776,14 @@ typedef enum
     NTV2_VIDEOLIMITING_LEGALSDI,
     NTV2_VIDEOLIMITING_OFF,
     NTV2_VIDEOLIMITING_LEGALBROADCAST,
-    NTV2_MAX_NUM_VideoLimitingEnums
+    NTV2_MAX_NUM_VideoLimitingEnums,
+    NTV2_VIDEOLIMITING_INVALID	=	NTV2_MAX_NUM_VideoLimitingEnums
 } NTV2VideoLimiting;
+
+#define	NTV2_IS_VALID_VIDEOLIMITING(__v__)			((__v__) >= NTV2_VIDEOLIMITING_LEGALSDI && (__v__) < NTV2_VIDEOLIMITING_INVALID)
+#define	NTV2_IS_LIMITING_LEGALSDI(__v__)			((__v__) == NTV2_VIDEOLIMITING_LEGALSDI)
+#define	NTV2_IS_LIMITING_OFF(__v__)					((__v__) == NTV2_VIDEOLIMITING_OFF)
+#define	NTV2_IS_LIMITING_LEGALBROADCAST(__v__)		((__v__) == NTV2_VIDEOLIMITING_LEGALBROADCAST)
 
 
 /**
@@ -3721,8 +3935,11 @@ typedef enum
         NTV2_BYPASS				= NTV2_DEVICE_BYPASSED,
         NTV2_STRAIGHT_THROUGH	= NTV2_THROUGH_DEVICE,
     #endif	//	NTV2_DEPRECATE
-    NTV2_MAX_NUM_RelayStates
+    NTV2_MAX_NUM_RelayStates,
+    NTV2_RELAY_STATE_INVALID	= NTV2_MAX_NUM_RelayStates
 } NTV2RelayState;
+
+#define	NTV2_IS_VALID_RELAY_STATE(__x__)			((__x__) >= NTV2_DEVICE_BYPASSED  &&  (__x__) < NTV2_MAX_NUM_RelayStates)
 
 
 /**
@@ -3891,7 +4108,10 @@ typedef enum
 	VPIDStandard_1080_Single_6Gb				= 0xC1,	// 1080 single link 6Gb
 	VPIDStandard_1080_AFR_Single_6Gb			= 0xC2,	// 1080 additional frame rates single link 6Gb
 	VPIDStandard_2160_Single_12Gb				= 0xCE,	// 2160 single link 12Gb
-	VPIDStandard_1080_10_12_AFR_Single_12Gb		= 0xCF	// 1080 10 bit or 12 bit additional frame rates single link 12Gb
+	VPIDStandard_1080_10_12_AFR_Single_12Gb		= 0xCF,	// 1080 10 bit or 12 bit additional frame rates single link 12Gb
+	VPIDStandard_4320_DualLink_12Gb				= 0xD0, // 4320 dual link 12Gb ST2802-11 Mode 1
+	VPIDStandard_2160_DualLink_12Gb				= 0xD1, // 2160 RGB dual link 12Gb ST2082-11 Mode 2
+	VPIDStandard_4320_QuadLink_12Gb				= 0xD2 // 4320 quad link 12Gb ST2082-12 Mode 1
 } VPIDStandard;
 
 typedef enum
@@ -4045,13 +4265,52 @@ typedef enum
 
 #define	NTV2_IS_VALID_DIETEMP_SCALE(_x_)	((_x_) >= NTV2DieTempScale_Celsius  &&  (_x_) < NTV2DieTempScale_INVALID)
 
+/**
+	@brief	These enumerations identify the various ancillary data regions located at the bottom
+			of each frame buffer on the NTV2 device.
+	@note	These are only applicable to devices that support custom anc insertion/extraction
+			(see ::NTV2DeviceCanDoCustomAnc). Also see \ref anccapture  and \ref ancplayout .
+**/
 typedef enum
 {
-	NTV2_AnalogAudioIO_8Out,
-	NTV2_AnalogAudioIO_4In_4Out,
-	NTV2_AnalogAudioIO_4Out_4In,
-	NTV2_AnalogAudioIO_8In
-}NTV2AnalogAudioIO;
+	NTV2_AncRgn_Field1,		///< @brief	Identifies the "normal" Field 1 ancillary data region.
+	NTV2_AncRgn_Field2,		///< @brief	Identifies the "normal" Field 2 ancillary data region.
+	NTV2_AncRgn_MonField1,	///< @brief	Identifies the "monitor" or "auxiliary" Field 1 ancillary data region.
+	NTV2_AncRgn_MonField2,	///< @brief	Identifies the "monitor" or "auxiliary" Field 2 ancillary data region.
+	NTV2_MAX_NUM_AncRgns,
+	NTV2_AncRgn_FIRST	= NTV2_AncRgn_Field1,
+	NTV2_AncRgn_LAST	= NTV2_AncRgn_MonField2,
+	NTV2_AncRgn_INVALID	= NTV2_MAX_NUM_AncRgns,
+	NTV2_AncRgn_All = 0xFFFF	///< @brief	Identifies "all" ancillary data regions.
+} NTV2AncillaryDataRegion, NTV2AncDataRgn;
+
+#define	NTV2_IS_ALL_ANC_RGNS(_x_)		((_x_) == NTV2_AncRgn_All)
+#define	NTV2_IS_VALID_ANC_RGN(_x_)		(NTV2_IS_ALL_ANC_RGNS(_x_)  ||  ((_x_) >= NTV2_AncRgn_Field1  &&  (_x_) < NTV2_MAX_NUM_AncRgns))
+#define	NTV2_IS_NORMAL_ANC_RGN(_x_)		((_x_) == NTV2_AncRgn_Field1  ||  (_x_) == NTV2_AncRgn_Field2)
+#define	NTV2_IS_MONITOR_ANC_RGN(_x_)	((_x_) == NTV2_AncRgn_MonField1  ||  (_x_) == NTV2_AncRgn_MonField2)
+
+
+typedef enum
+{
+	NTV2_VPID_TC_SDR_TV,
+	NTV2_VPID_TC_HLG,
+	NTV2_VPID_TC_PQ,
+	NTV2_VPID_TC_Unspecified
+} NTV2VPIDTransferCharacteristics, NTV2VPIDXferChars, NTV2HDRXferChars;
+		
+typedef enum
+{
+	NTV2_VPID_Color_Rec709,
+	NTV2_VPID_Color_Reserved,
+	NTV2_VPID_Color_UHDTV,
+	NTV2_VPID_Color_Unknown
+} NTV2VPIDColorimetry, NTV2HDRColorimetry;
+		
+typedef enum
+{
+	NTV2_VPID_Luminance_YCbCr,
+	NTV2_VPID_Luminance_ICtCp
+} NTV2VPIDLuminance, NTV2HDRLuminance;
 
 
 #if !defined (NTV2_DEPRECATE)
@@ -4349,7 +4608,7 @@ typedef enum
     #define		NTV2K2_Input3Select					NTV2_Input3Select					///< @deprecated	Use NTV2_Input3Select instead.
     #define		NTV2K2_Input4Select					NTV2_Input4Select					///< @deprecated	Use NTV2_Input4Select instead.
     #define		NTV2K2_Input5Select					NTV2_Input5Select					///< @deprecated	Use NTV2_Input5Select instead.
-    #define		NTV2K2_DualLinkInputSelect			NTV2_Input2xDLHDSelect			///< @deprecated	Use NTV2_Input2xDLHDSelect instead.
+    #define		NTV2K2_DualLinkInputSelect			NTV2_Input2xDLHDSelect				///< @deprecated	Use NTV2_Input2xDLHDSelect instead.
     #define		NTV2K2_DualLink2xSdi4k				NTV2_Input2x4kSelect				///< @deprecated	Use NTV2_Input2x4kSelect instead.
     #define		NTV2K2_DualLink4xSdi4k				NTV2_Input4x4kSelect				///< @deprecated	Use NTV2_Input4x4kSelect instead.
     #define		NTV2K2_InputSelectMax				NTV2_MAX_NUM_InputVideoSelectEnums	///< @deprecated	Use NTV2_MAX_NUM_InputVideoSelectEnums instead.

@@ -17,9 +17,21 @@
 const uint8_t AJAAncillaryDataWildcard_DID = 0xFF;
 const uint8_t AJAAncillaryDataWildcard_SID = 0xFF;
 
-
+/**
+	@brief	Associates certain frame line numbers with specific types of "raw" or "analog" ancillary data.
+			For example, you may wish to associate line 21 (in 525i) with ::AJAAncillaryDataType_Cea608_Line21.
+	@note	This facility is ONLY used by AJAAncillaryList::AddReceivedAncillaryData to identify captured
+			"raw" data (AJAAncillaryDataCoding_Analog).
+**/
 typedef std::map <uint16_t, AJAAncillaryDataType>	AJAAncillaryAnalogTypeMap;
 
+typedef std::vector<ULWordSequence>	AJAU32Pkts;						///< @brief	Ordered sequence of U32 RTP packets (U32s in network byte order)
+typedef AJAU32Pkts::const_iterator	AJAU32PktsConstIter;			///< @brief	Handy const iterator over AJAU32Pkts
+typedef AJAU32Pkts::iterator		AJAU32PktsIter;					///< @brief	Handy non-const iterator over AJAU32Pkts
+
+typedef UByteSequence				AJAAncPktCounts;				///< @brief	Ordered sequence of SMPTE Anc packet counts
+typedef AJAAncPktCounts::const_iterator	AJAAncPktCountsConstIter;	///< @brief	Handy const iterator over AJAAncPktCounts
+class CNTV2Card;
 
 /**
 	@brief		I am an ordered collection of AJAAncillaryData instances which represent one or more SMPTE 291
@@ -31,15 +43,20 @@ typedef std::map <uint16_t, AJAAncillaryDataType>	AJAAncillaryAnalogTypeMap;
 				Use my AJAAncillaryList::SortListByDID, AJAAncillaryList::SortListBySID or AJAAncillaryList::SortListByLocation
 				methods to sort my packets by DID, SDID or location.
 
-	@warning	I am not thread-safe! When any of my non-const methods are called by one thread, do not call any of my
-				methods from any other thread.
+	@warning	I am not thread-safe! When any of my non-const instance methods are called by one thread,
+				do not call any of my other instance methods from any other thread.
 **/
 class AJAExport AJAAncillaryList
 {
 public:	//	CLASS METHODS
+
+	/**
+		@name	Create from Device Buffers (Capture/Ingest)
+	**/
+	///@{
 	/**
 		@brief		Returns all packets found in the VANC lines of the given NTV2 frame buffer.
-		@param[in]	inFrameBuffer		Specifies the NTV2 frame buffer (or the portion containing the VANC lines).
+		@param[in]	inFrameBuffer		Specifies the NTV2 frame buffer (or at least the portion containing the VANC lines).
 		@param[in]	inFormatDesc		Describes the frame buffer (pixel format, video standard, etc.).
 		@param[out]	outPackets			Receives the packets found.
 		@return		AJA_STATUS_SUCCESS if successful.
@@ -53,25 +70,78 @@ public:	//	CLASS METHODS
 
 	/**
 		@brief		Returns all ancillary data packets found in the given F1 and F2 ancillary data buffers.
-		@param[in]	inF1AncBuffer		Specifies the F1 ancillary data ("GUMP") buffer.
-		@param[in]	inF2AncBuffer		Specifies the F2 ancillary data ("GUMP") buffer.
+		@param[in]	inF1AncBuffer		Specifies the F1 ancillary data buffer.
+		@param[in]	inF2AncBuffer		Specifies the F2 ancillary data buffer.
 		@param[out]	outPackets			Receives the packet list.
 		@return		AJA_STATUS_SUCCESS if successful.
 	**/
-	static AJAStatus						SetFromSDIAncData (const NTV2_POINTER & inF1AncBuffer,
-															const NTV2_POINTER & inF2AncBuffer,
-															AJAAncillaryList & outPackets);
+	static AJAStatus						SetFromDeviceAncBuffers (const NTV2_POINTER & inF1AncBuffer,
+																	const NTV2_POINTER & inF2AncBuffer,
+																	AJAAncillaryList & outPackets);
+
+	#if !defined(NTV2_DEPRECATE_15_2)
+		static inline AJAStatus	SetFromSDIAncData (const NTV2_POINTER & inF1, const NTV2_POINTER & inF2, AJAAncillaryList & outPkts)	{return SetFromDeviceAncBuffers(inF1, inF2, outPkts);}	///< @deprecated	Use SetFromDeviceAncBuffers instead.
+		static inline AJAStatus	SetFromIPAncData (const NTV2_POINTER & inF1, const NTV2_POINTER & inF2, AJAAncillaryList & outPkts)		{return SetFromDeviceAncBuffers(inF1, inF2, outPkts);}	///< @deprecated	Use SetFromDeviceAncBuffers instead.
+	#endif	//	!defined(NTV2_DEPRECATE_15_2)
+	///@}
+
 
 	/**
-		@brief		Returns all ancillary data packets found in the given F1 and F2 RTP packet buffers.
-		@param[in]	inF1AncBuffer		Specifies the F1 RTP packet buffer.
-		@param[in]	inF2AncBuffer		Specifies the F2 RTP packet buffer.
-		@param[out]	outPackets			Receives the packet list.
+		@name	Global Configuration
+	**/
+	///@{
+	/**
+		@brief		Clears my global Analog Ancillary Data Type map.
 		@return		AJA_STATUS_SUCCESS if successful.
 	**/
-	static AJAStatus						SetFromIPAncData (const NTV2_POINTER & inF1AncBuffer,
-															const NTV2_POINTER & inF2AncBuffer,
-															AJAAncillaryList & outPackets);
+	static AJAStatus						ClearAnalogAncillaryDataTypeMap (void);
+	
+
+	/**
+		@brief		Copies the given map to the global Analog Ancillary Data Type map.
+		@param[in]	inMap	The map to copy.
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	static AJAStatus						SetAnalogAncillaryDataTypeMap (const AJAAncillaryAnalogTypeMap & inMap);
+	
+
+	/**
+		@brief		Returns a copy of the global Analog Ancillary Data Type map.
+		@param[out]	outMap	Receives a copy of the map.
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	static AJAStatus						GetAnalogAncillaryDataTypeMap (AJAAncillaryAnalogTypeMap & outMap);
+
+
+	/**
+		@brief		Sets (or changes) the map entry for the designated line to the designated type.
+		@param[in]	inLineNum	Specifies the frame line number to be added or changed.
+		@param[in]	inType		Specifies the ancillary data type to be associated with this line.
+								Use AJAAncillaryDataType_Unknown to remove any associations with the line.
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	static	AJAStatus						SetAnalogAncillaryDataTypeForLine (const uint16_t inLineNum, const AJAAncillaryDataType inType);
+
+
+	/**
+		@brief		Answers with the ancillary data type associated with the designated line.
+		@param[in]	inLineNum		Specifies the frame line number of interest.
+		@return		The ancillary data type associated with the designated line, if any;
+					otherwise AJAAncillaryDataType_Unknown if the line has no association.
+	**/
+	static AJAAncillaryDataType				GetAnalogAncillaryDataTypeForLine (const uint16_t inLineNum);
+
+
+	/**
+		@brief		Sets whether or not zero-length packets are included or not.
+		@param[in]	inExclude	Specify true to exclude zero-length packets.
+	**/
+	static void								SetIncludeZeroLengthPackets (const bool inExclude);
+	static uint32_t							GetExcludedZeroLengthPacketCount (void);	///< @return	The current number of zero-length packets that have been excluded
+	static void								ResetExcludedZeroLengthPacketCount (void);	///< @brief		Resets my tally of excluded zero-length packets to zero.
+	static bool								IsIncludingZeroLengthPackets (void);		///< @return	True if zero-length packets are included;  otherwise false.
+	///@}
+
 
 public:	//	INSTANCE METHODS
 	/**
@@ -79,7 +149,7 @@ public:	//	INSTANCE METHODS
 	**/
 	///@{
 											AJAAncillaryList ();			///< @brief	Instantiate and initialize with a default set of values.
-
+	inline									AJAAncillaryList (const AJAAncillaryList & inRHS)	{*this = inRHS;}	///< @brief	My copy constructor.
 	virtual									~AJAAncillaryList ();			///< @brief	My destructor.
 
 	/**
@@ -101,6 +171,11 @@ public:	//	INSTANCE METHODS
 		@return	The number of AJAAncillaryData objects I contain.
 	**/
 	virtual inline uint32_t					CountAncillaryData (void) const				{return uint32_t(m_ancList.size());}
+
+	/**
+		@return	True if I'm empty;  otherwise false.
+	**/
+	virtual inline bool						IsEmpty (void) const						{return !CountAncillaryData();}
 
 	/**
 		@brief		Answers with the AJAAncillaryData object at the given index.
@@ -156,6 +231,13 @@ public:	//	INSTANCE METHODS
 		@return	AJA_STATUS_SUCCESS if successful.
 	**/
 	virtual AJAStatus						Clear (void);
+
+	/**
+		@brief		Adds (appends) a copy (using AJAAncillaryData::Clone) of the given list's packet objects to me.
+		@param[in]	inPackets	Specifies the AJAAncillaryList containing the packets to be copied and added to me.
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	virtual AJAStatus						AddAncillaryData (const AJAAncillaryList & inPackets);
 
 	/**
 		@brief		Adds (appends) a copy (using AJAAncillaryData::Clone) of the AJAAncillaryData object to me.
@@ -214,18 +296,30 @@ public:	//	INSTANCE METHODS
 
 	/**
 		@brief		Compares me with another list.
+		@param[in]	inCompareList		Specifies the other list to be compared with me.
 		@param[in]	inIgnoreLocation	If true, don't compare each packet's AJAAncillaryDataLocation info. Defaults to true.
 		@param[in]	inIgnoreChecksum	If true, don't compare each packet's checksums. Defaults to true.
 		@return		AJA_STATUS_SUCCESS if equal;  otherwise AJA_STATUS_FAIL.
 		@note		The sort order of each list, to be considered identical, must be the same.
 	**/
 	virtual AJAStatus						Compare (const AJAAncillaryList & inCompareList, const bool inIgnoreLocation = true,  const bool inIgnoreChecksum = true) const;
+
+	/**
+		@brief		Compares me with another list and returns a std::string that contains a human-readable explanation
+					of the first difference found (if any).
+		@param[in]	inCompareList		Specifies the other list to be compared with me.
+		@param[in]	inIgnoreLocation	If true, don't compare each packet's AJAAncillaryDataLocation info. Defaults to true.
+		@param[in]	inIgnoreChecksum	If true, don't compare each packet's checksums. Defaults to true.
+		@return		A string that contains a human-readable explanation of the first difference found (if any);
+					or an empty string if the lists are identical.
+		@note		The sort order of each list, to be considered identical, must be the same.
+	**/
 	virtual std::string						CompareWithInfo (const AJAAncillaryList & inCompareList, const bool inIgnoreLocation = true,  const bool inIgnoreChecksum = true) const;
 	///@}
 
 
 	/**
-		@name	Transmit to AJA Hardware
+		@name	Transmit to AJA Hardware (Playout)
 	**/
 	///@{
 	/**
@@ -259,49 +353,110 @@ public:	//	INSTANCE METHODS
 																			uint8_t * pOutF2AncData, const uint32_t inF2ByteCountMax);
 
 	/**
-		@brief		Writes my AJAAncillaryData objects into the given buffers for insertion into an SDI data stream
-					in \ref ancgumpformat.
+		@brief		Encodes my AJAAncillaryData packets into the given buffers in the default \ref ancgumpformat .
+					The buffer contents are replaced;  the unused remainder, if any, will be zeroed.
 		@param		F1Buffer			Specifies the buffer memory into which Field 1's anc data will be written.
 		@param		F2Buffer			Specifies the buffer memory into which Field 2's anc data will be written.
 		@param		inIsProgressive		Specify true to designate the output ancillary data stream as progressive; 
 										otherwise, specify false. Defaults to true (is progressive).
 		@param[in]	inF2StartLine		For interlaced/psf frames, specifies the line number where Field 2 begins;  otherwise ignored.
 										Defaults to zero (progressive). For interlaced video, see NTV2SmpteLineNumber::GetLastLine .
-		@note		It's assumed that my packets are already sorted by location.
+		@note		This function has a side-effect of automatically sorting my packets by ascending location before encoding.
 		@return		AJA_STATUS_SUCCESS if successful.
 	**/
-	virtual AJAStatus						GetSDITransmitData (NTV2_POINTER & F1Buffer, NTV2_POINTER & F2Buffer,
-																const bool inIsProgressive = true, const uint32_t inF2StartLine = 0);
+	virtual AJAStatus						GetTransmitData (NTV2_POINTER & F1Buffer, NTV2_POINTER & F2Buffer,
+															const bool inIsProgressive = true, const uint32_t inF2StartLine = 0);
+
+	virtual inline AJAStatus				GetSDITransmitData (NTV2_POINTER & F1Buffer, NTV2_POINTER & F2Buffer,
+																const bool inIsProgressive = true, const uint32_t inF2StartLine = 0)
+																			{return GetTransmitData(F1Buffer, F2Buffer, inIsProgressive, inF2StartLine);}	///< @deprecated	An alias for GetTransmitData
 
 	/**
 		@brief		Writes my AJAAncillaryData objects into the given tall/taller frame buffer having the given raster/format.
 		@param		inFrameBuffer		Specifies the frame buffer memory on the host to modify.
 		@param[in]	inFormatDesc		Describes the frame buffer's raster and pixel format.
-		@note		It's a good idea to call AJAAncillaryList::SortListByLocation before calling this function.
+		@note		Before writing, I automatically sort my packets by location.
 		@return		AJA_STATUS_SUCCESS if successful.
 		@bug		Currently ignores each packet's horizontal offset (assumes AJAAncDataHorizOffset_Anywhere).
 	**/
 	virtual AJAStatus						GetVANCTransmitData (NTV2_POINTER & inFrameBuffer,  const NTV2FormatDescriptor & inFormatDesc);
 
 	/**
-		@brief		Writes my AJAAncillaryData objects into the given buffers as an IP/RTP data structure suitable for
-					insertion into an IP ancillary data stream in \ref ancrtpformat.
+		@brief		Explicitly encodes my AJAAncillaryData packets into the given buffers in \ref ancrtpformat .
+					The buffer contents are replaced;  the unused remainder, if any, will be zeroed.
 		@param		F1Buffer			Specifies the buffer memory into which Field 1's IP/RTP data will be written.
 		@param		F2Buffer			Specifies the buffer memory into which Field 2's IP/RTP data will be written.
-		@param		inIsProgressive		Specify true to designate the output ancillary data stream as progressive; 
+		@param[in]	inIsProgressive		Specify true to designate the output ancillary data stream as progressive; 
 										otherwise, specify false. Defaults to true (is progressive).
 		@param[in]	inF2StartLine		For interlaced/psf frames, specifies the line number where Field 2 begins;  otherwise ignored.
 										Defaults to zero (progressive).
-		@note		It's assumed that my packets are already sorted by location.
+		@note		This function has the following side-effects:
+					-	Sorts my packets by ascending location before encoding.
+					-	Calls AJAAncillaryData::GenerateTransmitData on each of my packets.
 		@return		AJA_STATUS_SUCCESS if successful.
 	**/
 	virtual AJAStatus						GetIPTransmitData (NTV2_POINTER & F1Buffer, NTV2_POINTER & F2Buffer,
 																const bool inIsProgressive = true, const uint32_t inF2StartLine = 0);
+
+	/**
+		@brief		Answers with the number of bytes required to store IP/RTP for my AJAAncillaryData packets in \ref ancrtpformat .
+		@param[out]	outF1ByteCount		Receives the requisite byte count for Field 1's IP/RTP packet data.
+		@param[out]	outF2ByteCount		Receives the requisite byte count for Field 1's IP/RTP packet data.
+		@param[in]	inIsProgressive		Specify true to designate the output ancillary data stream as progressive; 
+										otherwise, specify false. Defaults to true (is progressive).
+		@param[in]	inF2StartLine		For interlaced/psf frames, specifies the line number where Field 2 begins;  otherwise ignored.
+										Defaults to zero (progressive).
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	virtual AJAStatus						GetIPTransmitDataLength (uint32_t & outF1ByteCount, uint32_t & outF2ByteCount,
+																	const bool inIsProgressive = true, const uint32_t inF2StartLine = 0);
+
+	/**
+		@brief		Answers true if multiple RTP packets will be transmitted/encoded.
+					The default behavior is to transmit/encode a single RTP packet.
+		@return		True if multiple RTP packets are allowed to be encoded;  otherwise false.
+	**/
+	virtual inline bool						AllowMultiRTPTransmit (void) const					{return m_xmitMultiRTP;}
+
+	/**
+		@brief		Determines if multiple RTP packets will be encoded for playout (via GetIPTransmitData).
+					The default behavior is to transmit/encode a single RTP packet.
+		@param[in]	inAllow		Specify true to allow encoding more than one RTP packet into the destination Anc buffer.
+								Specify false to transmit/encode a single RTP packet (the default).
+	**/
+	virtual inline void						SetAllowMultiRTPTransmit (const bool inAllow)		{m_xmitMultiRTP = inAllow;}
+
+#if !defined(NTV2_DEPRECATE_15_5)
+	/**
+		@deprecated	Use SetAllowMultiRTPTransmit with the 4-parameter version of this function.
+	**/
+	virtual NTV2_DEPRECATED_f(AJAStatus	GetIPTransmitData (NTV2_POINTER & F1Buffer, NTV2_POINTER & F2Buffer,
+															const bool inIsProgressive, const uint32_t inF2StartLine,
+															const bool inSingleRTPPkt))
+			{	const bool oldValue(AllowMultiRTPTransmit());
+				SetAllowMultiRTPTransmit(!inSingleRTPPkt);
+				const AJAStatus result(GetIPTransmitData(F1Buffer, F2Buffer, inIsProgressive, inF2StartLine));
+				SetAllowMultiRTPTransmit(oldValue);
+				return result;
+			}
+	/**
+		@deprecated	Use SetAllowMultiRTPTransmit with the 4-parameter version of this function.
+	**/
+	virtual NTV2_DEPRECATED_f(AJAStatus	GetIPTransmitDataLength (uint32_t & outF1ByteCount, uint32_t & outF2ByteCount,
+																const bool inIsProgressive, const uint32_t inF2StartLine,
+																const bool inSingleRTPPkt))
+			{	const bool oldValue(AllowMultiRTPTransmit());
+				SetAllowMultiRTPTransmit(!inSingleRTPPkt);
+				const AJAStatus result(GetIPTransmitDataLength(outF1ByteCount, outF2ByteCount, inIsProgressive, inF2StartLine));
+				SetAllowMultiRTPTransmit(oldValue);
+				return result;
+			}
+#endif	//	!defined(NTV2_DEPRECATE_15_5)
 	///@}
 
 
 	/**
-		@name	Receive from AJA Hardware
+		@name	Receive from AJA Hardware (Ingest)
 	**/
 	///@{
 
@@ -321,7 +476,7 @@ public:	//	INSTANCE METHODS
 		@param[in]	inReceivedData		The received packet words in network byte order.
 		@return		AJA_STATUS_SUCCESS if successful.
 	**/
-	virtual AJAStatus						AddReceivedAncillaryData (const std::vector<uint32_t> & inReceivedData);
+	virtual AJAStatus						AddReceivedAncillaryData (const ULWordSequence & inReceivedData);
 
 
 	/**
@@ -332,83 +487,53 @@ public:	//	INSTANCE METHODS
 		@param[in]	inLocation			Specifies where the packet was found.
 		@return		AJA_STATUS_SUCCESS if successful.
 	**/
-	virtual AJAStatus						AddVANCData (const std::vector<uint16_t> & inPacketWords,
+	virtual AJAStatus						AddVANCData (const UWordSequence & inPacketWords,
 														const AJAAncillaryDataLocation & inLocation);
+
+	/**
+		@brief		Answers true if multiple RTP packets are allowed for capture/receive.
+					The default behavior is to process all (multiple) received RTP packets.
+		@return		True if multiple RTP packets are allowed to be decoded;  otherwise false.
+	**/
+	virtual inline bool						AllowMultiRTPReceive (void) const					{return m_rcvMultiRTP;}
+
+	/**
+		@brief		Determines if more than one RTP packet will be processed/decoded (via AddReceivedAncillaryData).
+		@param[in]	inAllow		Specify true to allow processing/decoding multiple RTP packets from the receiving Anc buffer.
+								Specify false to only process/decode the first RTP packet found in the receiving Anc buffer.
+	**/
+	virtual inline void						SetAllowMultiRTPReceive (const bool inAllow)		{m_rcvMultiRTP = inAllow;}
+
+	/**
+		@brief		Answers if checksum errors are to be ignored or not.
+					The default behavior is to not ignore them.
+		@note		This applies to capture/ingest (i.e. AddReceivedAncillaryData methods).
+		@return		True if ignoring checksum errors;  otherwise false.
+	**/
+	virtual inline bool						IgnoreChecksumErrors (void) const	{return m_ignoreCS;}
+
+	/**
+		@brief		Determines if checksum errors encountered during capture/ingest
+					(via AddReceivedAncillaryData) will be ignored or not.
+		@param[in]	inIgnore	Specify true to ignore checksum errors;  otherwise use false.
+	**/
+	virtual inline void						SetIgnoreChecksumErrors (const bool inIgnore)		{m_ignoreCS = inIgnore;}
 
 
 #if !defined(NTV2_DEPRECATE_14_2)
 	/**
 		@deprecated	Use the 2-parameter version of this function instead.
 	**/
-	virtual NTV2_DEPRECATED_f(AJAStatus		AddVANCData (const std::vector<uint16_t> & inPacketWords, const uint16_t inLineNum,
-														const AJAAncillaryDataVideoStream inStream = AJAAncillaryDataChannel_Y));
+	virtual NTV2_DEPRECATED_f(AJAStatus	AddVANCData (const UWordSequence & inPacketWords, const uint16_t inLineNum,
+													const AJAAncillaryDataVideoStream inStream = AJAAncillaryDataChannel_Y));
 #endif	//	!defined(NTV2_DEPRECATE_14_2)
+
 
 	/**
 		@brief		Sends a "ParsePayloadData" command to all of my AJAAncillaryData objects.
 		@return		AJA_STATUS_SUCCESS if all items parse successfully;  otherwise the last failure result.
 	**/
 	virtual AJAStatus						ParseAllAncillaryData (void);
-	///@}
-
-
-	/**
-		@name	Analog Anc Type Mapping
-	**/
-	///@{
-
-//--------------------------------------------------------
-	/**
-	 *	The Analog Ancillary Data Type Map is a way for the user to associate certain frame line line numbers
-	 *	with specific types of analog ancillary data. For example, in 525i you may wish to say, "if you find
-	 *	any analog ancillary data on line 21, it is going to be AJAAncillaryDataType_Cea608_Line21. The
-	 *	implementation is a std::map, and the following access methods may be used to set/get the map values.
-	 *
-	 *	Note: this is ONLY used by AddReceivedAncillaryData() to identify captured "analog" (AJAAncillaryDataCoding_Analog)
-	 *	      data. It should be loaded BEFORE calling AddReceivedAncillaryData().
-	 *
-	 */
-
-	/**
-		@brief		Clears my local Analog Ancillary Data Type map.
-		@return		AJA_STATUS_SUCCESS if successful.
-	**/
-	virtual AJAStatus						ClearAnalogAncillaryDataTypeMap (void);
-	
-
-	/**
-		@brief		Copies the contents of <inMap> to the local Analog Ancillary Data Type map.
-		@param[in]	inMap	The map to copy.
-		@return		AJA_STATUS_SUCCESS if successful.
-	**/
-	virtual AJAStatus						SetAnalogAncillaryDataTypeMap (const AJAAncillaryAnalogTypeMap & inMap);
-	
-
-	/**
-		@brief		Copies the contents of the local Analog Ancillary Data Type map to <outMap>.
-		@param[out]	outMap	Receives a copy of my map.
-		@return		AJA_STATUS_SUCCESS if successful.
-	**/
-	virtual AJAStatus						GetAnalogAncillaryDataTypeMap (AJAAncillaryAnalogTypeMap & outMap) const;
-
-
-	/**
-		@brief		Sets (or changes) the map entry for the designated line to the designated type.
-		@note		Setting a particular line to AJAAncillaryDataType_Unknown erases the entry for that line,
-					since a non-entry is treated the same as AJAAncillaryDataType_Unknown.
-		@param[in]	inLineNum	Specifies the frame line number to be inserted/modified.
-		@param[in]	inType		The ancillary data type to be associated with this line.
-		@return		AJA_STATUS_SUCCESS if successful.
-	**/
-	virtual	AJAStatus						SetAnalogAncillaryDataTypeForLine (const uint16_t inLineNum, const AJAAncillaryDataType inType);
-
-
-	/**
-		@brief		Answers with the ancillary data type associated with the designated line.
-		@param[in]	inLineNum		Specifies the frame line number of interest.
-		@return		The ancillary data type associated with the designated line, if known, or AJAAncillaryDataType_Unknown.
-	**/
-	virtual AJAAncillaryDataType			GetAnalogAncillaryDataTypeForLine (const uint16_t inLineNum) const;
 	///@}
 
 
@@ -428,18 +553,70 @@ public:	//	INSTANCE METHODS
 
 
 protected:
-	virtual AJAAncillaryDataType			GetAnalogAncillaryDataType (AJAAncillaryData * pInAncData);
+	friend class CNTV2Card;	//	CNTV2Card's member functions can call AJAAncillaryList's private & protected member functions
 
-
-protected:
 	typedef std::list <AJAAncillaryData *>			AJAAncillaryDataList;
 	typedef AJAAncillaryDataList::const_iterator	AJAAncDataListConstIter;	///< @brief	Handy const iterator for iterating over members of an AJAAncillaryDataList.
 	typedef AJAAncillaryDataList::iterator			AJAAncDataListIter;			///< @brief	Handy non-const iterator for iterating over members of an AJAAncillaryDataList.
 
-	AJAAncillaryDataList		m_ancList;			///< @brief	My packet list
-	AJAAncillaryAnalogTypeMap	m_analogTypeMap;	///< @brief	My "Analog Type Map" can be set by users to suggest where certain types of "analog"
-													///			ancillary data are likely to be found. For example, in 525i systems, analog ancillary
-													///			data captured on Line 21 are likely to be AJAAncillaryDataType_Cea608_Line21 type.
+	virtual inline AJAAncillaryDataType				GetAnalogAncillaryDataType (const AJAAncillaryData & inAncData)	{return GetAnalogAncillaryDataTypeForLine(inAncData.GetLocationLineNumber());}
+
+	static bool								BufferHasGUMPData (const NTV2_POINTER & inBuffer);
+
+	/**
+		@brief		Appends whatever can be decoded from the given device Anc buffer to the AJAAncillaryList.
+		@param[in]	inAncBuffer			Specifies the Anc buffer to be parsed.
+		@param		outPacketList		The AJAAncillaryList to be appended to, for whatever packets are found in the buffer.
+		@note		Called by SetFromDeviceAncBuffers, once for the F1 buffer, another time for the F2 buffer.
+		@return		AJA_STATUS_SUCCESS if successful, including if no Anc packets are found and added to the list.
+	**/
+	static AJAStatus						AddFromDeviceAncBuffer (const NTV2_POINTER & inAncBuffer,
+																	AJAAncillaryList & outPacketList);
+
+	/**
+		@brief		Answers with my F1 & F2 SMPTE anc packets encoded as RTP ULWordSequences.
+					The returned ULWords are already network-byte-order, ready to encapsulate into an RTP packet buffer.
+		@param[out]	outF1U32Pkts	Receives my F1 AJAU32Pkts, containing zero or more RTP ULWordSequences.
+		@param[out]	outF2U32Pkts	Receives my F1 AJAU32Pkts, containing zero or more RTP ULWordSequences.
+		@param[out]	outF1AncCounts	Receives my F1 SMPTE Anc packet counts for each of the returned F1 RTP packets (in outF1U32Pkts).
+		@param[out]	outF2AncCounts	Receives my F2 SMPTE Anc packet counts for each of the returned F2 RTP packets (in outF2U32Pkts).
+		@param[in]	inIsProgressive	Specify false for interlace;  true for progressive/Psf.
+		@param[in]	inF2StartLine	For interlaced/psf frames, specifies the line number where Field 2 begins;  otherwise ignored.
+									Defaults to zero (progressive).
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	virtual AJAStatus						GetRTPPackets (AJAU32Pkts & outF1U32Pkts,
+															AJAU32Pkts & outF2U32Pkts,
+															AJAAncPktCounts & outF1AncCounts,
+															AJAAncPktCounts & outF2AncCounts,
+															const bool inIsProgressive,
+															const uint32_t inF2StartLine);
+	/**
+		@brief		Fills the buffer with the given RTP packets.
+		@param		theBuffer		The buffer to be filled. An empty/NULL buffer is permitted, and
+									will copy no data, but instead will return the byte count that
+									otherwise would've been written.
+		@param[out]	outBytesWritten	Receives the total bytes written into the buffer (or that would
+									be written if given a non-NULL buffer).
+		@param[in]	inRTPPkts		The RTP packets, a vector of zero or more RTP ULWordSequences.
+		@param[in]	inAncCounts		The per-RTP-packet anc packet counts.
+		@param[in]	inIsF2			Specify false for Field1 (or progressive or Psf);  true for Field2.
+		@param[in]	inIsProgressive	Specify false for interlace;  true for progressive/Psf.
+		@return		AJA_STATUS_SUCCESS if successful.
+	**/
+	static AJAStatus						WriteRTPPackets (NTV2_POINTER & theBuffer,
+															uint32_t & outBytesWritten,
+															const AJAU32Pkts & inRTPPkts,
+															const AJAAncPktCounts & inAncCounts,
+															const bool inIsF2,
+															const bool inIsProgressive);
+
+private:
+	AJAAncillaryDataList	m_ancList;		///< @brief	My packet list
+	bool					m_rcvMultiRTP;	///< @brief	True: Rcv 1 RTP pkt per Anc pkt;  False: Rcv 1 RTP pkt for all Anc pkts
+	bool					m_xmitMultiRTP;	///< @brief	True: Xmit 1 RTP pkt per Anc pkt;  False: Xmit 1 RTP pkt for all Anc pkts
+	bool					m_ignoreCS;		///< @brief	True: ignore checksum errors;  False: don't ignore CS errors
+
 };	//	AJAAncillaryList
 
 
@@ -450,5 +627,13 @@ protected:
 	@return		A non-constant reference to the specified output stream.
 **/
 inline std::ostream & operator << (std::ostream & inOutStream, const AJAAncillaryList & inList)		{return inList.Print(inOutStream);}
+
+/**
+	@brief		Writes the given AJAU32Pkts object into the given output stream in a human-readable format.
+	@param		inOutStream		Specifies the output stream to be written.
+	@param[in]	inPkts			Specifies the AJAU32Pkts object to be rendered into the output stream.
+	@return		A non-constant reference to the specified output stream.
+**/
+AJAExport std::ostream & operator << (std::ostream & inOutStream, const AJAU32Pkts & inPkts);
 
 #endif	// AJA_ANCILLARYLIST_H

@@ -91,6 +91,28 @@ enum AJA_VideoFormat
 	AJA_VideoFormat_4K_1080p_5000,
 	AJA_VideoFormat_4K_1080p_5994,
 	AJA_VideoFormat_4K_1080p_6000,
+	
+	// UHD2 (8K)
+	AJA_VideoFormat_4x3840x2160p_2398,
+	AJA_VideoFormat_4x3840x2160p_2400,
+	AJA_VideoFormat_4x3840x2160p_2500,
+	AJA_VideoFormat_4x3840x2160p_2997,
+	AJA_VideoFormat_4x3840x2160p_3000,
+	AJA_VideoFormat_4x3840x2160p_5000,
+	AJA_VideoFormat_4x3840x2160p_5994,
+	AJA_VideoFormat_4x3840x2160p_6000,
+	
+	// UHD2 (8K)
+	AJA_VideoFormat_4x4096x2160p_2398,
+	AJA_VideoFormat_4x4096x2160p_2400,
+	AJA_VideoFormat_4x4096x2160p_2500,
+	AJA_VideoFormat_4x4096x2160p_2997,
+	AJA_VideoFormat_4x4096x2160p_3000,
+	AJA_VideoFormat_4x4096x2160p_4795,
+	AJA_VideoFormat_4x4096x2160p_4800,
+	AJA_VideoFormat_4x4096x2160p_5000,
+	AJA_VideoFormat_4x4096x2160p_5994,
+	AJA_VideoFormat_4x4096x2160p_6000,
 
 	AJA_VideoFormat_Size
 };
@@ -115,7 +137,7 @@ enum AJA_PixelFormat
 	AJA_PixelFormat_YCbCrA10,			/**< Pixel format YCbCrA 10 bit */
 	AJA_PixelFormat_RGB_DPX_LE,			/**< Pixel format RGB DPX little endian */
 	AJA_PixelFormat_RGB12,				/**< Pixel format RGB 12 bit */
-	AJA_PixelFormat_PRORES,				/**< Pixel format PRORES */
+	AJA_PixelFormat_RGB12P,				/**< Pixel format RGB 12 bit packed */
 	AJA_PixelFormat_PRORES_DVPRO,		/**< Pixel format PRORES DVPRO */
 	AJA_PixelFormat_PRORES_HDV,			/**< Pixel format PRORES HDV */
 	AJA_PixelFormat_RGB10_PACK,			/**< Pixel format RGB 10 bit packed */

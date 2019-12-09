@@ -477,6 +477,7 @@ ostream &	operator << (ostream & inOutStr, const NTV2DeviceInfo & inInfo)
 					<< "                        ProcAmp: " << (inInfo.procAmpSupport ? "Y" : "N") << endl
 					<< "                             2K: " << (inInfo.has2KSupport ? "Y" : "N") << endl
 					<< "                             4K: " << (inInfo.has4KSupport ? "Y" : "N") << endl
+					<< "                             8K: " << (inInfo.has8KSupport ? "Y" : "N") << endl
                     << "            3G Level Conversion: " << (inInfo.has3GLevelConversion ? "Y" : "N") << endl
 					<< "                         ProRes: " << (inInfo.proResSupport ? "Y" : "N") << endl
 					<< "                         SDI 3G: " << (inInfo.sdi3GSupport ? "Y" : "N") << endl
@@ -583,6 +584,7 @@ void CNTV2DeviceScanner::SetVideoAttributes (NTV2DeviceInfo & info)
 	info.pingLED				= NTV2DeviceGetPingLED				(info.deviceID);
 	info.has2KSupport			= NTV2DeviceCanDo2KVideo			(info.deviceID);
 	info.has4KSupport			= NTV2DeviceCanDo4KVideo			(info.deviceID);
+	info.has8KSupport			= NTV2DeviceCanDo8KVideo			(info.deviceID);
     info.has3GLevelConversion   = NTV2DeviceCanDo3GLevelConversion  (info.deviceID);
 	info.isoConvertSupport		= NTV2DeviceCanDoIsoConvert			(info.deviceID);
 	info.rateConvertSupport		= NTV2DeviceCanDoRateConvert		(info.deviceID);
@@ -681,34 +683,21 @@ bool NTV2DeviceGetSupportedVideoFormats (const NTV2DeviceID inDeviceID, NTV2Vide
 {
 	bool	isOkay	(true);
 
-	outFormats.clear ();
+	outFormats.clear();
 
-    for (unsigned formatIndex (1);  formatIndex < NTV2_FORMAT_END_4K_TSI_DEF_FORMATS;  formatIndex++)
+    for (NTV2VideoFormat videoFormat(NTV2_FORMAT_UNKNOWN);  videoFormat < NTV2_MAX_NUM_VIDEO_FORMATS;  videoFormat = NTV2VideoFormat(videoFormat + 1))
 	{
-		const NTV2VideoFormat	videoFormat	(static_cast <NTV2VideoFormat> (formatIndex));
-
-		if (formatIndex == NTV2_FORMAT_END_HIGH_DEF_FORMATS)
-			formatIndex = NTV2_FORMAT_FIRST_STANDARD_DEF_FORMAT - 1;
-		else if (formatIndex == NTV2_FORMAT_END_STANDARD_DEF_FORMATS)
-			formatIndex = NTV2_FORMAT_FIRST_2K_DEF_FORMAT - 1;
-		else if (formatIndex == NTV2_FORMAT_END_2K_DEF_FORMATS)
-			formatIndex = NTV2_FORMAT_FIRST_4K_DEF_FORMAT - 1;
-		else if (formatIndex == NTV2_FORMAT_END_4K_DEF_FORMATS)
-			formatIndex = NTV2_FORMAT_FIRST_HIGH_DEF_FORMAT2;
-        else if (formatIndex == NTV2_FORMAT_END_HIGH_DEF_FORMATS2)
-            formatIndex = NTV2_FORMAT_FIRST_UHD_TSI_DEF_FORMAT - 1;
-		else if (::NTV2DeviceCanDoVideoFormat (inDeviceID, videoFormat))
+		if (!::NTV2DeviceCanDoVideoFormat (inDeviceID, videoFormat))
+			continue;
+		try
 		{
-			try
-			{
-				outFormats.insert (videoFormat);
-			}
-			catch (std::bad_alloc)
-			{
-				isOkay = false;
-				outFormats.clear ();
-				break;
-			}
+			outFormats.insert(videoFormat);
+		}
+		catch (std::bad_alloc)
+		{
+			isOkay = false;
+			outFormats.clear();
+			break;
 		}
 	}	//	for each video format
 
@@ -725,11 +714,8 @@ bool NTV2DeviceGetSupportedPixelFormats (const NTV2DeviceID inDeviceID, NTV2Fram
 
 	outFormats.clear ();
 
-	for (unsigned formatIndex (1);  formatIndex < NTV2_FBF_NUMFRAMEBUFFERFORMATS;  formatIndex++)
-	{
-		const NTV2FrameBufferFormat	pixelFormat	(static_cast <NTV2FrameBufferFormat> (formatIndex));
+	for (NTV2PixelFormat pixelFormat(NTV2_FBF_FIRST);  pixelFormat < NTV2_FBF_LAST;  pixelFormat = NTV2PixelFormat(pixelFormat+1))
 		if (::NTV2DeviceCanDoFrameBufferFormat (inDeviceID, pixelFormat))
-		{
 			try
 			{
 				outFormats.insert (pixelFormat);
@@ -740,10 +726,8 @@ bool NTV2DeviceGetSupportedPixelFormats (const NTV2DeviceID inDeviceID, NTV2Fram
 				outFormats.clear ();
 				break;
 			}
-		}
-	}	//	for each pixel format
 
-	assert ((isOkay && !outFormats.empty () ) || (!isOkay && outFormats.empty () ));
+	NTV2_ASSERT ((isOkay && !outFormats.empty () ) || (!isOkay && outFormats.empty () ));
 	return isOkay;
 
 }	//	NTV2DeviceGetSupportedPixelFormats
@@ -761,6 +745,23 @@ bool NTV2DeviceGetSupportedStandards (const NTV2DeviceID inDeviceID, NTV2Standar
 		const NTV2Standard	std	(::GetNTV2StandardFromVideoFormat(*it));
 		if (NTV2_IS_VALID_STANDARD(std)  &&  outStandards.find(std) == outStandards.end())
 			outStandards.insert(std);
+	}
+	return true;
+}
+
+
+//	This needs to be moved into a C++ compatible "device features" module:
+bool NTV2DeviceGetSupportedGeometries (const NTV2DeviceID inDeviceID, NTV2GeometrySet & outGeometries)
+{
+	NTV2VideoFormatSet	videoFormats;
+	outGeometries.clear();
+	if (!::NTV2DeviceGetSupportedVideoFormats(inDeviceID, videoFormats))
+		return false;
+	for (NTV2VideoFormatSetConstIter it(videoFormats.begin());  it != videoFormats.end();  ++it)
+	{
+		const NTV2FrameGeometry	fg	(::GetNTV2FrameGeometryFromVideoFormat(*it));
+		if (NTV2_IS_VALID_NTV2FrameGeometry(fg))
+			outGeometries += ::GetRelatedGeometries(fg);
 	}
 	return true;
 }

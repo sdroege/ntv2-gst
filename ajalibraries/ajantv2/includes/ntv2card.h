@@ -22,6 +22,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <bitset>
 
 /**
 	@brief	Used in calls to CNTV2Card::GetBoolParam to determine device features.
@@ -243,6 +244,10 @@ AJAExport std::ostream &	operator << (std::ostream & inOutStr, const NTV2DIDSet 
 	} SegmentTestPatternData;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+
+typedef std::bitset<16>		NTV2AudioChannelsMuted16;				///< @brief	Per-audio-channel mute state for up to 16 audio channels.
+const NTV2AudioChannelsMuted16	NTV2AudioChannelsMuteAll(0xFFFF);	///< @brief	All 16 audio channels muted/disabled.
+const NTV2AudioChannelsMuted16	NTV2AudioChannelsEnableAll(0x0000);	///< @brief	All 16 audio channels unmuted/enabled.
 
 
 
@@ -469,6 +474,7 @@ public:
 		@return		True if successful; otherwise false.
 		@note		The host buffer should be at least inByteCount + inOffsetBytes in size, or host memory will be corrupted.
 		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAWrite, CNTV2Card::DMAReadFrame, CNTV2Card::DMAReadSegments, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMARead (const ULWord inFrameNumber, ULWord * pFrameBuffer, const ULWord inOffsetBytes, const ULWord inByteCount);
 
@@ -482,6 +488,7 @@ public:
 		@return		True if successful; otherwise false.
 		@note		The host buffer should be at least inByteCount + inOffsetBytes in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMARead, CNTV2Card::DMAWriteFrame, CNTV2Card::DMAWriteSegments, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAWrite (const ULWord inFrameNumber, const ULWord * pFrameBuffer, const ULWord inOffsetBytes, const ULWord inByteCount);
 
@@ -495,8 +502,23 @@ public:
 		@return		True if successful; otherwise false.
 		@note		The host buffer must be at least inByteCount in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAWriteFrame, CNTV2Card::DMARead, CNTV2Card::DMAReadSegments, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAReadFrame (const ULWord inFrameNumber, ULWord * pOutFrameBuffer, const ULWord inByteCount);
+
+	/**
+		@brief		Transfers a single frame from the AJA device to the host. This call is multi-format compatible.
+		@param[in]	inFrameNumber	Specifies the zero-based frame number of the frame to be read from the device.
+		@param[in]	pOutFrameBuffer	Specifies the non-NULL address of the host buffer that is to receive the frame data.
+									The memory it points to must be writeable.
+		@param[in]	inByteCount		Specifies the total number of bytes to transfer.
+		@param[in]	inChannel		Specified for multi-format
+		@return		True if successful; otherwise false.
+		@note		The host buffer must be at least inByteCount in size, or a host memory access violation may occur.
+		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAWriteFrame, CNTV2Card::DMARead, CNTV2Card::DMAReadSegments, \ref vidop-fbaccess
+	**/
+	AJA_VIRTUAL bool	DMAReadFrame (const ULWord inFrameNumber, ULWord * pFrameBuffer, const ULWord inByteCount, const NTV2Channel inChannel);
 
 	/**
 		@brief		Transfers a single frame from the host to the AJA device.
@@ -507,8 +529,23 @@ public:
 		@return		True if successful; otherwise false.
 		@note		The host buffer must be at least inByteCount in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAReadFrame, CNTV2Card::DMAWrite, CNTV2Card::DMAWriteSegments, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAWriteFrame (const ULWord inFrameNumber, const ULWord * pInFrameBuffer, const ULWord inByteCount);
+
+	/**
+		@brief		Transfers a single frame from the host to the AJA device. This call is multi-format compatible.
+		@param[in]	inFrameNumber	Specifies the zero-based frame number of the frame to be written to the device.
+		@param[in]	pInFrameBuffer	Specifies the non-NULL address of the host buffer that is to supply the frame data.
+									The memory it points to must be readable.
+		@param[in]	inByteCount		Specifies the total number of bytes to transfer.
+		@param[in]	inChannel		Specified for multi-format
+		@return		True if successful; otherwise false.
+		@note		The host buffer must be at least inByteCount in size, or a host memory access violation may occur.
+		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAReadFrame, CNTV2Card::DMAWrite, CNTV2Card::DMAWriteSegments, \ref vidop-fbaccess
+	**/
+	AJA_VIRTUAL bool	DMAWriteFrame (const ULWord inFrameNumber, const ULWord * pInFrameBuffer, const ULWord inByteCount, const NTV2Channel inChannel);
 
 	/**
 		@brief		Performs a segmented data transfer from the AJA device to the host.
@@ -523,6 +560,7 @@ public:
 		@return		True if successful; otherwise false.
 		@note		The host buffer should be at least inByteCount + inOffsetBytes in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAWriteSegments, CNTV2Card::DMARead, CNTV2Card::DMAReadFrame, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAReadSegments (	const ULWord		inFrameNumber,
 											ULWord *			pFrameBuffer,
@@ -545,6 +583,7 @@ public:
 		@return		True if successful; otherwise false.
 		@note		The host buffer should be at least inByteCount + inOffsetBytes in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
+		@see		CNTV2Card::DMAReadSegments, CNTV2Card::DMAWrite, CNTV2Card::DMAWriteFrame, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAWriteSegments (	const ULWord		inFrameNumber,
 											const ULWord *		pFrameBuffer,
@@ -607,35 +646,131 @@ public:
 
 	/**
 		@brief		Transfers the contents of the ancillary data buffer(s) from a given frame on the AJA device to the host.
-		@param[in]	inFrameNumber		Specifies the zero-based frame number of the frame to be read from the device.
+		@param[in]	inFrameNumber		Specifies the zero-based frame number of the frame buffer to be read on the device.
+										The actual starting device memory address is predicated on the device's current
+										frame size, which doesn't take into account "quad" or "quad-quad 8K" frames.
+										Callers must carefully calculate this number, taking into account other FrameStores
+										or Channels that may be active, and if they're using "Quad" or "QuadQuad" geometries.
 		@param[out]	outAncF1Buffer		Specifies the host buffer that is to receive the device F1 ancillary data buffer contents.
 		@param[out]	outAncF2Buffer		Optionally specifies the host buffer that is to receive the device F2 ancillary data
 										buffer contents.
+		@param[in]	inChannel			The FrameStore/Channel being used for ingest. Defaults to NTV2_CHANNEL1.
 		@return		True if successful; otherwise false.
+		@note		This function assumes the device Anc extractor has been properly configured by a prior calls to
+					CNTV2Card::AncExtractInit, CNTV2Card::AncExtractSetWriteParams (and also possibly CNTV2Card::AncExtractSetField2WriteParams).
 		@note		This function will block and not return until the transfer has finished or failed.
 		@note		This function uses the values stored in the ::kVRegAncField1Offset and ::kVRegAncField2Offset virtual registers
 					to determine the Anc data boundary locations within each frame buffer in device memory.
+		@note		For <b>capture</b> from IP devices running S2110 firmware, this method will automatically extract <b>VPID</b> and
+					<b>RP188</b> timecode packets from the incoming RTP Anc streams, even if not ::AUTOCIRCULATE_WITH_ANC, or without
+					Anc buffers in the "transferInfo".
+					-	To disable this behavior completely, use an invalid ::NTV2Channel value (e.g. ::NTV2_CHANNEL_INVALID).
 	**/
 	AJA_VIRTUAL bool	DMAReadAnc (	const ULWord	inFrameNumber,
 										NTV2_POINTER &	outAncF1Buffer,
-										NTV2_POINTER &	outAncF2Buffer	= NULL_POINTER);
+										NTV2_POINTER &	outAncF2Buffer	= NULL_POINTER,
+										const NTV2Channel	inChannel	= NTV2_CHANNEL1);
 
 	/**
 		@brief		Transfers the contents of the ancillary data buffer(s) from the host to a given frame on the AJA device.
 		@param[in]	inFrameNumber		Specifies the zero-based frame number of the frame to be read from the device.
+										The actual starting device memory address is predicated on the device's current
+										frame size, which doesn't take into account "quad" or "quad-quad 8K" frames.
+										Callers must carefully calculate this number, taking into account other FrameStores
+										or Channels that may be active, and if they're using "Quad" or "QuadQuad" geometries.
 		@param[in]	inAncF1Buffer		Specifies the host buffer that is to supply the F1 ancillary data buffer content.
 		@param[in]	inAncF2Buffer		Optionally specifies the host buffer that is to supply the F2 ancillary data
 										buffer content.
+		@param[in]	inChannel			The FrameStore/Channel being used for playout. Defaults to NTV2_CHANNEL1.
 		@return		True if successful; otherwise false.
+		@note		This function assumes the device Anc inserter has been properly configured by prior calls to
+					CNTV2Card::AncInsertInit, CNTV2Card::AncInsertSetReadParams (and also possibly CNTV2Card::AncInsertSetField2ReadParams).
 		@note		This function will block and not return until the transfer has finished or failed.
 		@note		This function uses the values stored in the ::kVRegAncField1Offset and ::kVRegAncField2Offset virtual registers
 					to determine the Anc data boundary locations within each frame buffer in device memory.
+		@note		For <b>playout</b> to IP devices running S2110 firmware, this method will automatically add <b>VPID</b> and
+					<b>RP188</b> timecode packets into the outgoing RTP Anc streams, even if such packets weren't placed into the
+					given buffers. This default behavior can be overridden or disabled:
+					-	To disable this behavior completely, use an invalid ::NTV2Channel value (e.g. ::NTV2_CHANNEL_INVALID).
+					-	To disable the default <b>VPID</b> insertion, call CNTV2Card::SetSDIOutVPID, passing zeroes for
+						the VPID values.
+					-	To override the default <b>VPID</b> values, insert your own <b>VPID</b> packet(s) into the F1
+						and/or F2 Anc buffers.
+					-	To override the default <b>RP188</b> value(s), insert your own <b>RP188</b> packets into the
+						F1 and/or F2 Anc buffers.
 	**/
-	AJA_VIRTUAL bool	DMAWriteAnc (	const ULWord			inFrameNumber,
-										const NTV2_POINTER &	inAncF1Buffer,
-										const NTV2_POINTER &	inAncF2Buffer	= NULL_POINTER);
+	AJA_VIRTUAL bool	DMAWriteAnc (	const ULWord		inFrameNumber,
+										NTV2_POINTER &		inAncF1Buffer,
+										NTV2_POINTER &		inAncF2Buffer	= NULL_POINTER,
+										const NTV2Channel	inChannel		= NTV2_CHANNEL1);
+
+	/**
+		@brief		Page-locks the given host buffer to reduce transfer time and CPU usage of DMA transfers.
+		@param[in]	inBuffer	Specifies the host buffer to lock.
+								If inBuffer.IsNULL(), the driver will unlock all host buffers.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	DMABufferLock (const NTV2_POINTER & inBuffer);
+
+	/**
+		@brief		Page-locks the given host buffer to reduce transfer time and CPU usage of DMA transfers.
+		@param[in]	pInBuffer		Specifies the starting address of the host buffer to lock.
+		@param[in]	inByteCount		Specifies the total length of the host buffer.
+		@note		Specifying NULL for "pInBuffer" and 0 for "inByteCount" will command the driver to unlock all buffers.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL inline bool	DMABufferLock (const ULWord * pInBuffer, const ULWord inByteCount)	{return DMABufferLock(NTV2_POINTER(pInBuffer, inByteCount));}
 
 
+	/**
+		@brief		Unlocks all buffers used for DMA transfers.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	DMABufferUnlockAll ();
+
+
+	/**
+		@brief		Clears the ancillary data region in the device frame buffer for the specified frames.
+		@param[in]	inStartFrameNumber		Specifies the starting device frame number.
+		@param[in]	inEndFrameNumber		Specifies the ending device frame number.
+		@param[in]	inAncRegion				Optionally specifies the ancillary data region to clear (e.g.
+											NTV2_AncRgn_Field1, NTV2_AncRgn_Field2, etc.).  Defaults to all regions.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	DMAClearAncRegion (	const UWord inStartFrameNumber,
+											const UWord inEndFrameNumber,
+											const NTV2AncillaryDataRegion inAncRegion = NTV2_AncRgn_All);
+
+	/**
+		@brief		Answers with the offset and size of an ancillary data region within a device frame buffer.
+		@param[out]	outByteOffset	Receives the byte offset where the ancillary data region starts in the frame buffer,
+									(measured from the start of the frame buffer).
+									This is guaranteed to be non-zero if the function succeeds, and zero if it fails.
+		@param[out]	outByteCount	Receives the size of the ancillary data region, in bytes.
+									This is guaranteed to be non-zero if the function succeeds, and zero if it fails.
+		@param[in]	inAncRegion		Optionally specifies the ancillary data region of interest (e.g. NTV2_AncRgn_Field1,
+									NTV2_AncRgn_Field2, etc.).  Defaults to all regions, for the maximum offset and size
+									among all of them.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	GetAncRegionOffsetAndSize (ULWord & outByteOffset, ULWord & outByteCount,
+													const NTV2AncillaryDataRegion inAncRegion = NTV2_AncRgn_All);
+
+	/**
+		@brief		Answers with the byte offset to the start of an ancillary data region within a device frame buffer,
+					as measured from the bottom of the frame buffer.
+		@param[out]	outByteOffsetFromBottom		Receives the byte offset to the start of the ancillary data region,
+												as measured from the bottom of the frame buffer.
+		@param[in]	inAncRegion		Optionally specifies the ancillary data region of interest (e.g. NTV2_AncRgn_Field1,
+									NTV2_AncRgn_Field2, etc.).  Defaults to all regions, for the largest offset among
+									them all.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	GetAncRegionOffsetFromBottom (ULWord & outByteOffsetFromBottom,
+														const NTV2AncillaryDataRegion inAncRegion = NTV2_AncRgn_All);
+
+
+#if !defined(NTV2_DEPRECATE_15_2)
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool	DMAReadAnc (	const ULWord		inFrameNumber,
 																UByte *				pOutAncBuffer,
 																const NTV2FieldID	inFieldID		= NTV2_FIELD0,
@@ -644,6 +779,7 @@ public:
 																const UByte *		pInAncBuffer,
 																const NTV2FieldID	inFieldID		= NTV2_FIELD0,
 																const ULWord		inByteCount		= 2048));	///< @deprecated	Call CNTV2Card::DMAWriteAnc(const ULWord, const NTV2_POINTER &, const NTV2_POINTER &) instead.
+#endif	//	!defined(NTV2_DEPRECATE_15_2)
 	///@}
 
 //
@@ -690,11 +826,19 @@ public:
 									This must be a valid ::NTV2FrameBufferFormat value.
 		@param[in]	inIsAJARetail	Specifies if the AJA retail configuration settings are to be respected or not.
 									Defaults to false on all platforms other than MacOS, which defaults to true.
+		@param[in]	inXferChars		Specifies the HDR tranfer characteristc description.
+		@param[in]	inColorimetry	Specifies the HDR colorimetry description.
+		@param[in]	inLuminance		Specifies the HDR luminance description.
 		@details	This function allows client applications to control the format of frame data stored
 					in the frame stores on an AJA device. This is important, because when frames are transferred
 					between the host and the AJA device, the frame data format is presumed to be identical.
 	**/
-	AJA_VIRTUAL bool	SetFrameBufferFormat (NTV2Channel inChannel, NTV2FrameBufferFormat inNewFormat, bool inIsAJARetail = AJA_RETAIL_DEFAULT);
+	AJA_VIRTUAL bool	SetFrameBufferFormat (NTV2Channel inChannel,
+											  NTV2FrameBufferFormat inNewFormat,
+											  bool inIsAJARetail = AJA_RETAIL_DEFAULT,
+											  NTV2HDRXferChars inXferChars = NTV2_VPID_TC_SDR_TV,
+											  NTV2HDRColorimetry inColorimetry = NTV2_VPID_Color_Rec709,
+											  NTV2HDRLuminance inLuminance = NTV2_VPID_Luminance_YCbCr);
 
 	/**
 		@brief		Sets the device's clock reference source. See \ref deviceclockingandsync for more information.
@@ -855,44 +999,85 @@ public:
 	AJA_VIRTUAL bool		GetProgressivePicture (ULWord & outValue);
 
 	/**
-		@brief	Enables or disables quad-frame mode on the device.
+		@brief		Enables or disables quad-frame mode on the device.
 		@return		True if successful; otherwise false.
-		@param[in]	inValue		Specify a non-zero value (true) to put the device into quad frame mode.
-								Specify zero (false) to put the device into normal (non-quad) frame mode.
+		@param[in]	inValue		Specify 'true' to put the device into quad frame mode.
+								Specify 'false' to put the device into normal (non-quad) frame mode.
 		@param[in]	inChannel	Specifies the channel of interest. Defaults to channel 1. Ignored if the device
-								is incapable of multi-format mode, or is not currently in multi-format mode.
-		@todo		Should use bool parameter.
-		@note		Most clients need not call this function, as SetVideoFormat to one of the 4K/UHD formats will automatically call this function.
+								is incapable of 4K.
+		@note		Most clients won't need to call this function, as calling CNTV2Card::SetVideoFormat to one of
+					the 4K/UHD formats will automatically do so.
 	**/
-	AJA_VIRTUAL bool		SetQuadFrameEnable (const ULWord inValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	AJA_VIRTUAL bool		SetQuadFrameEnable (const bool inValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	/**
-		@brief	Returns the device's current quad-frame mode, whether it's enabled or not.
+		@brief		Returns the device's current quad-frame mode, whether it's enabled or not.
 		@return		True if successful; otherwise false.
-		@param[in]	outValue	Receives 1 if the device is currently in quad frame mode; otherwise receives 0.
+		@param[out]	outValue	Receives 'true' if the device is currently in quad frame mode; otherwise 'false'.
 		@param[in]	inChannel	Specifies the channel of interest. Defaults to channel 1. Ignored if the device
-								is incapable of multi-format mode, or is not currently in multi-format mode.
-		@todo		Should use bool & parameter.
+								is incapable of 4K.
 	**/
-	AJA_VIRTUAL bool		GetQuadFrameEnable (ULWord & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	AJA_VIRTUAL bool		GetQuadFrameEnable (bool & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
+	
+	/**
+		@brief		Enables or disables "quad-quad" 8K frame mode on the device.
+		@return		True if successful; otherwise false.
+		@param[in]	inValue		Specify 'true' to put the device into "quad quad" frame mode.
+								Specify 'false' to put the device into normal (non-quad-quad) frame mode.
+		@param[in]	inChannel	Specifies the channel of interest. Defaults to channel 1. Ignored if the device
+								is incapable of 8K/UHD2.
+		@note		Most clients won't need to call this function, as CNTV2Card::SetVideoFormat using one of
+					the 8K/UHD2 formats will automatically do so.
+	**/
+	AJA_VIRTUAL bool		SetQuadQuadFrameEnable (const bool inValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	/**
-		@brief	Enables or disables SMPTE 425 "2K quadrants" mode for the given frame store on the device.
-				Client applications should call this function only when Tsi is needed.
+		@brief		Returns the device's current "quad-quad" frame mode, whether it's enabled or not.
+		@return		True if successful; otherwise false.
+		@param[out]	outValue	Receives 'true' if the device is currently in quad quad frame mode; otherwise 'false'.
+		@param[in]	inChannel	Specifies the channel of interest. Defaults to channel 1. Ignored if the device
+								is incapable of 8K/UHD2.
+	**/
+	AJA_VIRTUAL bool		GetQuadQuadFrameEnable (bool & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
+
+	/**
+		@brief		Enables or disables quad-quad-frame (8K) squares mode on the device.
+		@return		True if successful; otherwise false.
+		@param[in]	inValue		Specify a non-zero value (true) to put the device into quad quad frame mode.
+								Specify zero (false) to put the device into normal (non-quad-quad) frame mode.
+		@param[in]	inChannel	Specifies the channel of interest. Defaults to channel 1. Ignored if the device
+								is incapable of multi-format mode, or is not currently in multi-format mode.
+	**/
+	AJA_VIRTUAL bool		SetQuadQuadSquaresEnable (const bool inValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
+
+	/**
+		@brief		Returns the device's current "quad-quad-squares" frame mode, whether it's enabled or not.
+		@return		True if successful; otherwise false.
+		@param[out]	outValue	Receives 'true' if the device is currently in "quad quad squares" frame mode;
+								otherwise 'false'.
+		@param[in]	inChannel	Specifies the channel of interest. Defaults to channel 1. Ignored if the device
+								is incapable of multi-format mode, or is not currently in multi-format mode.
+	**/
+	AJA_VIRTUAL bool		GetQuadQuadSquaresEnable (bool & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
+
+	/**
+		@brief		Enables or disables SMPTE 425 "2K quadrants" mode for the given frame store bank on the device.
+					Client applications should call this function when "4K Squares" mode (not two-sample-interleave) is needed.
 		@return		True if successful; otherwise false.
 		@param[in]	inIsEnabled		Specify true to put the device's frame stores into "4K squares" (i.e., "2K quadrants") mode.
 									Specify false to put the device's frame stores into normal mode (if not currently running in quad frame mode), or the non-2K quadrants quad mode.
 		@param[in]	inChannel		Specifies the frame store bank of interest. Using anything ordinally less than ::NTV2_CHANNEL5
 									will affect Frame Stores 1/2/3/4, while anything ordinally greater than ::NTV2_CHANNEL4 will
 									affect Frame Stores 5/6/7/8.
-		@note	Disabling 4K squares will implicitly set two-sample-interleave mode for the frame stores.
+		@note		Disabling 4K squares will implicitly set two-sample-interleave mode for the frame stores.
 	**/
 	AJA_VIRTUAL bool		Set4kSquaresEnable (const bool inIsEnabled, const NTV2Channel inChannel);
 
 	/**
-		@brief	Returns the device frame store's current SMPTE 425 "2K quadrants" mode, whether it's enabled or not.
+		@brief		Answers whether the frame store bank's current SMPTE 425 "4K squares" (i.e., "2K quadrants") mode is enabled or not.
 		@return		True if successful; otherwise false.
-		@param[in]	outIsEnabled	Receives true if the device's frame stores are currently in "2K quadrants" mode; otherwise false.
+		@param[out]	outIsEnabled	Receives true if the device's frame stores are currently in "4K squares"
+									(i.e., "2K quadrants") mode;  otherwise false.
 		@param[in]	inChannel		Specifies the frame store bank of interest. Using anything ordinally less than ::NTV2_CHANNEL5
 									will report on Frame Stores 1/2/3/4, while anything ordinally greater than ::NTV2_CHANNEL4 will
 									report on Frame Stores 5/6/7/8.
@@ -900,28 +1085,26 @@ public:
 	AJA_VIRTUAL bool		Get4kSquaresEnable (bool & outIsEnabled, const NTV2Channel inChannel);
 
 	/**
-		@brief	Enables or disables SMPTE 425 two-sample interleave (Tsi) frame mode on the device.
+		@brief		Enables or disables SMPTE 425 two-sample interleave (Tsi) frame mode on the device.
 		@return		True if successful; otherwise false.
 		@param[in]	inIsEnabled		Specify true to put the device's frame stores into two-sample interleave (Tsi) mode.
 									Specify false to put the device's frame stores into non-Tsi mode.
 		@param[in]	inChannel		Specifies the frame store bank of interest. Using anything ordinally less than ::NTV2_CHANNEL5
 									will affect Frame Stores 1/2/3/4, while anything ordinally greater than ::NTV2_CHANNEL4 will
 									affect Frame Stores 5/6/7/8.
-		@note	There is no need to call this function if Set4kSquaresEnable(false) was called.
+		@note		Since Tsi is the default 4K mode, there's no need to call this function if Set4kSquaresEnable(false) was called.
 	**/
 	AJA_VIRTUAL bool		SetTsiFrameEnable (const bool inIsEnabled, const NTV2Channel inChannel);
-#define Set425FrameEnable	SetTsiFrameEnable
 
 	/**
-		@brief	Returns the current SMPTE 425 two-sample-interleave frame mode on the device, whether it's enabled or not.
+		@brief		Returns the current SMPTE 425 two-sample-interleave frame mode on the device, whether it's enabled or not.
 		@return		True if successful; otherwise false.
-		@param[in]	outIsEnabled	Receives true if the device's frame stores are currently in two-sample interleave (Tsi) mode; otherwise false.
+		@param[out]	outIsEnabled	Receives true if the device's frame stores are currently in two-sample interleave (Tsi) mode; otherwise false.
 		@param[in]	inChannel		Specifies the frame store bank of interest. Using anything ordinally less than ::NTV2_CHANNEL5
 									will report on Frame Stores 1/2/3/4, while anything ordinally greater than ::NTV2_CHANNEL4 will
 									report on Frame Stores 5/6/7/8.
 	**/
 	AJA_VIRTUAL bool		GetTsiFrameEnable (bool & outIsEnabled, const NTV2Channel inChannel);
-#define Get425FrameEnable	GetTsiFrameEnable
 
 	AJA_VIRTUAL bool		SetFrameBufferQuarterSizeMode (NTV2Channel inChannel, NTV2QuarterSizeExpandMode inValue);
 	AJA_VIRTUAL bool		GetFrameBufferQuarterSizeMode (NTV2Channel inChannel, NTV2QuarterSizeExpandMode & outValue);
@@ -990,8 +1173,8 @@ public:
 	AJA_VIRTUAL bool		GetOutputFrame (const NTV2Channel inChannel, ULWord & outValue);
 
 	/**
-		@brief		Sets the current input frame number for the given channel. This identifies which particular frame
-					in device SDRAM will be written after the next frame interrupt.
+		@brief		Sets the current input frame number for the given Frame Store.
+					This identifies which particular frame in device SDRAM will be written after the next frame interrupt.
 		@param[in]	inChannel	Specifies the Frame Store of interest as an ::NTV2Channel, a zero-based index number.
 		@param[out]	inValue		Specifies the frame number in device memory to be written, which is a zero-based index
 								into each 8/16/32MB block of SDRAM on the device.
@@ -1007,8 +1190,8 @@ public:
 	AJA_VIRTUAL bool		SetInputFrame (const NTV2Channel inChannel, const ULWord inValue);
 
 	/**
-		@brief		Answers with the current input frame number for the given channel. This identifies which particular
-					frame in device SDRAM will be written after the next frame interrupt.
+		@brief		Answers with the current input frame number for the given Frame Store.
+					This identifies which particular frame in device SDRAM will be written after the next frame interrupt.
 		@param[in]	inChannel	Specifies the Frame Store of interest as an ::NTV2Channel, a zero-based index number.
 								(The Frame Store should be enabled and set for capture mode.)
 		@param[out]	outValue	Receives the input frame number of the frame in device memory to be written, which is a
@@ -1021,18 +1204,30 @@ public:
 	AJA_VIRTUAL bool		SetDualLinkOutputEnable (bool inIsEnabled);
 	AJA_VIRTUAL bool		GetDualLinkOutputEnable (bool & outIsEnabled);
 
-	AJA_VIRTUAL bool		SetDualLinkInputEnable (bool enable);
+	AJA_VIRTUAL bool		SetDualLinkInputEnable (bool inIsEnabled);
 	AJA_VIRTUAL bool		GetDualLinkInputEnable (bool & outIsEnabled);
 
-	AJA_VIRTUAL bool		SetVideoLimiting (NTV2VideoLimiting inValue);
+	AJA_VIRTUAL bool		SetVideoLimiting (const NTV2VideoLimiting inValue);
 	AJA_VIRTUAL bool		GetVideoLimiting (NTV2VideoLimiting & outValue);
 
 	AJA_VIRTUAL bool		SetEnableVANCData (const bool inVANCenabled, const bool inTallerVANC, const NTV2Standard inStandard, const NTV2FrameGeometry inGeometry, const NTV2Channel inChannel = NTV2_CHANNEL1);
 	AJA_VIRTUAL bool		SetEnableVANCData (const bool inVANCenabled, const bool inTallerVANC = false, const NTV2Channel inChannel = NTV2_CHANNEL1);
-	AJA_VIRTUAL bool		SetVANCMode (const NTV2VANCMode inVancMode, const NTV2Standard inStandard, const NTV2FrameGeometry inFrameGeometry, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	/**
-		@brief		Retrieves the current VANC mode for the given channel.
+		@brief		Sets the VANC mode for the given Frame Store.
+		@param[in]	inVancMode		Specifies the new ::NTV2VANCMode setting.
+		@param[in]	inStandard		Specifies the ::NTV2Standard setting.
+		@param[in]	inFrameGeometry	Specifies the ::NTV2FrameGeometry setting.
+		@param[in]	inChannel		Specifies the Frame Store of interest as an ::NTV2Channel, a zero-based index number.
+									Defaults to ::NTV2_CHANNEL1.
+		@return		True if successful; otherwise false.
+		@see		CNTV2Card::GetVANCMode, \ref vancframegeometries
+	**/
+	AJA_VIRTUAL bool		SetVANCMode (const NTV2VANCMode inVancMode, const NTV2Standard inStandard,
+										const NTV2FrameGeometry inFrameGeometry, const NTV2Channel inChannel = NTV2_CHANNEL1);
+
+	/**
+		@brief		Retrieves the current VANC mode for the given Frame Store.
 		@param[out]	outVancMode		Receives the current ::NTV2VANCMode setting.
 		@param[in]	inChannel		Specifies the Frame Store of interest as an ::NTV2Channel, a zero-based index number.
 									Defaults to ::NTV2_CHANNEL1.
@@ -1074,11 +1269,27 @@ public:
 	AJA_VIRTUAL bool		GetPulldownMode (NTV2Channel inChannel, bool & outValue);
 
 	/**
-		@brief	Swaps the values stored in the PCI access frame and output frame registers for the given frame store (channel).
+		@brief		Swaps the values stored in the PCI access frame and output frame registers for the given frame store (channel).
 		@param[in]	inChannel	Specifies the channel (frame store) of interest.
-		@return	True if successful;  otherwise false.
+		@return		True if successful;  otherwise false.
 	**/
-	AJA_VIRTUAL bool		FlipFlopPage (NTV2Channel inChannel);
+	AJA_VIRTUAL bool		FlipFlopPage (const NTV2Channel inChannel);
+
+	/**
+		@brief		Answers with the line offset into the frame currently being read (playout) or written
+					(capture) for FrameStore 1.
+		@param[in]	outValue	Receives the line number being read or written for ::NTV2_CHANNEL1.
+		@return		True if successful;  otherwise false.
+	**/
+	AJA_VIRTUAL bool		ReadLineCount (ULWord & outValue);
+
+
+#if !defined(NTV2_DEPRECATE_15_2)
+	AJA_VIRTUAL inline bool NTV2_SHOULD_BE_DEPRECATED(GetQuadFrameEnable (ULWord & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1))	{ bool enb(false); if(!GetQuadFrameEnable(enb, inChannel)) return false; outValue = enb?1:0; return true; }
+	AJA_VIRTUAL inline bool NTV2_SHOULD_BE_DEPRECATED(GetQuadQuadFrameEnable (ULWord & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1))	{ bool enb(false); if(!GetQuadQuadFrameEnable(enb, inChannel)) return false; outValue = enb?1:0; return true; }
+#endif	//	NTV2_DEPRECATE_15_2
+#define Set425FrameEnable	SetTsiFrameEnable
+#define Get425FrameEnable	GetTsiFrameEnable
 
 
 	/**
@@ -1093,6 +1304,7 @@ public:
 		@param[in]	inWhichMixer			Specifies the mixer/keyer to be affected as a zero-based index number.
 		@param[in]	inFromForegroundSource	If true, sets the mixer/keyer's VANC source to its foreground video input;
 											otherwise, sets it to its background video input.
+		@see		CNTV2Card::GetMixerVancOutputFromForeground, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	SetMixerVancOutputFromForeground (const UWord inWhichMixer, const bool inFromForegroundSource = true);
 
@@ -1103,6 +1315,7 @@ public:
 		@param[in]	inWhichMixer				Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	outIsFromForegroundSource	Receives True if the mixer/keyer's VANC source is its foreground video input;
 												otherwise False if it's its background video input.
+		@see		CNTV2Card::SetMixerVancOutputFromForeground, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	GetMixerVancOutputFromForeground (const UWord inWhichMixer, bool & outIsFromForegroundSource);
 
@@ -1112,6 +1325,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	inInputControl		Specifies the mixer/keyer's foreground input control value.
+		@see		CNTV2Card::GetMixerFGInputControl, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	SetMixerFGInputControl (const UWord inWhichMixer, const NTV2MixerKeyerInputControl inInputControl);
 
@@ -1120,6 +1334,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	outInputControl		Receives the mixer/keyer's foreground input control value; otherwise NTV2MIXERINPUTCONTROL_INVALID upon failure.
+		@see		CNTV2Card::SetMixerFGInputControl, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	GetMixerFGInputControl (const UWord inWhichMixer, NTV2MixerKeyerInputControl & outInputControl);
 
@@ -1128,6 +1343,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	inInputControl		Specifies the mixer/keyer's background input control value.
+		@see		CNTV2Card::GetMixerBGInputControl, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	SetMixerBGInputControl (const UWord inWhichMixer, const NTV2MixerKeyerInputControl inInputControl);
 
@@ -1136,6 +1352,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	outInputControl		Receives the mixer/keyer's background input control value; otherwise NTV2MIXERINPUTCONTROL_INVALID upon failure.
+		@see		CNTV2Card::SetMixerBGInputControl, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	GetMixerBGInputControl (const UWord inWhichMixer, NTV2MixerKeyerInputControl & outInputControl);
 
@@ -1144,6 +1361,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	inMode				Specifies the mode value.
+		@see		CNTV2Card::GetMixerMode, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	SetMixerMode (const UWord inWhichMixer, const NTV2MixerKeyerMode inMode);
 
@@ -1152,6 +1370,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	outMode				Receives the mode value.
+		@see		CNTV2Card::SetMixerMode, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	GetMixerMode (const UWord inWhichMixer, NTV2MixerKeyerMode & outMode);
 
@@ -1160,6 +1379,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	inMixCoefficient	Specifies the new mix coefficient value, where \c 0x10000 is the maximum.
+		@see		CNTV2Card::GetMixerCoefficient, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	SetMixerCoefficient (const UWord inWhichMixer, const ULWord inMixCoefficient);
 
@@ -1168,6 +1388,7 @@ public:
 		@return		True if successful; otherwise false.
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	outMixCoefficient	Receives the current mix coefficient value, where \c 0x10000 is the maximum.
+		@see		CNTV2Card::SetMixerCoefficient, \ref vidop-mixerkeyer, \ref widget_mixkey
 	**/
 	AJA_VIRTUAL bool	GetMixerCoefficient (const UWord inWhichMixer, ULWord & outMixCoefficient);
 
@@ -1177,10 +1398,63 @@ public:
 		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
 		@param[in]	outIsSyncOK			Receives the mixer's current sync state. If true, the mixer is synchronized to its inputs.
 										If false, the mixer is not synchronized to its inputs.
+		@see		See \ref vidop-mixerkeyer for more information
 	**/
 	AJA_VIRTUAL bool	GetMixerSyncStatus (const UWord inWhichMixer, bool & outIsSyncOK);
 
-	AJA_VIRTUAL bool	ReadLineCount (ULWord & outValue);
+	/**
+		@brief		Answers if the given mixer/keyer's foreground matte is enabled or not.
+		@return		True if successful; otherwise false.
+		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
+		@param[in]	outIsEnabled		Receives true if the mixer's foreground matte is currently enabled;  otherwise false.
+		@see		CNTV2Card::SetMixerFGMatteEnabled, CNTV2Card::GetMixerBGMatteEnabled, \ref vidop-mixerkeyer, \ref widget_mixkey
+	**/
+	AJA_VIRTUAL bool	GetMixerFGMatteEnabled (const UWord inWhichMixer, bool & outIsEnabled);
+
+	/**
+		@brief		Answers if the given mixer/keyer's foreground matte is enabled or not.
+		@return		True if successful; otherwise false.
+		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
+		@param[in]	inIsEnabled			Specify true to enable the mixer's foreground matte;  otherwise false to disable it.
+		@see		CNTV2Card::GetMixerFGMatteEnabled, CNTV2Card::SetMixerBGMatteEnabled, \ref vidop-mixerkeyer, \ref widget_mixkey
+	**/
+	AJA_VIRTUAL bool	SetMixerFGMatteEnabled (const UWord inWhichMixer, const bool & inIsEnabled);
+
+	/**
+		@brief		Answers if the given mixer/keyer's background matte is enabled or not.
+		@return		True if successful; otherwise false.
+		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
+		@param[in]	outIsEnabled		Receives true if the mixer's background matte is currently enabled;  otherwise false.
+		@see		CNTV2Card::SetMixerBGMatteEnabled, CNTV2Card::GetMixerFGMatteEnabled, \ref vidop-mixerkeyer, \ref widget_mixkey
+	**/
+	AJA_VIRTUAL bool	GetMixerBGMatteEnabled (const UWord inWhichMixer, bool & outIsEnabled);
+
+	/**
+		@brief		Answers if the given mixer/keyer's background matte is enabled or not.
+		@return		True if successful; otherwise false.
+		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
+		@param[in]	inIsEnabled			Specify true to enable the mixer's background matte;  otherwise false to disable it.
+		@see		CNTV2Card::GetMixerBGMatteEnabled, CNTV2Card::SetMixerFGMatteEnabled, \ref vidop-mixerkeyer, \ref widget_mixkey
+	**/
+	AJA_VIRTUAL bool	SetMixerBGMatteEnabled (const UWord inWhichMixer, const bool & inIsEnabled);
+
+	/**
+		@brief		Answers with the given mixer/keyer's current matte color value being used.
+		@return		True if successful; otherwise false.
+		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
+		@param[in]	outYCbCrValue		Receives the mixer's current matte color value.
+		@see		CNTV2Card::SetMixerMatteColor, \ref vidop-mixerkeyer, \ref widget_mixkey
+	**/
+	AJA_VIRTUAL bool	GetMixerMatteColor (const UWord inWhichMixer, YCbCr10BitPixel & outYCbCrValue);
+
+	/**
+		@brief		Sets the matte color to use for the given mixer/keyer.
+		@return		True if successful; otherwise false.
+		@param[in]	inWhichMixer		Specifies the mixer/keyer of interest as a zero-based index number.
+		@param[in]	inYCbCrValue		Specifies the new matte color value to use.
+		@see		CNTV2Card::GetMixerMatteColor, CNTV2Card::GetMixerFGMatteEnabled, CNTV2Card::SetMixerFGMatteEnabled, CNTV2Card::GetMixerBGMatteEnabled, CNTV2Card::SetMixerBGMatteEnabled, \ref vidop-mixerkeyer, \ref widget_mixkey
+	**/
+	AJA_VIRTUAL bool	SetMixerMatteColor (const UWord inWhichMixer, const YCbCr10BitPixel & inYCbCrValue);
 	///@}
 
 
@@ -1343,6 +1617,7 @@ public:
 		@param[in]	inValue		Specifies the new byte offset into the device's output audio buffer.
 		@param[in]	inChannel	Specifies the NTV2Channel (output audio embedder) of interest.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::ReadAudioLastOut, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool	WriteAudioLastOut (const ULWord inValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
@@ -1354,6 +1629,7 @@ public:
 								embedder in its output audio buffer.
 		@param[in]	inChannel	Specifies the NTV2Channel (output audio embedder) of interest.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::WriteAudioLastOut, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool	ReadAudioLastOut (ULWord & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1);
 
@@ -1412,6 +1688,7 @@ public:
 										Specify 'false' to stop producing audio samples ("stopped").
 		@note		This function doesn't alter the Audio Output Buffer Pointer ("play head") position.
 					To reset the "play head" back to the beginning of the buffer, use CNTV2Card::SetAudioOutputReset instead.
+		@see		CNTV2Card::GetAudioOutputPause, CNTV2Card::StartAudioOutput, CNTV2Card::StopAudioOutput, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioOutputPause (const NTV2AudioSystem inAudioSystem, const bool inEnablePlayout);
 
@@ -1423,6 +1700,7 @@ public:
 		@param[in]	inAudioSystem		Specifies the Audio System of interest.
 		@param[in]	outIsPaused			Receives 'true' if audio output is paused, or 'false' if audio
 										playout is running normally.
+		@see		CNTV2Card::SetAudioOutputPause, CNTV2Card::IsAudioOutputRunning, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioOutputPause (const NTV2AudioSystem inAudioSystem, bool & outIsPaused);
 
@@ -1469,6 +1747,7 @@ public:
 									If false, the Audio System will not capture samples.
 		@note		Applications using \ref aboutautocirculate won't need to call this function, since AutoCirculate
 					configures the Audio System automatically.
+		@see		CNTV2Card::GetAudioCaptureEnable, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		SetAudioCaptureEnable (const NTV2AudioSystem inAudioSystem, const bool inEnable);
 
@@ -1479,6 +1758,7 @@ public:
 		@param[in]	outEnable			Receives 'true' if the Audio System will capture samples to memory when
 										not in reset mode;  otherwise 'false' if the Audio System is inhibited from
 										capturing samples.
+		@see		CNTV2Card::SetAudioCaptureEnable, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		GetAudioCaptureEnable (const NTV2AudioSystem inAudioSystem, bool & outEnable);
 
@@ -1513,6 +1793,7 @@ public:
 									Values from 0 thru 8159 are valid, which gives a maximum delay of about
 									1.36 seconds.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioInputDelay, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		SetAudioInputDelay (const NTV2AudioSystem inAudioSystem, const ULWord inDelay);
 
@@ -1524,6 +1805,7 @@ public:
 									audio buffer on the device. This can be translated into microseconds by multiplying
 									the received value by 166.7.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioInputDelay, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		GetAudioInputDelay (const NTV2AudioSystem inAudioSystem, ULWord & outDelay);
 
@@ -1536,6 +1818,7 @@ public:
 									about 166.7 microseconds (when configured for 16 audio channels). Values from 0 to 8159
 									are valid, which gives a maximum delay of about 1.36 seconds.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioOutputDelay, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioOutputDelay (const NTV2AudioSystem inAudioSystem, const ULWord inDelay);
 
@@ -1547,6 +1830,7 @@ public:
 									audio buffer on the device. This can be translated into microseconds by multiplying
 									the received value by 166.7.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioOutputDelay, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioOutputDelay (const NTV2AudioSystem inAudioSystem, ULWord & outDelay);
 
@@ -1560,6 +1844,7 @@ public:
 		@return		True if successful;  otherwise false.
 		@note		This setting, if non-PCM, overrides per-audio-channel-pair PCM control on those devices that support it
 					(see ::NTV2DeviceCanDoPCMControl).
+		@see		CNTV2Card::GetAudioPCMControl, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioPCMControl (const NTV2AudioSystem inAudioSystem, const bool inIsNonPCM);
 
@@ -1571,6 +1856,7 @@ public:
 		@param[out]	outIsNonPCM		Receives true if all outgoing audio channel pairs are currently flagged as non-PCM;
 									otherwise receives false if the non-PCM indicator is set "Off".
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::SetAudioPCMControl, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioPCMControl (const NTV2AudioSystem inAudioSystem, bool & outIsNonPCM);
 
@@ -1586,6 +1872,7 @@ public:
 		@note		Call ::NTV2DeviceCanDoPCMControl to determine if per-audio-channel-pair PCM control capability is available on this device.
 		@note		This function has no effect if the Audio-System-wide non-PCM control setting is set to non-PCM.
 					(See the two-parameter overloaded version of this function.)
+		@see		CNTV2Card::GetAudioPCMControl, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioPCMControl (const NTV2AudioSystem inAudioSystem, const NTV2AudioChannelPair inChannelPair, const bool inIsNonPCM);
 
@@ -1596,6 +1883,7 @@ public:
 		@param[in]	inNonPCMChannelPairs	Specifies the audio channel pairs whose non-PCM indicators will be set "On".
 		@return		True if successful; otherwise false.
 		@note		Call ::NTV2DeviceCanDoPCMControl to determine if this device supports per-audio-channel-pair PCM control.
+		@see		CNTV2Card::GetAudioPCMControl, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioPCMControl (const NTV2AudioSystem inAudioSystem, const NTV2AudioChannelPairs & inNonPCMChannelPairs);
 
@@ -1611,6 +1899,7 @@ public:
 		@note		Call ::NTV2DeviceCanDoPCMControl to determine if this device supports per-audio-channel-pair PCM control.
 		@note		This function's answer is irrelevant if the Audio-System-wide non-PCM control setting is set to non-PCM.
 					(See the two-parameter overloaded version of this function.)
+		@see		CNTV2Card::SetAudioPCMControl, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioPCMControl (const NTV2AudioSystem inAudioSystem, const NTV2AudioChannelPair inChannelPair, bool & outIsNonPCM);
 
@@ -1622,6 +1911,7 @@ public:
 		@param[out]	outNonPCMChannelPairs	Receives the ::NTV2AudioChannelPairs that are currently being flagged as non-PCM.
 		@return		True if successful; otherwise false.
 		@note		Call ::NTV2DeviceCanDoPCMControl to determine if this device supports per-audio-channel-pair PCM control.
+		@see		CNTV2Card::SetAudioPCMControl, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioPCMControl (const NTV2AudioSystem inAudioSystem, NTV2AudioChannelPairs & outNonPCMChannelPairs);
 
@@ -1632,6 +1922,7 @@ public:
 		@param[in]	inChannelPair	Specifies the ::NTV2AudioChannelPair of interest.
 		@param[out]	outIsPresent	Receives true if the ::NTV2AudioChannelPair is present;  otherwise false if it's not present.
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::GetDetectedAudioChannelPairs, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		IsAudioChannelPairPresent (const NTV2AudioSystem inAudioSystem, const NTV2AudioChannelPair inChannelPair, bool & outIsPresent);
 
@@ -1644,6 +1935,7 @@ public:
 		@note		NTV2 device firmware performs this detection using a simple method of detecting the presence of the Audio Group's data packet.
 					It does not perform detailed inspection of the packet -- i.e., checking bits b1/b2 of the AES sub-frame per SMPTE 272, nor
 					checking the V/U/C/P bits per SMPTE 299.
+		@see		CNTV2Card::IsAudioChannelPairPresent, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		GetDetectedAudioChannelPairs (const NTV2AudioSystem inAudioSystem, NTV2AudioChannelPairs & outDetectedChannelPairs);
 
@@ -1652,6 +1944,7 @@ public:
 		@brief		Answers which AES/EBU audio channel pairs are present on the device.
 		@param[out]	outDetectedChannelPairs		Receives the set of unique audio channel pairs that are present in any of the device's AES/EBU inputs.
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::IsAudioChannelPairPresent, \ref audiocapture
 	**/
 	AJA_VIRTUAL bool		GetDetectedAESChannelPairs (NTV2AudioChannelPairs & outDetectedChannelPairs);
 
@@ -1805,6 +2098,7 @@ public:
 		@param[out]	outSrcAudioSystem		Receives the NTV2AudioSystem that is currently driving the given AES audio output channel quad.
 		@param[out]	outSrcAudioChannels		Receives the audio channel quad from the Audio System that's sourcing the given AES audio output channel quad.
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::SetAESOutputSource, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAESOutputSource (const NTV2Audio4ChannelSelect inAESAudioChannels, NTV2AudioSystem & outSrcAudioSystem, NTV2Audio4ChannelSelect & outSrcAudioChannels);
 
@@ -1816,6 +2110,7 @@ public:
 		@param[in]	inSrcAudioSystem		Specifies the NTV2AudioSystem that should drive the given AES audio output channel quad.
 		@param[in]	inSrcAudioChannels		Specifies the audio channel quad from the given Audio System that should drive the given AES audio output channel quad.
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::GetAESOutputSource, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAESOutputSource (const NTV2Audio4ChannelSelect inAESAudioChannels, const NTV2AudioSystem inSrcAudioSystem, const NTV2Audio4ChannelSelect inSrcAudioChannels);
 
@@ -1827,6 +2122,7 @@ public:
 		@bug		The \c inChannelPair parameter really should be an ::NTV2AudioChannelPair.
 					The \c inAudioSystem parameter really should be an ::NTV2AudioSystem.
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::GetAudioOutputMonitorSource, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioOutputMonitorSource (const NTV2AudioMonitorSelect inChannelPair, const NTV2Channel inAudioSystem = NTV2_CHANNEL1);
 
@@ -1838,6 +2134,7 @@ public:
 		@bug		The \c outChannelPair parameter really should be an ::NTV2AudioChannelPair.
 					The \c outAudioSystem parameter really should be an ::NTV2AudioSystem.
 		@return		True if successful; otherwise false.
+		@see		CNTV2Card::SetAudioOutputMonitorSource, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioOutputMonitorSource (NTV2AudioMonitorSelect & outChannelPair, NTV2Channel & outAudioSystem);
 
@@ -1847,6 +2144,7 @@ public:
 		@param[in]	inSDIOutputConnector	Specifies the SDI output of interest.
 		@param[out]	outIsEnabled			Receives 'true' if the audio output embedder is enabled;  otherwise 'false' if disabled.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioOutputEmbedderState, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioOutputEmbedderState (const NTV2Channel inSDIOutputConnector, bool & outIsEnabled);
 
@@ -1857,26 +2155,61 @@ public:
 		@param[out]	inEnable				Specify 'true' to enable the audio output embedder (normal operation).
 											Specify 'false' to disable the embedder.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioOutputEmbedderState, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioOutputEmbedderState (const NTV2Channel inSDIOutputConnector, const bool & inEnable);
 
 	/**
 		@brief		Answers with the current state of the audio output erase mode for the given Audio System.
 					If enabled, the Audio System automatically writes zeroes into the audio output buffer behind the output read head during playout.
-		@param[in]	inAudioSystem			Specifies the SDI output of interest.
+		@param[in]	inAudioSystem			Specifies the audio system of interest.
 		@param[out]	outEraseModeEnabled		Receives 'true' if enabled;  otherwise 'false' if disabled (normal operation).
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioOutputEraseMode, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		GetAudioOutputEraseMode (const NTV2AudioSystem inAudioSystem, bool & outEraseModeEnabled);
 
 	/**
 		@brief		Enables or disables output erase mode for the given Audio System, which, when enabled, automatically writes zeroes into the audio output buffer
 					behind the output read head.
-		@param[in]	inAudioSystem			Specifies the SDI output of interest.
+		@param[in]	inAudioSystem			Specifies the audio system of interest.
 		@param[in]	inEraseModeEnabled		Specify 'true' to enable output erase mode;  otherwise 'false' for normal operation.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioOutputEraseMode, \ref audioplayout
 	**/
 	AJA_VIRTUAL bool		SetAudioOutputEraseMode (const NTV2AudioSystem inAudioSystem, const bool & inEraseModeEnabled);
+
+	/**
+		@brief		Answers with the current state of the AES Sync Mode bit for the given Audio System's output.
+		@param[in]	inAudioSystem			Specifies the audio system of interest.
+		@param[out]	outAESSyncModeBitSet	Receives 'true' if the bit is set;  otherwise 'false' (normal operation).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioOutputAESSyncModeBit, \ref audioplayout
+	**/
+	AJA_VIRTUAL bool		GetAudioOutputAESSyncModeBit (const NTV2AudioSystem inAudioSystem, bool & outAESSyncModeBitSet);
+
+	/**
+		@brief		Sets or clears the AES Sync Mode bit for the given Audio System's output.
+		@param[in]	inAudioSystem			Specifies the audio system of interest.
+		@param[in]	inAESSyncModeBitSet		Specify 'true' to set the AES Sync Mode bit;  otherwise 'false' for normal operation.
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioOutputAESSyncModeBit, \ref audioplayout
+	**/
+	AJA_VIRTUAL bool		SetAudioOutputAESSyncModeBit (const NTV2AudioSystem inAudioSystem, const bool & inAESSyncModeBitSet);
+
+	AJA_VIRTUAL bool		SetAnalogAudioIOConfiguration (const NTV2AnalogAudioIO inAudioIOConfiguration);
+	AJA_VIRTUAL bool		GetAnalogAudioIOConfiguration (NTV2AnalogAudioIO & inAudioIOConfiguration);
+
+	/**
+		@brief		Answers with the current value of the 48kHz audio clock counter.
+		@return		True if successful; otherwise false.
+		@param[in]	outValue		Receives the number of 48kHz "ticks" that have transpired since the
+									device was powered up.
+		@param[in]	inAudioSystem	Specifies the ::NTV2AudioSystem of interest. Currently ignored, but
+									may be used if a future NTV2 device has more than one audio clock.
+		@note		This counter will overflow and wrap back to zero in 24:51:00 [hh:mm:ss].
+	**/
+    AJA_VIRTUAL bool		GetRawAudioTimer (ULWord & outValue, const NTV2AudioSystem inAudioSystem = NTV2_AUDIOSYSTEM_1);
 
 	AJA_VIRTUAL bool NTV2_SHOULD_BE_DEPRECATED(WriteAudioSource (const ULWord inValue, const NTV2Channel inChannel = NTV2_CHANNEL1));
 	AJA_VIRTUAL bool NTV2_SHOULD_BE_DEPRECATED(ReadAudioSource (ULWord & outValue, const NTV2Channel inChannel = NTV2_CHANNEL1));
@@ -1890,45 +2223,167 @@ public:
 		@name	Audio Mixer
 	**/
 	///@{
-	AJA_VIRTUAL bool		GetAudioMixerMainInputAudioSystem (NTV2AudioSystem & outAudioSystem);
-	AJA_VIRTUAL bool		SetAudioMixerMainInputAudioSystem (const NTV2AudioSystem inAudioSystem);
 
-	AJA_VIRTUAL bool		GetAudioMixerMainInputChannelSelect(NTV2AudioChannelPair & outChannelPair);
-	AJA_VIRTUAL bool		SetAudioMixerMainInputChannelSelect(const NTV2AudioChannelPair inChannelPair);
+	/**
+		@brief		Answers with the Audio System that's currently driving the given input of the Audio Mixer.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[out]	outAudioSystem	Receives the ::NTV2AudioSystem that's currently driving the Audio Mixer's input.
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioMixerInputAudioSystem, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerInputAudioSystem (const NTV2AudioMixerInput inMixerInput, NTV2AudioSystem & outAudioSystem);
 
-	AJA_VIRTUAL bool		GetAudioMixerMainInputGain(ULWord & outGainValue);
-	AJA_VIRTUAL bool		SetAudioMixerMainInputGain(const ULWord inGainValue);
+	/**
+		@brief		Sets the Audio System that will drive the given input of the Audio Mixer.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[in]	inAudioSystem	Specifies the new ::NTV2AudioSystem that is to drive the Audio Mixer's input.
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioMixerInputAudioSystem, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		SetAudioMixerInputAudioSystem (const NTV2AudioMixerInput inMixerInput, const NTV2AudioSystem inAudioSystem);
 
-	AJA_VIRTUAL bool		GetAudioMixerAux1x2chInputAudioSystem (NTV2AudioSystem & outAudioSystem);
-	AJA_VIRTUAL bool		SetAudioMixerAux1x2chInputAudioSystem(const NTV2AudioSystem inAudioSystem);
+	/**
+		@brief		Answers with the Audio Channel Pair that's currently driving the given input of the Audio Mixer.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[out]	outChannelPair	Receives the ::NTV2AudioChannelPair that's currently driving the audio mixer's input.
+		@return		True if successful;  otherwise false.
+		@note		Audio mixer inputs ::NTV2_AudioMixerInputAux1 and ::NTV2_AudioMixerInputAux2 currently return ::NTV2_AudioChannel1_2.
+		@see		CNTV2Card::SetAudioMixerInputChannelSelect, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerInputChannelSelect (const NTV2AudioMixerInput inMixerInput, NTV2AudioChannelPair & outChannelPair);
 
-	AJA_VIRTUAL bool		GetAudioMixerAux1InputGain(const NTV2AudioMixerChannel inChannel, ULWord & outGainValue);
-	AJA_VIRTUAL bool		SetAudioMixerAux1InputGain(const NTV2AudioMixerChannel inChannel, const ULWord inGainValue);
+	/**
+		@brief		Specifies the Audio Channel Pair that will drive the given input of the Audio Mixer.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[in]	inChannelPair	Specifies the new ::NTV2AudioChannelPair that is to drive the audio mixer's input.
+		@return		True if successful;  otherwise false.
+		@note		Audio mixer inputs ::NTV2_AudioMixerInputAux1 and ::NTV2_AudioMixerInputAux2 are currently fixed to ::NTV2_AudioChannel1_2 and cannot be changed.
+		@see		CNTV2Card::GetAudioMixerInputChannelSelect, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		SetAudioMixerInputChannelSelect (const NTV2AudioMixerInput inMixerInput, const NTV2AudioChannelPair inChannelPair);
 
-	AJA_VIRTUAL bool		GetAudioMixerAux2x2chInputAudioSystem (NTV2AudioSystem & outAudioSystem);
-	AJA_VIRTUAL bool		SetAudioMixerAux2x2chInputAudioSystem (const NTV2AudioSystem inAudioSystem);
+	/**
+		@brief		Answers with the current gain setting for the Audio Mixer's given input.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[in]	inChannel		Specifies the audio channel of interest.
+		@param[out]	outGainValue	Receives the current main input gain level.
+									This is a signed 18-bit value, where unity gain is 0x10000.
+		@return		True if successful;  otherwise false.
+		@note		Currently, the Audio Mixer's Main input gain control affects both audio channels 1 & 2 (L & R),
+					while the Aux 1 & 2 inputs have separate gain settings for audio channels 1 & 2 (L & R).
+		@see		CNTV2Card::SetAudioMixerInputGain, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerInputGain (const NTV2AudioMixerInput inMixerInput, const NTV2AudioMixerChannel inChannel, ULWord & outGainValue);
 
-	AJA_VIRTUAL bool		GetAudioMixerAux2InputGain(const NTV2AudioMixerChannel inChannel, ULWord & outGainValue);
-	AJA_VIRTUAL bool		SetAudioMixerAux2InputGain(const NTV2AudioMixerChannel inChannel, const ULWord inGainValue);
+	/**
+		@brief		Sets the gain for the given input of the Audio Mixer.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[in]	inChannel		Specifies the audio channel of interest.
+		@param[in]	inGainValue		Specifies the new input gain level.
+									This is a signed 18-bit value, where unity gain is 0x10000.
+		@return		True if successful;  otherwise false.
+		@note		Currently, the Audio Mixer's Main input gain control affects both audio channels 1 & 2 (L & R),
+					while the Aux 1 & 2 inputs have separate gain settings for audio channels 1 & 2 (L & R).
+		@see		CNTV2Card::GetAudioMixerInputGain, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		SetAudioMixerInputGain (const NTV2AudioMixerInput inMixerInput, const NTV2AudioMixerChannel inChannel, const ULWord inGainValue);
 
-	AJA_VIRTUAL bool		GetAudioMixerOutputChannelMute(NTV2AudioMixerChannel inChannel, bool & outChannelMuted);
-	AJA_VIRTUAL bool		SetAudioMixerOutputChannelMute(NTV2AudioMixerChannel inChannel, bool inMuteChannel);
+	/**
+		@brief		Answers with a std::bitset that indicates which input audio channels of the given Audio Mixer input are currently muted.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[out]	outMutes		Receives the bitset. Call its "test" method, passing it a valid ::NTV2AudioMixerChannel
+									to determine if that channel is muted (true) or not (false).
+									Note that only audio channels ::NTV2_AudioMixerChannel1 and ::NTV2_AudioMixerChannel2 are relevant.
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioMixerInputChannelsMute, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerInputChannelsMute (const NTV2AudioMixerInput inMixerInput, NTV2AudioChannelsMuted16 & outMutes);
 
-	AJA_VIRTUAL bool		GetAudioMixerMainInputEnable(bool & outEnabled);
-	AJA_VIRTUAL bool		SetAudioMixerMainInputEnable(bool inEnabled);
+	/**
+		@brief		Mutes (or enables) the given output audio channel of the Audio Mixer.
+		@param[in]	inMixerInput	Specifies the Audio Mixer's input of interest.
+		@param[in]	inMutes			Specifies the mute state for each audio channel as a std::bitset.
+									The index in the bitset directly correlates with the ::NTV2AudioMixerChannel.
+									Set the bit to mute the channel;  clear/reset the bit to unmute/enable the channel.
+									Note that only audio channels ::NTV2_AudioMixerChannel1 and ::NTV2_AudioMixerChannel2 are relevant.
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioMixerInputChannelsMute, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		SetAudioMixerInputChannelsMute (const NTV2AudioMixerInput inMixerInput, const NTV2AudioChannelsMuted16 inMutes);
 
-	AJA_VIRTUAL bool		GetAudioMixerAux1InputEnable(bool & outEnabled);
-	AJA_VIRTUAL bool		SetAudioMixerAux1InputEnable(bool inEnabled);
+	/**
+		@brief		Answers with the Audio Mixer's current audio input levels.
+		@param[in]	inMixerInput		Specifies the Audio Mixer's input of interest.
+		@param[in]	inChannelPairs		Specifies the audio channel pair(s) of interest.
+										Use an empty list to retrieve all available audio channels.
+		@param[out]	outLevels			A std::vector of ULWord values, one per audio channel, in ascending audio
+										channel order (per the ::NTV2AudioChannelPairs that were specified).
+		@return		True if successful;  otherwise false.
+		@see		See \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerInputLevels (const NTV2AudioMixerInput inMixerInput, const NTV2AudioChannelPairs & inChannelPairs, std::vector<uint32_t> & outLevels);
 
-	AJA_VIRTUAL bool		GetAudioMixerAux2InputEnable(bool & outEnabled);
-	AJA_VIRTUAL bool		SetAudioMixerAux2InputEnable(bool inEnabled);
+	/**
+		@brief		Answers with the Audio Mixer's current sample count used for measuring audio levels.
+		@param[out]	outSampleCount		Receives the current sample count.
+		@return		True if successful;  otherwise false.
+		@see		See \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerLevelsSampleCount (ULWord & outSampleCount);
 
-	AJA_VIRTUAL ULWord		GetAudioMixerMainInputChannelLevel(NTV2AudioMixerChannel inChannel);
-	AJA_VIRTUAL ULWord		GetAudioMixerAux1InputChannelLevel(NTV2AudioMixerChannel inChannel);
-	AJA_VIRTUAL ULWord		GetAudioMixerAux2InputChannelLevel(NTV2AudioMixerChannel inChannel);
+	/**
+		@brief		Sets the Audio Mixer's sample count it uses for measuring audio levels.
+		@param[in]	inSampleCount	Specifies the new sample count. Must be a power of two
+									(e.g. 1, 2, 4, 8 ...) up to 0x8000 maximum.
+		@return		True if successful;  otherwise false.
+		@see		See \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		SetAudioMixerLevelsSampleCount (const ULWord inSampleCount);
 
-	AJA_VIRTUAL bool		SetAnalogAudioIOConfiguration(const NTV2AnalogAudioIO inAudioIOConfiguration);
-	AJA_VIRTUAL bool		GetAnalogAudioIOConfiguration(NTV2AnalogAudioIO & inAudioIOConfiguration);
+	/**
+		@brief		Answers with a std::bitset that indicates which output audio channels of the Audio Mixer are currently muted.
+		@param[out]	outMutes	Receives the bitset. Call its "test" method, passing it a valid ::NTV2AudioMixerChannel
+								to determine if that channel is muted (true) or not (false).
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetAudioMixerOutputChannelsMute, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		GetAudioMixerOutputChannelsMute (NTV2AudioChannelsMuted16 & outMutes);
+
+	/**
+		@brief		Mutes or enables the individual output audio channels of the Audio Mixer.
+		@param[in]	inMutes		Specifies the mute state for each audio channel as a std::bitset.
+								The index in the bitset directly correlates with the ::NTV2AudioMixerChannel.
+								Set the bit to mute the channel;  clear/reset the bit to unmute/enable the channel.
+		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetAudioMixerOutputChannelsMute, \ref audiomixer
+	**/
+	AJA_VIRTUAL bool		SetAudioMixerOutputChannelsMute (const NTV2AudioChannelsMuted16 inMutes);
+
+#if !defined(NTV2_DEPRECATE_15_5)
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerMainInputAudioSystem(NTV2AudioSystem & outAudioSystem))		{return GetAudioMixerInputAudioSystem(NTV2_AudioMixerInputMain, outAudioSystem);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputAudioSystem instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerMainInputAudioSystem(const NTV2AudioSystem inAudioSystem))	{return SetAudioMixerInputAudioSystem(NTV2_AudioMixerInputMain, inAudioSystem);}	///< @deprecated	Call CNTV2Card::SetAudioMixerInputAudioSystem instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerMainInputChannelSelect(NTV2AudioChannelPair & outChannelPair))	{return GetAudioMixerInputChannelSelect(NTV2_AudioMixerInputMain, outChannelPair);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputChannelSelect instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerMainInputChannelSelect(const NTV2AudioChannelPair inChannelPair)){return SetAudioMixerInputChannelSelect(NTV2_AudioMixerInputMain, inChannelPair);}	///< @deprecated	Call CNTV2Card::SetAudioMixerInputChannelSelect instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerMainInputGain(ULWord & outGainValue))							{return GetAudioMixerInputGain(NTV2_AudioMixerInputMain, NTV2_AudioMixerChannel1, outGainValue);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputGain instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerMainInputGain (const ULWord inGainValue))	{return SetAudioMixerInputGain(NTV2_AudioMixerInputMain, NTV2_AudioMixerChannel1, inGainValue);}	///< @deprecated	Call CNTV2Card::SetAudioMixerInputGain instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerAux1x2chInputAudioSystem(NTV2AudioSystem & outAudioSystem))		{return GetAudioMixerInputAudioSystem(NTV2_AudioMixerInputAux1, outAudioSystem);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputAudioSystem instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerAux1x2chInputAudioSystem(const NTV2AudioSystem inAudioSystem))	{return SetAudioMixerInputAudioSystem(NTV2_AudioMixerInputAux1, inAudioSystem);}	///< @deprecated	Call CNTV2Card::SetAudioMixerInputAudioSystem instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerAux1InputGain(const NTV2AudioMixerChannel inChannel, ULWord & outGainValue))	{return GetAudioMixerInputGain(NTV2_AudioMixerInputAux1, inChannel, outGainValue);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputGain instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerAux2x2chInputAudioSystem(NTV2AudioSystem & outAudioSystem))		{return GetAudioMixerInputAudioSystem(NTV2_AudioMixerInputAux2, outAudioSystem);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputAudioSystem instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerAux2x2chInputAudioSystem(const NTV2AudioSystem inAudioSystem))	{return SetAudioMixerInputAudioSystem(NTV2_AudioMixerInputAux2, inAudioSystem);}	///< @deprecated	Call CNTV2Card::SetAudioMixerInputAudioSystem instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerAux2InputGain(const NTV2AudioMixerChannel inChannel, ULWord & outGainValue))	{return GetAudioMixerInputGain(NTV2_AudioMixerInputAux2, inChannel, outGainValue);}	///< @deprecated	Call CNTV2Card::GetAudioMixerInputGain instead.
+	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerAux1InputGain (const NTV2AudioMixerChannel inChannel, const ULWord inGainValue));	///< @deprecated	Call CNTV2Card::SetAudioMixerInputGain instead.
+	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerAux2InputGain (const NTV2AudioMixerChannel inChannel, const ULWord inGainValue));	///< @deprecated	Call CNTV2Card::SetAudioMixerInputGain instead.
+	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerMainInputEnable(bool & outEnabled));	///< @deprecated	Call CNTV2Card::GetAudioMixerInputChannelsMute instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerMainInputEnable(const bool inEnable))	{return SetAudioMixerInputChannelsMute(NTV2_AudioMixerInputMain, inEnable ? NTV2AudioChannelsEnableAll : NTV2AudioChannelsMuteAll);}		///< @deprecated	Call CNTV2Card::SetAudioMixerInputChannelsMute instead.
+	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerAux1InputEnable (bool & outEnabled));	///< @deprecated	Call CNTV2Card::GetAudioMixerInputChannelsMute instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerAux1InputEnable (const bool inEnable))	{return SetAudioMixerInputChannelsMute(NTV2_AudioMixerInputAux1, inEnable ? NTV2AudioChannelsEnableAll : NTV2AudioChannelsMuteAll);}		///< @deprecated	Call CNTV2Card::SetAudioMixerInputChannelsMute instead.
+	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool GetAudioMixerAux2InputEnable (bool & outEnabled));	///< @deprecated	Call CNTV2Card::GetAudioMixerInputChannelsMute instead.
+	AJA_VIRTUAL inline NTV2_SHOULD_BE_DEPRECATED(bool SetAudioMixerAux2InputEnable (const bool inEnable))	{return SetAudioMixerInputChannelsMute(NTV2_AudioMixerInputAux2, inEnable ? NTV2AudioChannelsEnableAll : NTV2AudioChannelsMuteAll);}		///< @deprecated	Call CNTV2Card::SetAudioMixerInputChannelsMute instead.
+	AJA_VIRTUAL ULWord		GetAudioMixerMainInputChannelLevel (const NTV2AudioMixerChannel inChannel);
+	AJA_VIRTUAL ULWord		GetAudioMixerAux1InputChannelLevel (const NTV2AudioMixerChannel inChannel);
+	AJA_VIRTUAL ULWord		GetAudioMixerAux2InputChannelLevel (const NTV2AudioMixerChannel inChannel);
+#endif	//	!defined(NTV2_DEPRECATE_15_5)
 	///@}
 
 	//
@@ -2096,7 +2551,7 @@ public:
 	///@{
 	AJA_VIRTUAL bool	ReadFlashProgramControl(ULWord & outValue);
 	AJA_VIRTUAL bool	IsXilinxProgrammed();
-    AJA_VIRTUAL bool	ProgramMainFlash(const char *fileName, bool bForceUpdate = false);
+	AJA_VIRTUAL bool	ProgramMainFlash(const char *fileName, bool bForceUpdate = false, bool bQuiet = false);
 	AJA_VIRTUAL bool	GetProgramStatus(SSC_GET_FIRMWARE_PROGRESS_STRUCT *statusStruct);
 
     /**
@@ -2227,6 +2682,7 @@ public:
 		@param[in]	inMode			Specifies the new RP-188 mode for the given channel.
 									Must be one of ::NTV2_RP188_INPUT or ::NTV2_RP188_OUTPUT. All other values are illegal.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::GetRP188Mode, \ref anctimecode
 	**/
 	AJA_VIRTUAL bool	SetRP188Mode			(const NTV2Channel inChannel,	const NTV2_RP188Mode inMode);
 
@@ -2235,78 +2691,114 @@ public:
 		@param[in]	inChannel		Specifies the channel of interest.
 		@param[out]	outMode			Receives the RP-188 mode for the given channel.
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::SetRP188Mode, \ref anctimecode
 	**/
 	AJA_VIRTUAL bool	GetRP188Mode			(const NTV2Channel inChannel,	NTV2_RP188Mode & outMode);
 
 	/**
-		@brief		Writes the raw RP188 data into the DBB/Low/Hi registers for the given channel.
-		@param[in]	inChannel		Specifies the SDI output of interest as an ::NTV2Channel value.
+		@brief		Writes the raw RP188 data into the DBB/Low/Hi registers for the given SDI output.
+					These values are latched and sent at the next VBI.
+		@param[in]	inSDIOutput		Specifies the SDI output of interest as an ::NTV2Channel value.
 		@param[in]	inRP188Data		Specifies the raw RP188 data values to be written.
-		@note		This call won't have any effect if the channel is in "bypass mode".
-					See CNTV2Card::IsRP188BypassEnabled and CNTV2Card::DisableRP188Bypass.
+		@note		This call will have no effect if the SDI output is in "bypass mode".
+		@see		CNTV2Card::GetRP188Data, CNTV2Card::IsRP188BypassEnabled, CNTV2Card::DisableRP188Bypass, \ref anctimecode
 	**/
-	AJA_VIRTUAL bool	SetRP188Data			(const NTV2Channel inChannel,	const NTV2_RP188 & inRP188Data);
+	AJA_VIRTUAL bool	SetRP188Data			(const NTV2Channel inSDIOutput,	const NTV2_RP188 & inRP188Data);
 
 	/**
-		@brief		Reads the raw RP188 data from the DBB/Low/Hi registers for the given channel.
-		@param[in]	inChannel		Specifies the SDI input of interest as an ::NTV2Channel value.
+		@brief		Reads the raw RP188 data from the DBB/Low/Hi registers for the given SDI input.
+					On newer devices with bi-directional SDI connectors -- see \ref anctimecode for details --
+					if the device is configured for...
+					-	<b>input</b>: answers with the last timecode received at the SDI input (subject to
+						the SDI input's RP188 source filter -- see CNTV2Card::GetRP188SourceFilter);
+					-	<b>output</b>: answers with the timecode that's to be embedded into the SDI output
+						(usually the last timecode written via CNTV2Card::SetRP188Data).
+		@param[in]	inSDIInput		Specifies the SDI input of interest, expressed as an ::NTV2Channel.
+									For bi-directional SDI devices, specifies the SDI connector of interest,
+									which can specify an SDI output.
 		@param[out]	outRP188Data	Receives the raw RP188 data values.
+		@see		CNTV2Card::SetRP188Data, CNTV2Card::GetRP188SourceFilter, \ref anctimecode
 	**/
-	AJA_VIRTUAL bool	GetRP188Data			(const NTV2Channel inChannel,	NTV2_RP188 & outRP188Data);
-
-	AJA_VIRTUAL bool	SetRP188Data			(const NTV2Channel inChannel,	const ULWord frame, const RP188_STRUCT & inRP188Data);
-	AJA_VIRTUAL bool	GetRP188Data			(const NTV2Channel inChannel,	const ULWord frame, RP188_STRUCT & outRP188Data);
+	AJA_VIRTUAL bool	GetRP188Data			(const NTV2Channel inSDIInput,	NTV2_RP188 & outRP188Data);
 
 	/**
-		@brief		Sets the RP188 DBB filter for the given SDI output (channel).
-		@param[in]	inChannel		Specifies the SDI output (channel) of interest.
+		@brief		Sets the RP188 DBB filter for the given SDI input.
+		@param[in]	inSDIInput		Specifies the SDI input of interest, expressed as an NTV2Channel.
 		@param[out]	inFilterValue	Specifies the new filter value to use. Only the lower 8 bits are used.
-									Use 0xFF for unfiltered;  0x01 for VITC1;  0x02 for VITC2.
+									Use 0x00 for LTC;  0x01 for VITC1;  0x02 for VITC2; 0xFF for unfiltered.
 		@return		True if successful;  otherwise false.
-		@note		AutoCirculate-based applications have no need to use this function, since the driver manages
-					RP188 filtering when CNTV2Card::AutoCirculateInitForOutput is called.
+		@see		CNTV2Card::GetRP188SourceFilter, CNTV2Card::SetRP188BypassSource, \ref anctimecode
 	**/
-	AJA_VIRTUAL bool	SetRP188Source			(const NTV2Channel inChannel,	const ULWord inFilterValue);
-
+	AJA_VIRTUAL bool	SetRP188SourceFilter	(const NTV2Channel inSDIInput,	const UWord inFilterValue);
 
 	/**
-		@brief		Returns the current RP188 filter setting for the given (output) channel, assuming the channel's RP188 bypass mode is enabled (i.e., for E-E operation).
-		@param[in]	inChannel		Specifies the SDI output (channel) of interest.
-		@param[out]	outFilterValue	Receives the given channel's current RP188 SDI input filter, which will be an 8-bit value.
+		@brief		Returns the current RP188 filter setting for the given SDI input.
+		@param[in]	inSDIInput		Specifies the SDI input of interest, expressed as an NTV2Channel.
+		@param[out]	outFilterValue	Receives the given SDI input's current RP188 SDI input filter, an 8-bit value.
+									0x00 is LTC;  0x01 is VITC1;  0x02 is VITC2;  0xFF is unfiltered, which results
+									in the timecode registers containing the last received timecode packet for the
+									input frame.
 		@return		True if successful;  otherwise false.
-		@note		AutoCirculate-based applications have no need to use this function, since the driver manages
-					RP188 filtering when CNTV2Card::AutoCirculateInitForOutput is called.
+		@see		CNTV2Card::SetRP188SourceFilter, CNTV2Card::IsRP188BypassEnabled, CNTV2Card::GetRP188BypassSource, \ref anctimecode
 	**/
-	AJA_VIRTUAL bool	GetRP188Source			(const NTV2Channel inChannel,	ULWord & outFilterValue);
+	AJA_VIRTUAL bool	GetRP188SourceFilter	(const NTV2Channel inSDIInput,	UWord & outFilterValue);
 
+	#if !defined(NTV2_DEPRECATE_15_2)
+		AJA_VIRTUAL bool		SetRP188Data	(const NTV2Channel inChannel, const ULWord frame, const RP188_STRUCT & inRP188Data);
+		AJA_VIRTUAL bool		GetRP188Data	(const NTV2Channel inChannel, const ULWord frame, RP188_STRUCT & outRP188Data);
+		AJA_VIRTUAL inline bool	SetRP188Source	(const NTV2Channel inChannel, const ULWord inFilterValue)	{return SetRP188SourceFilter(inChannel, UWord(inFilterValue));}	///< @deprecated	Use SetRP188SourceFilter instead.
+		AJA_VIRTUAL inline bool	GetRP188Source	(const NTV2Channel inChannel, ULWord & outFilterValue)		{UWord val(0); bool result(GetRP188SourceFilter(inChannel, val)); outFilterValue = ULWord(val); return result;}	///< @deprecated	Use GetRP188SourceFilter instead.
+	#endif	//	!defined(NTV2_DEPRECATE_15_2)
 
 	/**
-		@brief		Answers whether or not the channel's RP-188 bypass mode is in effect.
-		@param[in]	inChannel	Specifies the output channel of interest.
-		@param[out]	outIsBypassEnabled	Receives true if the output channel's RP188 timecode is currently sourced from the channel's
-										RP188 registers (i.e., from calls to CNTV2Card::SetRP188Data). Receives false if its output timecode is
-										currently sourced from the input (specified from a prior call to CNTV2Card::SetRP188Source).
+		@brief		Answers if the SDI output's RP-188 bypass mode is enabled or not.
+		@param[in]	inSDIOutput			Specifies the SDI output of interest, expressed as an NTV2Channel.
+		@param[out]	outIsBypassEnabled	Receives true if the SDI output's RP188 timecode is currently sourced from its
+										RP188 registers (see CNTV2Card::SetRP188Data).
+										Receives false if its output timecode is currently sourced from an SDI input
+										(see CNTV2Card::GetRP188BypassSource and CNTV2Card::GetRP188SourceFilter).
 		@return		True if successful;  otherwise false.
+		@see		CNTV2Card::EnableRP188Bypass, CNTV2Card::DisableRP188Bypass, CNTV2Card::GetRP188BypassSource, CNTV2Card::GetRP188SourceFilter
 	**/
-	AJA_VIRTUAL bool	IsRP188BypassEnabled	(const NTV2Channel inChannel,	bool & outIsBypassEnabled);
+	AJA_VIRTUAL bool	IsRP188BypassEnabled	(const NTV2Channel inSDIOutput,	bool & outIsBypassEnabled);
 
 	/**
-		@brief		Normally, if the device channel's ::NTV2_RP188Mode is ::NTV2_RP188_OUTPUT, an SDI output will embed RP188 timecode as fed into its three
-					DBB/Bits0_31/Bits32_63 registers (via calls to CNTV2Card::SetRP188Data). These registers can be bypassed to grab RP188 from an SDI input, which
-					is useful in E-E mode.
-		@param[in]	inChannel			Specifies the (SDI output) channel of interest.
+		@brief		Configures the SDI output's embedder to embed SMPTE 12M timecode specified in calls to CNTV2Card::SetRP188Data.
+		@param[in]	inSDIOutput			Specifies the SDI output of interest, expressed as an NTV2Channel.
+		@return		True if successful; otherwise false.
+		@note		The SDI output's ::NTV2_RP188Mode must be set to ::NTV2_RP188_OUTPUT.
+		@see		CNTV2Card::EnableRP188Bypass, CNTV2Card::SetRP188Data, CNTV2Card::SetRP188Mode, \ref anctimecode
+	**/
+	AJA_VIRTUAL bool	DisableRP188Bypass		(const NTV2Channel inSDIOutput);
+
+	/**
+		@brief		Configures the SDI output's embedder to embed SMPTE 12M timecode obtained from an SDI input,
+					which is often useful in E-E mode.
+		@param[in]	inSDIOutput			Specifies the SDI output of interest, expressed as an NTV2Channel.
+		@return		True if successful; otherwise false.
+		@see		CNTV2Card::DisableRP188Bypass, CNTV2Card::SetRP188SourceFilter, CNTV2Card::SetRP188BypassSource, \ref anctimecode
+	**/
+	AJA_VIRTUAL bool	EnableRP188Bypass		(const NTV2Channel inSDIOutput);
+
+	/**
+		@brief		For the given SDI output that's in RP188 bypass mode (E-E), specifies the SDI input
+					to be used as a timecode source.
+		@param[in]	inSDIOutput		Specifies the SDI output of interest, expressed as an NTV2Channel.
+		@param[in]	inSDIInput		Specifies the SDI input to be used as a timecode source,
+									expressed as a zero-based index number.
 		@return		True if successful; otherwise false.
 	**/
-	AJA_VIRTUAL bool	DisableRP188Bypass		(const NTV2Channel inChannel);
+	AJA_VIRTUAL bool	SetRP188BypassSource (const NTV2Channel inSDIOutput, const UWord inSDIInput);
 
 	/**
-		@brief		Normally, if the device channel's NTV2_RP188Mode is NTV2_RP188_OUTPUT, an SDI output will embed RP188 timecode as fed into its three
-					DBB/Bits0_31/Bits32_63 registers (via calls to SetRP188Data). These registers can be bypassed to grab RP188 from an SDI input, which
-					is useful in E-E mode.
-		@param[in]	inChannel			Specifies the (SDI output) channel of interest.
+		@brief		For the given SDI output that's in RP188 bypass mode (E-E), answers with the SDI input
+					that's currently being used as a timecode source.
+		@param[in]	inSDIOutput		Specifies the SDI output of interest, expressed as an NTV2Channel.
+		@param[in]	outSDIInput		Receives the SDI input being used as a timecode source, expressed
+									as a zero-based index number.
 		@return		True if successful; otherwise false.
 	**/
-	AJA_VIRTUAL bool	EnableRP188Bypass		(const NTV2Channel inChannel);
+	AJA_VIRTUAL bool	GetRP188BypassSource (const NTV2Channel inSDIOutput, UWord & outSDIInput);
 
 	#if !defined(NTV2_DEPRECATE_14_0)
 		AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	DisableRP188Bypass	(const NTV2Channel inChannel, const bool inBypassDisabled))
@@ -2384,7 +2876,8 @@ public:
 	/**
 		@brief		Causes me to be notified when the given event/interrupt is triggered for the AJA device.
 		@param[in]	inEventCode		Specifies the INTERRUPT_ENUMS of interest.
-		@return		True if successful; otherwise false.
+		@return		True if successful; otherwise false, which can indicate communication with the device has been lost,
+					or on the Windows platform, there are no more event subscription handles available.
 		@see		CNTV2Card::UnsubscribeEvent, \ref fieldframeinterrupts
 	**/
 	AJA_VIRTUAL bool	SubscribeEvent (const INTERRUPT_ENUMS inEventCode);						//	GENERIC!
@@ -2392,9 +2885,8 @@ public:
 	/**
 		@brief		Causes me to be notified when an output vertical blanking interrupt is generated for the given output channel.
 		@param[in]	inChannel	Specifies the output channel of interest.
-		@return		True if successful; otherwise false.
-		@return		True if successful; otherwise false. A <b>false</b> result usually indicates communication has been
-					lost to the device, or on the Windows platform, there are no more event subscription handles available.
+		@return		True if successful; otherwise false, which can indicate communication with the device has been lost,
+					or on the Windows platform, there are no more event subscription handles available.
 		@note		<b>Windows Users:</b> AJA recommends calling this function on the same thread that will call
 					CNTV2Card::WaitForOutputVerticalInterrupt or CNTV2Card::WaitForOutputFieldID.
 		@see		CNTV2Card::UnsubscribeOutputVerticalEvent, CNTV2Card::SubscribeEvent, \ref fieldframeinterrupts
@@ -2405,7 +2897,8 @@ public:
 	/**
 		@brief		Causes me to be notified when an input vertical blanking interrupt occurs on the given input channel.
 		@param[in]	inChannel	Specifies the input channel of interest. Defaults to ::NTV2_CHANNEL1.
-		@return		True if successful; otherwise false.
+		@return		True if successful; otherwise false, which can indicate communication with the device has been lost,
+					or on the Windows platform, there are no more event subscription handles available.
 		@note		<b>Windows Users:</b> AJA recommends calling this function on the same thread that will call
 					CNTV2Card::WaitForInputVerticalInterrupt or CNTV2Card::WaitForInputFieldID.
 		@see		CNTV2Card::UnsubscribeInputVerticalEvent, CNTV2Card::SubscribeEvent, \ref fieldframeinterrupts
@@ -2958,12 +3451,12 @@ public:
 	**/
 
 	AJA_VIRTUAL bool	AutoCirculateInitForInput (	const NTV2Channel		inChannel,
-													const UByte				inFrameCount		= 7,
+													const UWord				inFrameCount		= 7,
 													const NTV2AudioSystem	inAudioSystem		= NTV2_AUDIOSYSTEM_INVALID,
 													const ULWord			inOptionFlags		= 0,
 													const UByte				inNumChannels		= 1,
-													const UByte				inStartFrameNumber	= 0,
-													const UByte				inEndFrameNumber	= 0);
+													const UWord				inStartFrameNumber	= 0,
+													const UWord				inEndFrameNumber	= 0);
 
 	/**
 		@brief		Prepares for subsequent AutoCirculate playout, designating a contiguous block of frame buffers on the device for use
@@ -3006,12 +3499,12 @@ public:
 	**/
 
 	AJA_VIRTUAL bool	AutoCirculateInitForOutput (const NTV2Channel		inChannel,
-													const UByte				inFrameCount		= 7,
+													const UWord				inFrameCount		= 7,
 													const NTV2AudioSystem	inAudioSystem		= NTV2_AUDIOSYSTEM_INVALID,
 													const ULWord			inOptionFlags		= 0,
 													const UByte				inNumChannels		= 1,
-													const UByte				inStartFrameNumber	= 0,
-													const UByte				inEndFrameNumber	= 0);
+													const UWord				inStartFrameNumber	= 0,
+													const UWord				inEndFrameNumber	= 0);
 
 	/**
 		@brief		Starts AutoCirculating the specified channel that was previously initialized by CNTV2Card::AutoCirculateInitForInput or
@@ -3184,6 +3677,25 @@ public:
 					via the AUTOCIRCULATE_TRANSFER::SetBuffers function(s). Bad addresses and/or sizes can cause crashes.
 		@note		Do not call this method with an ::NTV2Channel that's in the ::NTV2_AUTOCIRCULATE_DISABLED state.
 		@note		The calling thread will block until the transfer completes (or fails).
+		@note		For <b>capture</b>, there should be an available frame buffer on the device waiting to be transferred to the host.
+					Call CNTV2Card::AutoCirculateGetStatus, and check AUTOCIRCULATE_STATUS::HasAvailableInputFrame.
+		@note		For <b>playout</b>, there should be a free frame buffer on the device to accommodate the new frame being transferred.
+					Call CNTV2Card::AutoCirculateGetStatus, and check AUTOCIRCULATE_STATUS::CanAcceptMoreOutputFrames.
+		@note		For <b>playout</b> to IP devices running S2110 firmware, this method will automatically insert <b>VPID</b> and <b>RP188</b>
+					timecode packets into the outgoing RTP Anc streams, even if CNTV2Card::AutoCirculateInitForOutput was called
+					without ::AUTOCIRCULATE_WITH_ANC, or if Anc buffers weren't specified in the ::AUTOCIRCULATE_TRANSFER object.
+					This default behavior can be overridden or disabled:
+					-	To disable the default insertion of VPID, call CNTV2Card::SetSDIOutVPID, passing zeroes for the VPID values.
+					-	To override the default <b>VPID</b> packets, call CNTV2Card::AutoCirculateInitForOutput with ::AUTOCIRCULATE_WITH_ANC,
+						and insert your own <b>VPID</b> packet(s) into the ::AUTOCIRCULATE_TRANSFER object's Anc buffers.
+					-	To disable the default insertion of <b>RP188</b>, nullify (clear) the AUTOCIRCULATE_TRANSFER::acOutputTimeCodes
+						array storage.
+					-	To override the default <b>RP188</b> packet(s), be sure CNTV2Card::AutoCirculateInitForOutput was called with
+						::AUTOCIRCULATE_WITH_ANC, and insert your own <b>RP188</b> packets into the ::AUTOCIRCULATE_TRANSFER object's
+						Anc buffers.
+		@note		For <b>capture</b> from IP devices running S2110 firmware, this method will automatically extract <b>VPID</b> and
+					<b>RP188</b> timecode packets from the incoming RTP Anc streams, even if not ::AUTOCIRCULATE_WITH_ANC, or without
+					Anc buffers in the "transferInfo".
 		@see		CNTV2Card::DMAReadFrame, CNTV2Card::DMAWriteFrame, \ref aboutautocirculate
 	**/
 	AJA_VIRTUAL bool	AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULATE_TRANSFER & transferInfo);
@@ -3197,7 +3709,7 @@ public:
 		@return		True if successful; otherwise false.
 		@see		See \ref aboutautocirculate
 	**/
-	AJA_VIRTUAL bool	FindUnallocatedFrames (const UByte inFrameCount, LWord & outStartFrameNumber, LWord & outEndFrameNumber);
+	AJA_VIRTUAL bool	FindUnallocatedFrames (const UWord inFrameCount, LWord & outStartFrameNumber, LWord & outEndFrameNumber);
 	///@}
 
 	/**
@@ -3418,7 +3930,7 @@ public:
 		@return		True if successful; otherwise false.
 	*/
 	AJA_VIRTUAL bool		ReadSDIInVPID (const NTV2Channel inSDIInput, ULWord & outValueA, ULWord & outValueB);
-	
+
 	/**
 		@return		True if the SDI VPID link A input status is valid;  otherwise false.
 		@param[in]	inChannel		Specifies the SDI input connector of interest, specified as an ::NTV2Channel, a zero-based index value.
@@ -3728,8 +4240,10 @@ public:
 	AJA_VIRTUAL bool	SetSecondaryVideoFormat(NTV2VideoFormat inFormat);			//	RETAIL USE ONLY
 	AJA_VIRTUAL bool	GetSecondaryVideoFormat(NTV2VideoFormat & outFormat);		//	RETAIL USE ONLY
 
+	#if !defined(R2_DEPRECATE)
 	AJA_VIRTUAL bool	SetInputVideoSelect (NTV2InputVideoSelect inInputSelect);	//	RETAIL USE ONLY
 	AJA_VIRTUAL bool	GetInputVideoSelect(NTV2InputVideoSelect & outInputSelect);	//	RETAIL USE ONLY
+	#endif
 
 	//	--------------------------------------------
 	//	GetNTV2VideoFormat functions
@@ -3811,6 +4325,10 @@ public:
 		@note		The returned video format, if valid, will be an SD format for black burst and HD for tri-level.
 	**/
 	AJA_VIRTUAL NTV2VideoFormat GetReferenceVideoFormat (void);
+	
+	AJA_VIRTUAL NTV2FrameRate GetSDIInputRate (const NTV2Channel channel);
+	AJA_VIRTUAL NTV2FrameGeometry GetSDIInputGeometry (const NTV2Channel channel);
+	AJA_VIRTUAL bool GetSDIInputIsProgressive (const NTV2Channel channel);
 
 	AJA_VIRTUAL bool	GetSDIInput3GPresent (bool & outValue, const NTV2Channel channel);
 	#if !defined (NTV2_DEPRECATE)
@@ -4048,14 +4566,25 @@ public:
 	AJA_VIRTUAL bool	GetConnectedOutput (const NTV2InputCrosspointID inInputXpt, NTV2OutputCrosspointID & outOutputXpt);
 
 	/**
-		@brief		Answers with the currently connected NTV2InputCrosspointID for the given NTV2OutputCrosspointID.
+		@brief		Answers with a connected NTV2InputCrosspointID for the given NTV2OutputCrosspointID.
 		@param[in]	inOutputXpt		Specifies the output (signal source) of interest.
-		@param[out]	outInputXpt		Receives the input (signal sink) the given output is connected to (if connected),
+		@param[out]	outInputXpt		Receives one of the input (signal sink) the given output is connected to (if connected),
 									or NTV2_XptBlack if not connected.
 		@return		True if successful;  otherwise false.
 		@see		ntv2signalrouting, CNTV2Card::GetConnectedOutput, CNTV2Card::IsConnected
+		@bug		If the output is connected to more than one widget input, this function only returns the first one found.
 	**/
 	AJA_VIRTUAL bool	GetConnectedInput (const NTV2OutputCrosspointID inOutputXpt, NTV2InputCrosspointID & outInputXpt);
+
+	/**
+		@brief		Answers with all of the NTV2InputCrosspointIDs that are connected to the given NTV2OutputCrosspointID.
+		@param[in]	inOutputXpt		Specifies the output (signal source) of interest.
+		@param[out]	outInputXpts	Receives the ::NTV2InputCrosspointIDSet of the inputs (signal sinks) the given output
+									is connected to (if connected). If none are connected, the set will be empty.
+		@return		True if successful;  otherwise false.
+		@see		ntv2signalrouting, CNTV2Card::GetConnectedOutput, CNTV2Card::IsConnected
+	**/
+	AJA_VIRTUAL bool	GetConnectedInputs (const NTV2OutputCrosspointID inOutputXpt, NTV2InputCrosspointIDSet & outInputXpts);
 
 	/**
 		@brief		Connects the given widget signal input (sink) to the given widget signal output (source).
@@ -4213,8 +4742,10 @@ public:
 	AJA_VIRTUAL bool		ReadProcAmpC2CRAdjustment (ULWord & outValue);
 	AJA_VIRTUAL bool		ReadProcAmpOffsetYAdjustment (ULWord & outValue);
 
+	#if !defined(R2_DEPRECATE)
 	AJA_VIRTUAL bool		SetAnalogInputADCMode (const NTV2LSVideoADCMode inValue);
 	AJA_VIRTUAL bool		GetAnalogInputADCMode (NTV2LSVideoADCMode & outValue);
+	#endif
 	///@}
 
 
@@ -4647,12 +5178,12 @@ public:
 		@brief		Answers whether or not a valid analog LTC signal is being applied to the device's analog LTC input connector.
 		@param[out]	outIsPresent	Receives 'true' if a valid analog LTC signal is present at the analog LTC input connector;
 									otherwise 'false'.
+		@param[in]	inLTCInputNdx	Optionally specifies the LTC input connector. Defaults to 0 (LTCIn1).
 		@return		True if successful; otherwise false.
 		@note		Some devices share analog LTC input and reference input on one connector.
 					For these devices, this call should be preceded by a call to NTV2Card::SetLTCInputEnable(true).
 	**/
-	AJA_VIRTUAL bool		GetLTCInputPresent (bool & outIsPresent);
-	AJA_VIRTUAL inline bool	GetLTCInputPresent (bool * pOutValue)										{return pOutValue ? GetLTCInputPresent (*pOutValue) : false;}
+	AJA_VIRTUAL bool		GetLTCInputPresent (bool & outIsPresent, const UWord inLTCInputNdx = 0);
 
 	AJA_VIRTUAL bool		SetLTCOnReference (bool inNewValue);			//	DEPRECATE??
 	AJA_VIRTUAL bool		GetLTCOnReference (bool & outLTCIsOnReference);	//	DEPRECATE??
@@ -5287,6 +5818,16 @@ public:
 														const NTV2Channel inChannel = NTV2_CHANNEL_INVALID,
 														const NTV2Framesize inFrameSize = NTV2_FRAMESIZE_INVALID);
 
+	/**
+		@brief		Configures the Anc inserter IP specific params.
+		@return		True if successful; otherwise false.
+		@param[in]	inSDIOutput		Specifies the SDI output of interest (e.g., 0=SDIOut1, 1=SDIOut2, etc.).
+		@param[in]	ancChannel		Tells the IP packetizer which Anc inserter to use (4-7).
+		@param[in]	payloadID		Tells the IP packetizer what the RTP Payload Id is.
+		@param[in]	ssrc			Tells the IP packetizer what the RTP SSRC is.
+	**/
+	AJA_VIRTUAL bool	AncInsertSetIPParams (const UWord inSDIOutput, const UWord ancChannel, const ULWord payloadID, const ULWord ssrc);
+
 
 	/**
 		@brief		Initializes the given SDI input's Anc extractor for custom Anc packet detection and de-embedding.
@@ -5410,9 +5951,12 @@ public:
 
 	/**
 		@return		The default DIDs that the device Anc extractor filter is started with.
+		@param[in]	inHDAudio	Optionally specifies the desired audio packet filtering.
+								Specify true (the default) for the default HD audio packet DIDs;
+								otherwise false for the default SD audio packet DIDs.
 		@see		CNTV2Card::AncExtractSetFilterDIDs, CNTV2Card::AncExtractGetMaxNumFilterDIDs, \ref anccapture
 	**/
-	static NTV2DIDSet	AncExtractGetDefaultDIDs (void);
+	static NTV2DIDSet	AncExtractGetDefaultDIDs (const bool inHDAudio = true);
 
 
 #if !defined(NTV2_DEPRECATE_14_3)
@@ -5567,20 +6111,14 @@ public:
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(void							ConvertLinePixelFormat (UWord * unPackedBuffer, ULWord * packedBuffer, int numPixels));	///< Originally in CNTV2TestPattern.
 
 #ifdef AJAMac
-	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(void							DownloadRGBPicture (char * pSrc, ULWord srcWidthPixels, ULWord srcHeightPixels, ULWord srcRowBytes));	///< Originally in CNTV2TestPattern.
+//	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(void							DownloadRGBPicture (char * pSrc, ULWord srcWidthPixels, ULWord srcHeightPixels, ULWord srcRowBytes));	///< Originally in CNTV2TestPattern.
 #endif
-
-#if !defined(NTV2_DEPRECATE_13_0)
-	AJA_VIRTUAL NTV2_DEPRECATED_f(void							LocalLoadBarsTestPattern (UWord testPatternNumber, NTV2Standard standard));	///< @deprecated	This function is obsolete.
-#endif	//	!defined(NTV2_DEPRECATE_13_0)
 
 	protected:	//	CNTV2TestPattern Data
 		void													InitNTV2TestPattern (void);														///< Originally in CNTV2TestPattern.
 		AJA_VIRTUAL void										DownloadSegmentedTestPattern (SegmentTestPatternData * pTestPatternSegmentData);///< Originally in CNTV2TestPattern.
 		AJA_VIRTUAL void										AdjustFor2048x1080 (ULWord & numPixels, ULWord & linePitch);					///< Originally in CNTV2TestPattern.
-		AJA_VIRTUAL void										AdjustFor4096x2160 (ULWord & numPixels, ULWord & linePitch, ULWord & numLines);	///< Originally in CNTV2TestPattern.
-		AJA_VIRTUAL void										AdjustFor3840x2160 (ULWord & numPixels, ULWord & linePitch, ULWord & numLines);	///< Originally in CNTV2TestPattern.
-
+		
 		NTV2Channel				_channel;	//	Also in CNTV2ColorCorrection
 		TestPatternList			_testPatternList;
 		UWord					_signalMask;
@@ -5930,6 +6468,10 @@ public:
     AJA_VIRTUAL bool GetHDRData (HDRRegValues & outRegisterValues);
 	AJA_VIRTUAL bool SetHDMIHDRBT2020 (void);
 	AJA_VIRTUAL bool SetHDMIHDRDCIP3 (void);
+	
+	AJA_VIRTUAL bool SetVPIDTransferCharacteristics (const NTV2VPIDTransferCharacteristics inValue, const NTV2Channel inChannel);
+	AJA_VIRTUAL bool SetVPIDColorimetry (const NTV2VPIDColorimetry inValue, const NTV2Channel inChannel);
+	AJA_VIRTUAL bool SetVPIDVPIDLuminance (const NTV2VPIDLuminance inValue, const NTV2Channel inChannel);
 
 	///@}
 
@@ -5969,8 +6511,10 @@ public:
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetConversionMode						(NTV2ConversionMode * pOutConversionMode)		) {return pOutConversionMode ? GetConversionMode(*pOutConversionMode) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetLUTControlSelect						(NTV2LUTControlSelect * pOutLUTSelect)			) {return pOutLUTSelect ? GetLUTControlSelect(*pOutLUTSelect) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetSecondaryVideoFormat					(NTV2VideoFormat * pOutFormat)					) {return pOutFormat ? GetSecondaryVideoFormat(*pOutFormat) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
+	#if !defined(R2_DEPRECATE)
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetInputVideoSelect						(NTV2InputVideoSelect * pOutInputSelect)		) {return pOutInputSelect ? GetInputVideoSelect(*pOutInputSelect) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetAnalogInputADCMode					(NTV2LSVideoADCMode * pOutValue)				) {return pOutValue ? GetAnalogInputADCMode(*pOutValue) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
+	#endif
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetHDMIOut3DPresent						(bool * pOut3DPresent)							) {return pOut3DPresent ? GetHDMIOut3DPresent(*pOut3DPresent) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetHDMIOut3DMode						(NTV2HDMIOut3DMode * pOutValue)					) {return pOutValue ? GetHDMIOut3DMode(*pOutValue) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetHDMIInputRange						(NTV2HDMIRange * pOutValue)						) {return pOutValue ? GetHDMIInputRange(*pOutValue) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
@@ -6069,7 +6613,7 @@ public:
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetStandard								(NTV2Standard * pOutValue,								const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutValue ? GetStandard(*pOutValue, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetFrameRate							(NTV2FrameRate * pOutValue,								const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutValue ? GetFrameRate(*pOutValue, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetSmpte372								(ULWord * pOutValue,									const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutValue ? GetSmpte372(*pOutValue, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
-	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetQuadFrameEnable						(ULWord * pOutValue,									const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutValue ? GetQuadFrameEnable(*pOutValue, inChannel) : false;}		///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
+	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetQuadFrameEnable						(ULWord * pOutValue,									const NTV2Channel inChannel = NTV2_CHANNEL1)	) {bool enb(false); if (pOutValue && GetQuadFrameEnable(enb, inChannel)) {*pOutValue = enb?1:0; return true;}	return false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	IsProgressiveStandard					(bool * pOutIsProgressive,								const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutIsProgressive ? IsProgressiveStandard(*pOutIsProgressive, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	IsSDStandard							(bool * pOutIsStandardDef,								const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutIsStandardDef ? IsSDStandard(*pOutIsStandardDef, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	Get4kSquaresEnable						(bool * pOutIsEnabled,									const NTV2Channel inChannel)					) {return pOutIsEnabled ? Get4kSquaresEnable(*pOutIsEnabled, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
@@ -6086,6 +6630,7 @@ public:
     AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetHDMIInputStatusRegister				(ULWord * pOutValue,									const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutValue ? GetHDMIInputStatus(*pOutValue, inChannel) : false;}	///< @deprecated	Use CNTV2Card::GetHDMIInputStatus instead.
     AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetHDMIInputColor						(NTV2LHIHDMIColorSpace * pOutValue,						const NTV2Channel inChannel = NTV2_CHANNEL1)	) {return pOutValue ? GetHDMIInputColor(*pOutValue, inChannel) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	ReadOutputTimingControl					(ULWord * pOutValue,									const UWord inOutputSpigot = 0)					) {return pOutValue ? ReadOutputTimingControl(*pOutValue, inOutputSpigot) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
+	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetLTCInputPresent						(bool * pOutValue)																						) {return pOutValue ? GetLTCInputPresent (*pOutValue) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 
 	AJA_VIRTUAL        NTV2_DEPRECATED_f(bool	GetAudioOutputMonitorSource				(NTV2AudioMonitorSelect * pOutValue,					NTV2Channel * pOutChannel = NULL)				);	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 
@@ -6099,8 +6644,18 @@ protected:
 	AJA_VIRTUAL bool			IS_CHANNEL_INVALID (const NTV2Channel inChannel) const;
 	AJA_VIRTUAL bool			IS_OUTPUT_SPIGOT_INVALID (const UWord inOutputSpigot) const;
 	AJA_VIRTUAL bool			IS_INPUT_SPIGOT_INVALID (const UWord inInputSpigot) const;
-	AJA_VIRTUAL bool			S2110AddTimecodesToAncBuffers (const NTV2Channel inChannel, AUTOCIRCULATE_TRANSFER & inOutXferInfo);
 	AJA_VIRTUAL bool			SetWarmBootFirmwareReload(bool enable);
+
+	//	Seamless Anc Playout & Capture
+	//		For AutoCirculate Playout
+	AJA_VIRTUAL bool			S2110DeviceAncToXferBuffers (const NTV2Channel inChannel, AUTOCIRCULATE_TRANSFER & inOutXferInfo);
+	//		For Non-AutoCirculate Playout
+	AJA_VIRTUAL bool			S2110DeviceAncToBuffers (const NTV2Channel inChannel, NTV2_POINTER & ancF1, NTV2_POINTER & ancF2);
+	//		For AutoCirculate Capture
+	AJA_VIRTUAL bool			S2110DeviceAncFromXferBuffers (const NTV2Channel inChannel, AUTOCIRCULATE_TRANSFER & inOutXferInfo);
+	//		For Non-AutoCirculate Capture
+	AJA_VIRTUAL bool			S2110DeviceAncFromBuffers (const NTV2Channel inChannel, NTV2_POINTER & ancF1, NTV2_POINTER & ancF2);
+	AJA_VIRTUAL bool			WriteSDIInVPID (const NTV2Channel inChannel, const ULWord inValA, const ULWord inValB);
 
 private:
 	// frame buffer sizing helpers

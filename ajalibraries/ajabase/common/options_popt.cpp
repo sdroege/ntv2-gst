@@ -64,6 +64,8 @@ in this Software without prior written authorization from the X Consortium.
 
 #if defined(AJA_WINDOWS)
 
+#pragma warning (disable:4302)
+#pragma warning (disable:4311)
 #pragma warning (disable:4996)
 
 #include <BaseTsd.h>
@@ -113,6 +115,8 @@ inline char * stpcpy (char *dest, const char * src) {
 
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 
 /* End of platform differences section

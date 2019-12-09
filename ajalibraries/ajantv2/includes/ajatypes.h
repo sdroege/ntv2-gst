@@ -24,6 +24,9 @@
 //#define NTV2_DEPRECATE_14_3		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.3
 //#define NTV2_DEPRECATE_15_0		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.0
 //#define NTV2_DEPRECATE_15_1		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.1
+//#define NTV2_DEPRECATE_15_2		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.2
+//#define NTV2_DEPRECATE_15_3		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.3
+//#define NTV2_DEPRECATE_15_5		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.5
 
 #define NTV2_NUB_CLIENT_SUPPORT		//	If defined, includes nub client support;  otherwise, excludes it
 #define	AJA_VIRTUAL		virtual		//	Force use of virtual functions in CNTV2Card, etc.
@@ -61,6 +64,12 @@
 
 	#if __has_cpp_attribute(clang::fallthrough)
 		#define AJA_FALL_THRU	[[clang::fallthrough]]
+	#else
+		#define AJA_FALL_THRU
+	#endif
+#elif defined(__GNUC__)
+	#if __GNUC__ >= 5
+		#define AJA_FALL_THRU	[[gnu::fallthrough]];
 	#else
 		#define AJA_FALL_THRU
 	#endif
@@ -188,6 +197,7 @@
 	 * -JAC 3/6/2007 */
 	#ifdef __KERNEL__
 		#include "linux/version.h"
+		#include "linux/kernel.h"
 		#if defined (RHEL5) || (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,19))
 			#include "linux/types.h"
 		#else/* LINUX_VERSION_CODE */
@@ -358,6 +368,15 @@
 	#if !defined(NTV2_DEPRECATE_15_1)
 		#define NTV2_DEPRECATE_15_1		//	(future ready)
 	#endif
+	#if !defined(NTV2_DEPRECATE_15_2)
+		#define NTV2_DEPRECATE_15_2		//	(future ready)
+	#endif
+	#if !defined(NTV2_DEPRECATE_15_3)
+		#define NTV2_DEPRECATE_15_3		//	(future ready)
+	#endif
+	#if !defined(NTV2_DEPRECATE_15_5)
+		#define NTV2_DEPRECATE_15_5		//	(future ready)
+	#endif
 #endif
 
 
@@ -374,8 +393,8 @@
 				#define	NTV2_ASSERT(_expr_)		assert (_expr_)
 			#elif defined (AJALinux)
 				#define NTV2_ASSERT(_expr_)		do {if (#_expr_) break;														\
-													printk (KERN_EMERG "### NTV2_ASSERT '%s': %s: line %d: %s\n",			\
-															__FILE__, __func__, __LINE__, #_expr_); dump_stack(); BUG();	\
+													printk (KERN_EMERG "### NTV2_ASSERT '%s': %s: line %d: %s\n", \
+															__FILE__, __func__, __LINE__, #_expr_); dump_stack(); \
 												} while (0)
 			#else
 				#define	NTV2_ASSERT(_expr_)

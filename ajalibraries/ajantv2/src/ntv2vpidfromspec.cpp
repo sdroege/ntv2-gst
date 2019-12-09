@@ -32,6 +32,9 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	NTV2VideoFormat			outputFormat	= NTV2_FORMAT_UNKNOWN;
 	NTV2FrameBufferFormat	pixelFormat		= NTV2_FBF_INVALID;
 	NTV2FrameRate			frameRate		= NTV2_FRAMERATE_UNKNOWN;
+	NTV2VPIDTransferCharacteristics transferCharacteristics = NTV2_VPID_TC_SDR_TV;
+	NTV2VPIDColorimetry		colorimetry		= NTV2_VPID_Color_Rec709;
+	NTV2VPIDLuminance		luminance		= NTV2_VPID_Luminance_YCbCr;
 
 	bool	isProgressivePicture	= false;
 	bool	isProgressiveTransport	= false;
@@ -51,6 +54,11 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	uint8_t	byte2 = 0;
 	uint8_t	byte3 = 0;
 	uint8_t	byte4 = 0;
+	
+	uint8_t highBit = 0;
+	uint8_t lowBit = 0;
+
+	(void)enableBT2020;
 
 	if (! pOutVPID || ! pInVPIDSpec)
 		return false;
@@ -68,6 +76,9 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	is12G					= pInVPIDSpec->isOutput12G;
 	vpidChannel				= pInVPIDSpec->vpidChannel;
 	enableBT2020			= pInVPIDSpec->enableBT2020;
+	transferCharacteristics = pInVPIDSpec->transferCharacteristics;
+	colorimetry				= pInVPIDSpec->colorimetry;
+	luminance				= pInVPIDSpec->luminance;
 
 
 	if (! NTV2_IS_WIRE_FORMAT (outputFormat))
@@ -77,7 +88,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		return true;
 	}
 
-	if (is6G || is12G)
+	if (!NTV2_IS_QUAD_QUAD_FORMAT(outputFormat) && (is6G || is12G))
 		vpidChannel = VPIDChannel_1;
 
 	frameRate				= GetNTV2FrameRateFromVideoFormat			(outputFormat);
@@ -239,7 +250,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 					byte1 = (uint8_t) VPIDStandard_2160_QuadLink_3Ga;  //  0x97
 			}
 			else
-				byte1 = (uint8_t) VPIDStandard_1080;  //  0x85 (bogus if not 3G)
+				byte1 = (uint8_t) VPIDStandard_2160_DualLink;  //  0x96 (bogus if not 3G)
 		}
 		else
 		{
@@ -287,7 +298,39 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 			byte1 = isLevelB ? (uint8_t) VPIDStandard_1080_DualLink_3Gb : (uint8_t) VPIDStandard_1080_3Ga;		//	0x8A : 0x89
 		}
 		break;
-
+		
+	case NTV2_FORMAT_4x3840x2160p_2398:
+	case NTV2_FORMAT_4x3840x2160p_2400:
+	case NTV2_FORMAT_4x3840x2160p_2500:
+	case NTV2_FORMAT_4x3840x2160p_2997:
+	case NTV2_FORMAT_4x3840x2160p_3000:
+	case NTV2_FORMAT_4x4096x2160p_2398:
+	case NTV2_FORMAT_4x4096x2160p_2400:
+	case NTV2_FORMAT_4x4096x2160p_2500:
+	case NTV2_FORMAT_4x4096x2160p_2997:
+	case NTV2_FORMAT_4x4096x2160p_3000:
+		byte1 = isRGB ? (uint8_t)VPIDStandard_4320_QuadLink_12Gb : (uint8_t)VPIDStandard_4320_DualLink_12Gb;
+		break;
+		
+	case NTV2_FORMAT_4x3840x2160p_5000:
+	case NTV2_FORMAT_4x3840x2160p_5994:
+	case NTV2_FORMAT_4x3840x2160p_6000:
+	case NTV2_FORMAT_4x3840x2160p_5000_B:
+	case NTV2_FORMAT_4x3840x2160p_5994_B:
+	case NTV2_FORMAT_4x3840x2160p_6000_B:
+	case NTV2_FORMAT_4x4096x2160p_4795:
+	case NTV2_FORMAT_4x4096x2160p_4800:
+	case NTV2_FORMAT_4x4096x2160p_5000:
+	case NTV2_FORMAT_4x4096x2160p_5994:
+	case NTV2_FORMAT_4x4096x2160p_6000:
+	case NTV2_FORMAT_4x4096x2160p_4795_B:
+	case NTV2_FORMAT_4x4096x2160p_4800_B:
+	case NTV2_FORMAT_4x4096x2160p_5000_B:
+	case NTV2_FORMAT_4x4096x2160p_5994_B:
+	case NTV2_FORMAT_4x4096x2160p_6000_B:
+		byte1 = VPIDStandard_4320_QuadLink_12Gb;
+        break;
+            
 	default:
 		*pOutVPID = 0;
 		return true;
@@ -335,6 +378,8 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		return true;
 	}
 
+	byte2 |= (transferCharacteristics << 4);
+
 	//	Progressive picture
 	byte2 |= isProgressivePicture ? (1UL << 6) : 0;	//	0x40
 
@@ -353,6 +398,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	{
 		byte3 |= NTV2_IS_2K_1080_VIDEO_FORMAT (outputFormat) ? (1UL << 6) : 0;	//	0x40
 		byte3 |= NTV2_IS_4K_4096_VIDEO_FORMAT (outputFormat) ? (1UL << 6) : 0;	//	0x40
+        byte3 |= NTV2_IS_UHD2_FULL_VIDEO_FORMAT (outputFormat) ? (1UL << 6) : 0;    //    0x40
 	}
 
 	//	Aspect ratio
@@ -360,7 +406,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		 ! NTV2_IS_720P_VIDEO_FORMAT	(outputFormat) &&
 		 ! NTV2_IS_2K_1080_VIDEO_FORMAT	(outputFormat))
 	{
-		if (is3G && !isLevelB)
+		if (isLevelA)
 			byte3 |= (1UL << 7);			//	0x80
 		else
 			byte3 |= (1UL << 5);			//	0x20
@@ -369,23 +415,49 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	if ( NTV2_IS_4K_VIDEO_FORMAT (outputFormat) &&
 		 ! NTV2_IS_4K_4096_VIDEO_FORMAT (outputFormat))
 	{
-		if (is3G && !isLevelB && !isDualLink)
-			byte3 |= (1UL << 7);			//	0x80
-		else
-			byte3 |= (1UL << 5);			//	0x20
-	}
-
-	//Colorimetry
-	if ((NTV2_IS_4K_VIDEO_FORMAT(outputFormat) ||
-		NTV2_IS_HD_VIDEO_FORMAT(outputFormat)) &&
-		enableBT2020)
-	{
-		if ((!NTV2_IS_FBF_RGB(pixelFormat) &&
-			NTV2_IS_HIGH_NTV2FrameRate(frameRate)) ||
-			(NTV2_IS_FBF_RGB(pixelFormat) &&
-			!NTV2_IS_HIGH_NTV2FrameRate(frameRate)))
+		if(is6G || is12G || isLevelA)
 		{
-			byte3 |= (VPIDDynamicRange_400 << 4);
+			byte3 |= (1UL << 7);
+		}
+		else// if((!is3G) || isLevelB)
+		{
+			byte3 |= (1UL << 5);			//	0x20
+		}
+	}
+    
+    if ( NTV2_IS_UHD2_VIDEO_FORMAT (outputFormat))
+    {
+        if (isLevelB && isDualLink)
+            byte3 |= (1UL << 5);            //    0x20
+        else
+            byte3 |= (1UL << 7);            //    0x80
+    }
+	
+	//Colorimetry
+	highBit = (colorimetry&0x2)>>1;
+	lowBit = colorimetry&0x1;
+	if ( NTV2_IS_HD_VIDEO_FORMAT		(outputFormat) &&
+		 ! NTV2_IS_720P_VIDEO_FORMAT	(outputFormat))
+	{
+		if (isLevelA)
+			byte3 |= (highBit << 5);
+		else
+			byte3 |= (highBit << 7);
+		
+		byte3 |= (lowBit << 4);
+	}
+	
+	if ( NTV2_IS_4K_VIDEO_FORMAT (outputFormat) || NTV2_IS_QUAD_QUAD_FORMAT(outputFormat))
+	{
+		if(is6G || is12G || isLevelA)
+		{
+			byte3 |= (highBit << 5);
+			byte3 |= (lowBit << 4);
+		}
+		else// if ((!is3G) || isLevelB)
+		{
+			byte3 |= (highBit << 7);
+			byte3 |= (lowBit << 4);
 		}
 	}
 
@@ -416,6 +488,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		case NTV2_FBF_24BIT_RGB:
 		case NTV2_FBF_24BIT_BGR:
 		case NTV2_FBF_48BIT_RGB:
+		case NTV2_FBF_12BIT_RGB_PACKED:
 		case NTV2_FBF_10BIT_RGB_PACKED:
 			byte3 |= VPIDSampling_GBR_444;
 			break;
@@ -476,7 +549,15 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 		byte4 |= pInVPIDSpec->audioCarriage	<< 2;		//	0x0C
 	}
 
-	if (NTV2_IS_QUAD_FRAME_FORMAT(outputFormat))
+	//Luminance and color difference signal
+	if (NTV2_IS_QUAD_QUAD_FORMAT(outputFormat) ||
+		NTV2_IS_4K_VIDEO_FORMAT(outputFormat) ||
+		NTV2_IS_HD_VIDEO_FORMAT(outputFormat))
+	{
+		byte4 |= (luminance << 4);
+	}
+
+	if (NTV2_IS_QUAD_FRAME_FORMAT(outputFormat) && pInVPIDSpec->isTwoSampleInterleave)
 	{
 		byte4 |= VPIDAudio_Copied << 2;
 	}
@@ -484,43 +565,14 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	//	Bit depth
 	if(NTV2_IS_VALID_FBF(pixelFormat))
 	{
-		byte4 |= pixelFormat == NTV2_FBF_48BIT_RGB ? VPIDBitDepth_12 : VPIDBitDepth_10;
+		bool is12Bit = (pixelFormat == NTV2_FBF_48BIT_RGB || pixelFormat == NTV2_FBF_12BIT_RGB_PACKED) ? true : false;
+		byte4 |= is12Bit ? VPIDBitDepth_12 : VPIDBitDepth_10;
 	}
 	else
 	{
 		*pOutVPID = 0;
 		return true;
 	}
-//	switch (pixelFormat)
-//	{
-//	case NTV2_FBF_ARGB:
-//	case NTV2_FBF_RGBA:
-//	case NTV2_FBF_ABGR:
-//	case NTV2_FBF_8BIT_YCBCR:
-//	case NTV2_FBF_8BIT_YCBCR_YUY2:
-//	case NTV2_FBF_24BIT_BGR:
-//	case NTV2_FBF_24BIT_RGB:
-//		byte4 |= VPIDBitDepth_8;
-//		break;
-
-//	case NTV2_FBF_10BIT_YCBCR:
-//	case NTV2_FBF_10BIT_RGB:
-//	case NTV2_FBF_10BIT_DPX:
-//	case NTV2_FBF_10BIT_DPX_LE:
-//	case NTV2_FBF_10BIT_RGB_PACKED:
-//	case NTV2_FBF_10BIT_YCBCR_DPX:
-//	case NTV2_FBF_10BIT_ARGB:
-//		byte4 |= VPIDBitDepth_10;
-//		break;
-
-//	case NTV2_FBF_48BIT_RGB:
-//		byte4 |= VPIDBitDepth_12;
-//		break;
-
-//	default:
-//		*pOutVPID = 0;
-//		return true;
-//	}
 
 	//	Return VPID value to caller
 	*pOutVPID = ((ULWord)byte1 << 24) | ((ULWord)byte2 << 16) | ((ULWord)byte3 << 8) | byte4;
