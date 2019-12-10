@@ -16,6 +16,7 @@
 #include "ntv2signalrouter.h"
 #include "ntv2devicescanner.h"
 #include "ntv2rp188.h"
+#include "ntv2config2022.h"
 
 #include "ajabase/common/videotypes.h"
 #include "ajabase/common/circularbuffer.h"
@@ -146,7 +147,10 @@ class NTV2GstAV
                                 const NTV2TCIndex               inTimeCode      = NTV2_TCINDEX_SDI1,
                                 const bool                      inInfoData      = false,
 				const bool                      inCaptureTall   = false,
-                                const bool                      inPassthrough   = false);
+                                const bool                      inPassthrough   = false,
+                                // 0, 2022 or 2110
+                                const uint32_t                  inNetworkMode   = 0,
+                                const GstStructure             *inNetworkConfig = NULL);
 
         virtual AJAStatus InitAudio (const NTV2AudioSource inAudioSource, uint32_t *numAudioChannels);
 

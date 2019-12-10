@@ -74,6 +74,7 @@ struct _GstAjaVideoSrc
     GstAjaTimecodeMode          timecode_mode;
     gboolean                    output_cc;
     gint			last_cc_vbi_line;
+    GstStructure               *network_config;
 
     GstAjaSignalState signal_state;
     GstClockTime discont_time;

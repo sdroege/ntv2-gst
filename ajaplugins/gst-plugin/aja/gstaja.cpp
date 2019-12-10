@@ -475,10 +475,12 @@ gst_aja_video_input_mode_get_type (void)
     static gsize id = 0;
     static const GEnumValue modes[] =
     {
-        {GST_AJA_VIDEO_INPUT_MODE_SDI,     "sdi",              "SDI"},
-        {GST_AJA_VIDEO_INPUT_MODE_HDMI,    "hdmi",             "HDMI"},
-        {GST_AJA_VIDEO_INPUT_MODE_ANALOG,  "analog",           "Analog"},
-        {0,                                 NULL,               NULL}
+        {GST_AJA_VIDEO_INPUT_MODE_SDI,          "sdi",              "SDI"},
+        {GST_AJA_VIDEO_INPUT_MODE_HDMI,         "hdmi",             "HDMI"},
+        {GST_AJA_VIDEO_INPUT_MODE_ANALOG,       "analog",           "Analog"},
+        {GST_AJA_VIDEO_INPUT_MODE_SMPTE_2022,   "smpte-2022",       "SMPTE 2022"},
+        {GST_AJA_VIDEO_INPUT_MODE_SMPTE_2110,   "smpte-2110",       "SMPTE 2110"},
+        {0,                                     NULL,               NULL}
     };
     
     if (g_once_init_enter (&id))

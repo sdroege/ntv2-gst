@@ -41,6 +41,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_aja_video_src_debug);
 #define DEFAULT_SKIP_FIRST_TIME    (0)
 #define DEFAULT_TIMECODE_MODE	   (GST_AJA_TIMECODE_MODE_VITC1)
 #define DEFAULT_OUTPUT_CC	   (FALSE)
+#define DEFAULT_NETWORK_CONFIG     (NULL)
 
 enum
 {
@@ -56,7 +57,8 @@ enum
   PROP_SKIP_FIRST_TIME,
   PROP_TIMECODE_MODE,
   PROP_OUTPUT_CC,
-  PROP_SIGNAL
+  PROP_SIGNAL,
+  PROP_NETWORK_CONFIG,
 };
 
 typedef enum {
@@ -221,6 +223,11 @@ gst_aja_video_src_class_init (GstAjaVideoSrcClass * klass)
           "True if there is a valid input signal available",
           FALSE, (GParamFlags) (G_PARAM_READABLE | G_PARAM_STATIC_STRINGS)));
 
+  g_object_class_install_property (gobject_class, PROP_NETWORK_CONFIG,
+      g_param_spec_boxed ("network-config", "Network Configuration",
+          "Network Configuration for SMPTE 2022/2110 input mode",
+          GST_TYPE_STRUCTURE, (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+
   templ_caps = gst_aja_mode_get_template_caps_raw ();
   gst_element_class_add_pad_template (element_class,
       gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS, templ_caps));
@@ -248,6 +255,7 @@ gst_aja_video_src_init (GstAjaVideoSrc * src)
   src->output_stream_time = DEFAULT_OUTPUT_STREAM_TIME;
   src->skip_first_time = DEFAULT_SKIP_FIRST_TIME;
   src->timecode_mode = DEFAULT_TIMECODE_MODE;
+  src->network_config = DEFAULT_NETWORK_CONFIG;
 
   src->window_size = 64;
   src->times = g_new (GstClockTime, 4 * src->window_size);
@@ -353,6 +361,12 @@ gst_aja_video_src_set_property (GObject * object, guint property_id,
       src->output_cc = g_value_get_boolean (value);
       break;
 
+    case PROP_NETWORK_CONFIG:
+      if (src->network_config)
+        gst_structure_free (src->network_config);
+      src->network_config = (GstStructure *) g_value_dup_boxed (value);
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
@@ -415,6 +429,10 @@ gst_aja_video_src_get_property (GObject * object, guint property_id,
       g_value_set_boolean (value, src->signal_state == SIGNAL_STATE_AVAILABLE);
       break;
 
+    case PROP_NETWORK_CONFIG:
+      g_value_set_boxed (value, src->network_config);
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
@@ -433,6 +451,9 @@ gst_aja_video_src_finalize (GObject * object)
 
   g_free (src->device_identifier);
   src->device_identifier = NULL;
+
+  if (src->network_config)
+    gst_structure_free (src->network_config);
 
   g_free (src->times);
   src->times = NULL;
@@ -550,6 +571,7 @@ gst_aja_video_src_open (GstAjaVideoSrc * src)
   const GstAjaMode *mode;
   NTV2InputSource input_source;
   NTV2TCIndex timecode_mode;
+  uint32_t network_mode = 0;
 
   GST_DEBUG_OBJECT (src, "open");
 
@@ -588,6 +610,14 @@ gst_aja_video_src_open (GstAjaVideoSrc * src)
       input_source = NTV2_INPUTSOURCE_ANALOG1;
       break;
 
+    case GST_AJA_VIDEO_INPUT_MODE_SMPTE_2022:
+      input_source = NTV2_INPUTSOURCE_SDI1;
+      network_mode = 2022;
+      break;
+    case GST_AJA_VIDEO_INPUT_MODE_SMPTE_2110:
+      input_source = NTV2_INPUTSOURCE_SDI1;
+      network_mode = 2110;
+      break;
     default:
       g_assert_not_reached ();
       break;
@@ -627,7 +657,7 @@ gst_aja_video_src_open (GstAjaVideoSrc * src)
       false,
       false,
       src->sdi_input_mode, timecode_mode, false, src->output_cc ? true : false,
-      src->passthrough ? true : false);
+      src->passthrough ? true : false, network_mode, src->network_config);
   if (!AJA_SUCCESS (status)) {
     GST_ERROR_OBJECT (src, "Failed to initialize input");
     g_mutex_unlock (&src->input->lock);
