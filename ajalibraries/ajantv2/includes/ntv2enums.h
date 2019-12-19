@@ -17,9 +17,9 @@
 **/
 #define AJA_NTV2_SDK_VERSION_MAJOR		15			///< @brief	The SDK major version number, an unsigned decimal integer.
 #define AJA_NTV2_SDK_VERSION_MINOR		5			///< @brief	The SDK minor version number, an unsigned decimal integer.
-#define AJA_NTV2_SDK_VERSION_POINT		0			///< @brief	The SDK "point" release version, an unsigned decimal integer.
-#define AJA_NTV2_SDK_BUILD_NUMBER		4			///< @brief	The SDK build number, an unsigned decimal integer.
-#define AJA_NTV2_SDK_BUILD_DATETIME		"Thu Nov 14 18:20:30 UTC 2019"		///< @brief	The date and time the SDK was built, in this format: "MM/DD/YYYY +8:hh:mm:ss"
+#define AJA_NTV2_SDK_VERSION_POINT		1			///< @brief	The SDK "point" release version, an unsigned decimal integer.
+#define AJA_NTV2_SDK_BUILD_NUMBER		1			///< @brief	The SDK build number, an unsigned decimal integer.
+#define AJA_NTV2_SDK_BUILD_DATETIME		"Wed Dec 11 01:22:37 UTC 2019"		///< @brief	The date and time the SDK was built, in this format: "MM/DD/YYYY +8:hh:mm:ss"
 #define AJA_NTV2_SDK_BUILD_TYPE			""			///< @brief	The SDK build type, where "a"=alpha, "b"=beta, "d"=development, ""=release.
 
 #define	AJA_NTV2_SDK_VERSION	((AJA_NTV2_SDK_VERSION_MAJOR << 24) | (AJA_NTV2_SDK_VERSION_MINOR << 16) | (AJA_NTV2_SDK_VERSION_POINT << 8) | (AJA_NTV2_SDK_BUILD_NUMBER))
@@ -292,6 +292,7 @@ typedef NTV2FrameBufferFormat	NTV2PixelFormat;	///< @brief	An alias for NTV2Fram
                                             ||	(__fbf__) == NTV2_FBF_24BIT_BGR					\
                                             ||	(__fbf__) == NTV2_FBF_10BIT_DPX_LE				\
                                             ||	(__fbf__) == NTV2_FBF_48BIT_RGB					\
+                                            ||	(__fbf__) == NTV2_FBF_12BIT_RGB_PACKED			\
                                             ||	(__fbf__) == NTV2_FBF_10BIT_RGB_PACKED			\
                                             ||	(__fbf__) == NTV2_FBF_10BIT_ARGB				\
                                             ||	(__fbf__) == NTV2_FBF_16BIT_ARGB				\
