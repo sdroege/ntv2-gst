@@ -203,6 +203,8 @@ AJAStatus
 
   // First do IP configuration if requested
   if (inNetworkConfig && inNetworkMode != 0) {
+    gboolean multi_2si = FALSE;
+
     if (!mDevice.IsIPDevice()) {
       GST_ERROR ("IP modes require an IP-capable device");
       return AJA_STATUS_FAIL;
@@ -212,6 +214,8 @@ AJAStatus
       GST_ERROR ("Only SMPTE 2022 and SMPTE 2110 network modes supported");
       return AJA_STATUS_FAIL;
     }
+
+    gst_structure_get_boolean (inNetworkConfig, "multi-2si", &multi_2si);
 
     if (inNetworkMode == 2022) {
       gint num;
@@ -317,7 +321,7 @@ AJAStatus
         GST_ERROR ("Failed to enable 2022 RX configuration");
         return AJA_STATUS_FAIL;
       }
-    } else if (inNetworkMode == 2110) {
+    } else if (inNetworkMode == 2110 && !multi_2si) {
       gint num;
       gboolean b;
       eSFP sfp;
@@ -365,8 +369,9 @@ AJAStatus
         return AJA_STATUS_FAIL;
       }
 
-
       rx_2110Config rxChannelConfig;
+
+      rxChannelConfig.init();
 
       if ((ip_addr = gst_structure_get_string (inNetworkConfig, "video-source-ip"))) {
         rxChannelConfig.sourceIP = ip_addr;
@@ -408,6 +413,214 @@ AJAStatus
 
       if (!config.SetRxStreamEnable (sfp, NTV2_VIDEO1_STREAM, true)) {
         GST_ERROR ("Failed to enable 2110 video RX configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      rxChannelConfig.init();
+
+      if ((ip_addr = gst_structure_get_string (inNetworkConfig, "audio-source-ip"))) {
+        rxChannelConfig.sourceIP = ip_addr;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_SOURCE_IP;
+      }
+      if (gst_structure_get_int (inNetworkConfig, "audio-source-port", &num)) {
+        rxChannelConfig.sourcePort = num;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_SOURCE_PORT;
+      }
+      if ((ip_addr = gst_structure_get_string (inNetworkConfig, "audio-destination-ip"))) {
+        rxChannelConfig.destIP = ip_addr;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_DEST_IP;
+      }
+      if (gst_structure_get_int (inNetworkConfig, "audio-destination-port", &num)) {
+        rxChannelConfig.destPort = num;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_DEST_PORT;
+      }
+      if (gst_structure_get_int (inNetworkConfig, "audio-vlan", &num)) {
+        rxChannelConfig.vlan = num;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_VLAN;
+      }
+      if (gst_structure_get_int (inNetworkConfig, "audio-ssrc", &num)) {
+        rxChannelConfig.ssrc = num;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_SSRC;
+      }
+      if (gst_structure_get_int (inNetworkConfig, "audio-payload-type", &num)) {
+        rxChannelConfig.payloadType = num;
+        rxChannelConfig.rxMatch |= RX_MATCH_2110_PAYLOAD;
+      }
+
+      if (gst_structure_get_int (inNetworkConfig, "audio-num-channels", &num)) {
+        rxChannelConfig.numAudioChannels = num;
+      } else {
+        GST_ERROR ("Requires number of audio channels for audio stream");
+        return AJA_STATUS_FAIL;
+      }
+
+      if (gst_structure_get_int (inNetworkConfig, "audio-pkt-interval", &num)) {
+        if (num == 125) {
+          rxChannelConfig.audioPktInterval = PACKET_INTERVAL_125uS;
+        } else if (num == 1000) {
+          rxChannelConfig.audioPktInterval = PACKET_INTERVAL_1mS;
+        } else {
+        }
+      } else {
+        GST_ERROR ("Requires audio packet interval for audio stream");
+        return AJA_STATUS_FAIL;
+      }
+
+      if (!config.SetRxStreamConfiguration (sfp, NTV2_AUDIO1_STREAM, rxChannelConfig)) {
+        GST_ERROR ("Failed to set 2110 audio RX configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      if (!config.SetRxStreamEnable (sfp, NTV2_AUDIO1_STREAM, true)) {
+        GST_ERROR ("Failed to enable 2110 audio RX configuration");
+        return AJA_STATUS_FAIL;
+      }
+    } else if (inNetworkMode == 2110 && multi_2si) {
+      gint num;
+      gboolean b;
+      const gchar *ip_addr, *netmask, *gateway;
+      guint i;
+      eSFP sfp;
+
+      CNTV2Config2110 config (mDevice);
+
+      if (gst_structure_get_int (inNetworkConfig, "ptp-domain", &num)) {
+        config.SetPTPDomain (num);
+      }
+
+      // FIXME?
+      mDevice.SetReference(NTV2_REFERENCE_SFP1_PTP);
+
+      b = FALSE;
+      gst_structure_get_boolean (inNetworkConfig, "audio-combine", &b);
+      config.SetAudioCombineEnable(b);
+
+      ip_addr = gst_structure_get_string (inNetworkConfig, "ip-addr-1");
+      netmask = gst_structure_get_string (inNetworkConfig, "netmask-1");
+      gateway = gst_structure_get_string (inNetworkConfig, "gateway-1");
+      if (!ip_addr || !netmask || !gateway) {
+        GST_ERROR ("Incomplete network configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      if (!config.SetNetworkConfiguration(SFP_1, ip_addr, netmask, gateway)) {
+        GST_ERROR ("Failed to configure network configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      ip_addr = gst_structure_get_string (inNetworkConfig, "ip-addr-2");
+      netmask = gst_structure_get_string (inNetworkConfig, "netmask-2");
+      gateway = gst_structure_get_string (inNetworkConfig, "gateway-2");
+      if (!ip_addr || !netmask || !gateway) {
+        GST_ERROR ("Incomplete network configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      if (!config.SetNetworkConfiguration(SFP_2, ip_addr, netmask, gateway)) {
+        GST_ERROR ("Failed to configure network configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      rx_2110Config rxChannelConfig;
+      for (i = 0; i < 4; i++) {
+        gchar *s;
+
+        rxChannelConfig.init();
+
+        s = g_strdup_printf ("video-sfp-%d", i + 1);
+        if (!gst_structure_get_int (inNetworkConfig, s, &num)) {
+          GST_ERROR ("Incomplete network configuration");
+          return AJA_STATUS_FAIL;
+        }
+        g_free (s);
+
+        if (num == 1) {
+          sfp = SFP_1;
+        } else if (num == 2) {
+          sfp = SFP_2;
+        } else {
+          GST_ERROR ("Incomplete network configuration");
+          return AJA_STATUS_FAIL;
+        }
+
+        s = g_strdup_printf ("video-source-ip-%d", i + 1);
+        if ((ip_addr = gst_structure_get_string (inNetworkConfig, s))) {
+          rxChannelConfig.sourceIP = ip_addr;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_SOURCE_IP;
+        }
+        g_free (s);
+
+        s = g_strdup_printf ("video-source-port-%d", i + 1);
+        if (gst_structure_get_int (inNetworkConfig, s, &num)) {
+          rxChannelConfig.sourcePort = num;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_SOURCE_PORT;
+        }
+        g_free (s);
+
+        s = g_strdup_printf ("video-destination-ip-%d", i + 1);
+        if ((ip_addr = gst_structure_get_string (inNetworkConfig, s))) {
+          rxChannelConfig.destIP = ip_addr;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_DEST_IP;
+        }
+        g_free (s);
+
+        s = g_strdup_printf ("video-destination-port-%d", i + 1);
+        if (gst_structure_get_int (inNetworkConfig, s, &num)) {
+          rxChannelConfig.destPort = num;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_DEST_PORT;
+        }
+        g_free (s);
+
+        s = g_strdup_printf ("video-vlan-%d", i + 1);
+        if (gst_structure_get_int (inNetworkConfig, s, &num)) {
+          rxChannelConfig.vlan = num;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_VLAN;
+        }
+        g_free (s);
+
+        s = g_strdup_printf ("video-ssrc-%d", i + 1);
+        if (gst_structure_get_int (inNetworkConfig, s, &num)) {
+          rxChannelConfig.ssrc = num;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_SSRC;
+        }
+        g_free (s);
+
+        s = g_strdup_printf ("video-payload-type-%d", i + 1);
+        if (gst_structure_get_int (inNetworkConfig, s, &num)) {
+          rxChannelConfig.payloadType = num;
+          rxChannelConfig.rxMatch |= RX_MATCH_2110_PAYLOAD;
+        }
+        g_free (s);
+
+        // FIXME?
+        rxChannelConfig.videoFormat = inVideoFormat;
+        // FIXME: Only support 4:2:2 sampling for now
+        rxChannelConfig.videoSamples = VPIDSampling_YUV_422;
+
+        if (!config.SetRxStreamConfiguration (sfp, (NTV2Stream) (NTV2_VIDEO1_STREAM + i), rxChannelConfig)) {
+          GST_ERROR ("Failed to set 2110 video RX configuration %d", i);
+          return AJA_STATUS_FAIL;
+        }
+
+        if (!config.SetRxStreamEnable (sfp, (NTV2Stream) (NTV2_VIDEO1_STREAM + i), true)) {
+          GST_ERROR ("Failed to enable 2110 video RX configuration %d", i);
+          return AJA_STATUS_FAIL;
+        }
+      }
+
+      rxChannelConfig.init();
+
+      if (!gst_structure_get_int (inNetworkConfig, "audio-sfp", &num)) {
+        GST_ERROR ("Incomplete network configuration");
+        return AJA_STATUS_FAIL;
+      }
+
+      if (num == 1) {
+        sfp = SFP_1;
+      } else if (num == 2) {
+        sfp = SFP_2;
+      } else {
+        GST_ERROR ("Incomplete network configuration");
         return AJA_STATUS_FAIL;
       }
 
