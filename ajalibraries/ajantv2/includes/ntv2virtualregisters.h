@@ -1,7 +1,7 @@
 /**
 	@file		ntv2virtualregisters.h
-	@copyright	Copyright (C) 2011-2019 AJA Video Systems, Inc.All rights reserved.
 	@brief		Declares enums for virtual registers used in all platform drivers and the SDK.
+	@copyright	(C) 2011-2020 AJA Video Systems, Inc.All rights reserved.
 **/
 
 #ifndef NTV2VIRTUALREGISTERS_H
@@ -41,6 +41,7 @@ typedef enum
 	kVRegAnalogOutputSelect					= VIRTUALREG_START+24,		// Primary, Secondary
 	kVRegAnalogOutputType					= VIRTUALREG_START+25,		// Analog output type
 	kVRegAnalogOutBlackLevel				= VIRTUALREG_START+26,		// Analog output black level
+	kVRegInputSelectUser					= VIRTUALREG_START+27,		// Input 1, Input 2, DualLink, set by user
 
 	// COMMON_VIRTUAL_REGS_MISC
 	kVRegVideoOutPauseMode					= VIRTUALREG_START+40,		// whether we pause on a frame or a field
@@ -185,6 +186,7 @@ typedef enum
 	kVRegInputChangedCount					= VIRTUALREG_START+191,
 	kVReg8kOutputTransportSelection			= VIRTUALREG_START+192,
 	kVRegAnalogIoSelect						= VIRTUALREG_START+193,
+
 
 	// COMMON_VIRTUAL_REGS_PROCAMP_CONTROLS
 	kVRegProcAmpSDRegsInitialized			= VIRTUALREG_START+200,
@@ -538,12 +540,32 @@ typedef enum
 	kVRegHdrMasterLumMinCh1					= VIRTUALREG_START+569,
 	kVRegHdrMaxCLLCh1						= VIRTUALREG_START+570,
 	kVRegHdrMaxFALLCh1						= VIRTUALREG_START+571,
-	
 	kVRegHDROverrideState					= VIRTUALREG_START+572,
-
+	
 	kVRegPCIMaxReadRequestSize				= VIRTUALREG_START+573,
 
-	kVRegLastAJA							= VIRTUALREG_START+574,		///< @brief	The last AJA virtual register slot
+	kVRegUserInColorimetry					= VIRTUALREG_START+574,
+	kVRegUserInTransfer						= VIRTUALREG_START+575,
+	kVRegUserInLuminance					= VIRTUALREG_START+576,
+	
+	kVRegHdrInColorimetryCh1				= VIRTUALREG_START+577,
+	kVRegHdrInTransferCh1					= VIRTUALREG_START+578,
+	kVRegHdrInLuminanceCh1					= VIRTUALREG_START+579,
+	kVRegHdrInGreenXCh1						= VIRTUALREG_START+580,
+	kVRegHdrInGreenYCh1						= VIRTUALREG_START+581,
+	kVRegHdrInBlueXCh1						= VIRTUALREG_START+582,
+	kVRegHdrInBlueYCh1						= VIRTUALREG_START+583,
+	kVRegHdrInRedXCh1						= VIRTUALREG_START+584,
+	kVRegHdrInRedYCh1						= VIRTUALREG_START+585,
+	kVRegHdrInWhiteXCh1						= VIRTUALREG_START+586,
+	kVRegHdrInWhiteYCh1						= VIRTUALREG_START+587,
+	kVRegHdrInMasterLumMaxCh1				= VIRTUALREG_START+588,
+	kVRegHdrInMasterLumMinCh1				= VIRTUALREG_START+589,
+	kVRegHdrInMaxCLLCh1						= VIRTUALREG_START+590,
+	kVRegHdrInMaxFALLCh1					= VIRTUALREG_START+591,
+	kVRegHDRInOverrideState					= VIRTUALREG_START+592,
+
+	kVRegLastAJA							= VIRTUALREG_START+593,		///< @brief	The last AJA virtual register slot
 	kVRegFirstOEM							= kVRegLastAJA + 1,			///< @brief	The first virtual register slot available for general use
 	kVRegLast								= VIRTUALREG_START + MAX_NUM_VIRTUAL_REGISTERS - 1	///< @brief	Last virtual register slot
 

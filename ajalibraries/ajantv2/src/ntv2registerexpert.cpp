@@ -1,7 +1,7 @@
 /**
 	@file		ntv2registerexpert.cpp
 	@brief		Implements the CNTV2RegisterExpert class.
-	@copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2016-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
  **/
 #include "ntv2registerexpert.h"
 #include "ntv2devicefeatures.h"
@@ -243,15 +243,26 @@ private:
 		DefineRegister (kRegCh1ControlExtended,	"",	mDecodeChannelControlExt,	READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
 		DefineRegister (kRegCh2ControlExtended,	"",	mDecodeChannelControlExt,	READWRITE,	kRegClass_NULL,		kRegClass_Channel2,	kRegClass_NULL);
 
+		DefineRegister (kRegCanDoStatus,		"",	mDecodeCanDoStatus,			READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 		DefineRegister (kRegBitfileDate,		"",	mDecodeBitfileDateTime,		READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 		DefineRegister (kRegBitfileTime,		"",	mDecodeBitfileDateTime,		READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 		DefineRegister (kRegCPLDVersion,		"",	mDecodeCPLDVersion,			READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
 
-		DefineRegister (kRegStatus,				"",	mDecodeStatusReg,			READWRITE,	kRegClass_DMA,		kRegClass_Channel1,	kRegClass_Channel2);
+		DefineRegister (kRegVidIntControl,		"",	mDecodeVidIntControl,		READWRITE,	kRegClass_Interrupt,		kRegClass_Channel1,	kRegClass_Channel2);
+			DefineRegClass (kRegVidIntControl, kRegClass_Channel3);
+			DefineRegClass (kRegVidIntControl, kRegClass_Channel4);
+		DefineRegister (kRegStatus,				"",	mDecodeStatusReg,			READWRITE,	kRegClass_Interrupt,		kRegClass_Channel1,	kRegClass_Channel2);
 			DefineRegClass (kRegStatus, kRegClass_Timecode);
-		DefineRegister (kRegStatus2,			"",	mDecodeStatus2Reg,			READWRITE,	kRegClass_DMA,		kRegClass_Channel3,	kRegClass_Channel4);
-		DefineRegClass (kRegStatus2, kRegClass_Channel5);	DefineRegClass (kRegStatus2, kRegClass_Channel6);	DefineRegClass (kRegStatus2, kRegClass_Channel7);	DefineRegClass (kRegStatus2, kRegClass_Channel8);
-		DefineRegister (kRegInputStatus,		"",	mDecodeInputStatusReg,		READONLY,	kRegClass_Input,	kRegClass_Channel1,	kRegClass_Channel2);	DefineRegClass (kRegInputStatus, kRegClass_Audio);
+		DefineRegister (kRegVidIntControl2,		"",	mDecodeVidIntControl2,		READWRITE,	kRegClass_Interrupt,		kRegClass_Channel5,	kRegClass_Channel5);
+			DefineRegClass (kRegVidIntControl2, kRegClass_Channel7);
+			DefineRegClass (kRegVidIntControl2, kRegClass_Channel8);
+		DefineRegister (kRegStatus2,			"",	mDecodeStatus2Reg,			READWRITE,	kRegClass_Interrupt,		kRegClass_Channel3,	kRegClass_Channel4);
+			DefineRegClass (kRegStatus2, kRegClass_Channel5);
+			DefineRegClass (kRegStatus2, kRegClass_Channel6);
+			DefineRegClass (kRegStatus2, kRegClass_Channel7);
+			DefineRegClass (kRegStatus2, kRegClass_Channel8);
+		DefineRegister (kRegInputStatus,		"",	mDecodeInputStatusReg,		READONLY,	kRegClass_Input,	kRegClass_Channel1,	kRegClass_Channel2);
+			DefineRegClass (kRegInputStatus, kRegClass_Audio);
 		DefineRegister (kRegSDIInput3GStatus,	"",	mDecodeSDIInputStatusReg,	READWRITE,	kRegClass_Input,	kRegClass_Channel1,	kRegClass_Channel2);
 		DefineRegister (kRegSDIInput3GStatus2,	"",	mDecodeSDIInputStatusReg,	READWRITE,	kRegClass_Input,	kRegClass_Channel3,	kRegClass_Channel4);
 		DefineRegister (kRegSDI5678Input3GStatus,"",mDecodeSDIInputStatusReg,	READWRITE,	kRegClass_Input,	kRegClass_Channel5,	kRegClass_Channel6);
@@ -263,9 +274,12 @@ private:
 
 		DefineRegister (kRegFS1ReferenceSelect,	"", mDecodeFS1RefSelectReg,		READWRITE,	kRegClass_Input,	kRegClass_Timecode, kRegClass_NULL);
 		DefineRegister (kRegSysmonVccIntDieTemp,"",	mDecodeSysmonVccIntDieTemp,	READONLY,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
-		DefineRegister (kRegSDITransmitControl,	"",	mDecodeSDITransmitCtrl,		READWRITE,	kRegClass_Channel1,	kRegClass_Channel2,	kRegClass_Channel3);	DefineRegClass (kRegSDITransmitControl, kRegClass_Channel4);
-			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel5);	DefineRegClass (kRegSDITransmitControl, kRegClass_Channel6);
-			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel7);	DefineRegClass (kRegSDITransmitControl, kRegClass_Channel8);
+		DefineRegister (kRegSDITransmitControl,	"",	mDecodeSDITransmitCtrl,		READWRITE,	kRegClass_Channel1,	kRegClass_Channel2,	kRegClass_Channel3);
+			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel4);
+			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel5);
+			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel6);
+			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel7);
+			DefineRegClass (kRegSDITransmitControl, kRegClass_Channel8);
 		DefineRegister (kRegCh1InputFrame,		"",	mDefaultRegDecoder,			READWRITE,	kRegClass_NULL,		kRegClass_Channel1,	kRegClass_NULL);
 
 		DefineRegister (kRegSDIWatchdogControlStatus,"", mDecodeRelayCtrlStat,	READWRITE,	kRegClass_NULL,		kRegClass_NULL,		kRegClass_NULL);
@@ -422,12 +436,14 @@ private:
 		DefineRegister (kRegAud7InputLastAddr,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Audio,	kRegClass_Channel7,	kRegClass_Input);
 		DefineRegister (kRegAud8InputLastAddr,	"",	mDefaultRegDecoder,			READWRITE,	kRegClass_Audio,	kRegClass_Channel8,	kRegClass_Input);
 		DefineRegister (kRegPCMControl4321,		"",	mDecodePCMControlReg,		READWRITE,	kRegClass_Audio,	kRegClass_Channel1,	kRegClass_Channel2);
+			DefineRegClass (kRegPCMControl4321, kRegClass_Channel3);
+			DefineRegClass (kRegPCMControl4321, kRegClass_Channel4);
 		DefineRegister (kRegPCMControl8765,		"",	mDecodePCMControlReg,		READWRITE,	kRegClass_Audio,	kRegClass_Channel5,	kRegClass_Channel6);
-		DefineRegClass (kRegPCMControl4321, kRegClass_Channel3);	DefineRegClass (kRegPCMControl4321, kRegClass_Channel4);
-		DefineRegClass (kRegPCMControl8765, kRegClass_Channel7);	DefineRegClass (kRegPCMControl8765, kRegClass_Channel8);
+			DefineRegClass (kRegPCMControl8765, kRegClass_Channel7);
+			DefineRegClass (kRegPCMControl8765, kRegClass_Channel8);
 		DefineRegister (kRegAud1Counter,		"",	mDefaultRegDecoder,			READONLY,	kRegClass_Audio,	kRegClass_NULL,		kRegClass_NULL);
 		DefineRegister (kRegAudioOutputSourceMap,"",mDecodeAudOutputSrcMap,		READWRITE,	kRegClass_Audio,	kRegClass_Output,	kRegClass_AES);
-		DefineRegClass (kRegAudioOutputSourceMap, kRegClass_HDMI);
+			DefineRegClass (kRegAudioOutputSourceMap, kRegClass_HDMI);
 
 		DefineRegister (kRegAudioMixerInputSelects,				"kRegAudioMixerInputSelects",				mAudMxrInputSelDecoder,	READWRITE,	kRegClass_Audio,	kRegClass_NULL,	kRegClass_NULL);
 		DefineRegister (kRegAudioMixerMainGain,					"kRegAudioMixerMainGain",					mAudMxrGainDecoder,		READWRITE,	kRegClass_Audio,	kRegClass_NULL,	kRegClass_NULL);
@@ -526,6 +542,25 @@ private:
 		DefineXptReg	(kRegXptSelectGroup33,	NTV2_Xpt425Mux3AInput,			NTV2_Xpt425Mux3BInput,			NTV2_Xpt425Mux4AInput,			NTV2_Xpt425Mux4BInput);
 		DefineXptReg	(kRegXptSelectGroup34,	NTV2_XptFrameBuffer1BInput,		NTV2_XptFrameBuffer2BInput,		NTV2_XptFrameBuffer3BInput,		NTV2_XptFrameBuffer4BInput);
 		DefineXptReg	(kRegXptSelectGroup35,	NTV2_XptFrameBuffer5BInput,		NTV2_XptFrameBuffer6BInput,		NTV2_XptFrameBuffer7BInput,		NTV2_XptFrameBuffer8BInput);
+
+		//	Expose the CanConnect ROM registers:
+		for (ULWord regNum(kRegFirstValidXptROMRegister);  regNum < ULWord(kRegLastValidXptROMRegister);  regNum++)
+		{	ostringstream regName;	//	used to synthesize reg name
+			const ULWord rawInputXpt	((regNum - ULWord(kRegFirstValidXptROMRegister)) / 4UL + ULWord(NTV2_FIRST_INPUT_CROSSPOINT));
+			const ULWord ndx			((regNum - ULWord(kRegFirstValidXptROMRegister)) % 4UL);
+			const NTV2InputXptID inputXpt	(static_cast<NTV2InputXptID>(rawInputXpt));
+			if (NTV2_IS_VALID_InputCrosspointID(inputXpt))
+			{
+				string inputXptEnumName	(::NTV2InputCrosspointIDToString(inputXpt,false));	//	e.g. "NTV2_XptFrameBuffer1Input"
+				if (inputXptEnumName.empty())
+					regName << "kRegXptValid" << DEC0N(rawInputXpt,3) << "N" << DEC(ndx);
+				else
+					regName << "kRegXptValid" << aja::replace(inputXptEnumName, "NTV2_Xpt", "") << DEC(ndx);
+			}
+			else
+				regName << "kRegXptValue" << HEX0N(regNum,4);
+			DefineRegister (regNum, regName.str(),	mDecodeXptValidReg,	READONLY,	kRegClass_NULL,	kRegClass_NULL,	kRegClass_NULL);
+		}
 	}	//	SetupXptSelect
 	
 	void SetupAncInsExt(void)
@@ -881,6 +916,7 @@ private:
 		DefineRegName	(kVRegAnalogOutputSelect,				"kVRegAnalogOutputSelect");
 		DefineRegName	(kVRegAnalogOutputType,					"kVRegAnalogOutputType");
 		DefineRegName	(kVRegAnalogOutBlackLevel,				"kVRegAnalogOutBlackLevel");
+		DefineRegName	(kVRegInputSelectUser,					"kVRegInputSelectUser");
 		DefineRegName	(kVRegVideoOutPauseMode,				"kVRegVideoOutPauseMode");
 		DefineRegName	(kVRegPulldownPattern,					"kVRegPulldownPattern");
 		DefineRegName	(kVRegColorSpaceMode,					"kVRegColorSpaceMode");
@@ -1292,6 +1328,26 @@ private:
 		DefineRegName	(kVRegHdrMaxCLLCh1,						"kVRegHdrMaxCLLCh1");
 		DefineRegName	(kVRegHdrMaxFALLCh1,					"kVRegHdrMaxFALLCh1");
 		DefineRegName	(kVRegHDROverrideState,					"kVRegHDROverrideState");
+		DefineRegName	(kVRegUserInColorimetry,				"kVRegUserInColorimetry");					
+		DefineRegName	(kVRegUserInTransfer,					"kVRegUserInTransfer");
+		DefineRegName	(kVRegUserInLuminance,					"kVRegUserInLuminance");
+		DefineRegName	(kVRegHdrInColorimetryCh1,				"kVRegHdrInColorimetryCh1");
+		DefineRegName	(kVRegHdrInTransferCh1,					"kVRegHdrInTransferCh1");
+		DefineRegName	(kVRegHdrInLuminanceCh1,				"kVRegHdrInLuminanceCh1");
+		DefineRegName	(kVRegHdrInGreenXCh1,					"kVRegHdrInGreenXCh1");
+		DefineRegName	(kVRegHdrInGreenYCh1,					"kVRegHdrInGreenYCh1");
+		DefineRegName	(kVRegHdrInBlueXCh1,					"kVRegHdrInBlueXCh1");
+		DefineRegName	(kVRegHdrInBlueYCh1,					"kVRegHdrInBlueYCh1");
+		DefineRegName	(kVRegHdrInRedXCh1,						"kVRegHdrInRedXCh1");
+		DefineRegName	(kVRegHdrInRedYCh1,						"kVRegHdrInRedYCh1");
+		DefineRegName	(kVRegHdrInWhiteXCh1,					"kVRegHdrInWhiteXCh1");
+		DefineRegName	(kVRegHdrInWhiteYCh1,					"kVRegHdrInWhiteYCh1");
+		DefineRegName	(kVRegHdrInMasterLumMaxCh1,				"kVRegHdrInMasterLumMaxCh1");
+		DefineRegName	(kVRegHdrInMasterLumMinCh1,				"kVRegHdrInMasterLumMinCh1");
+		DefineRegName	(kVRegHdrInMaxCLLCh1,					"kVRegHdrInMaxCLLCh1");
+		DefineRegName	(kVRegHdrInMaxFALLCh1,					"kVRegHdrInMaxFALLCh1");
+		DefineRegName	(kVRegHDRInOverrideState,				"kVRegHDRInOverrideState");
+		
 		DefineRegName	(kVRegPCIMaxReadRequestSize,			"kVRegPCIMaxReadRequestSize");
 		DefineRegName	(kVRegLastAJA,							"kVRegLastAJA");
 		DefineRegName	(kVRegFirstOEM,							"kVRegFirstOEM");
@@ -1944,6 +2000,17 @@ private:
 		virtual	~DecodeBitfileDateTime()	{}
 	}	mDecodeBitfileDateTime;
 
+	struct DecodeCanDoStatus : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{	(void) inRegNum;	(void) inDeviceID;
+			ostringstream	oss;
+			oss	<< "Has CanConnect Xpt Route ROM: "		<< YesNo(inRegValue & BIT(0));
+			return oss.str();
+		}
+		virtual	~DecodeCanDoStatus()	{}
+	}	mDecodeCanDoStatus;
+
 	struct DecodeVidControlReg : public Decoder		//	Bit31=Is16x9 | Bit30=IsMono
 	{
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
@@ -1959,6 +2026,73 @@ private:
 		}
 		virtual	~DecodeVidControlReg()	{}
 	}	mDecodeVidControlReg;
+
+	struct DecodeVidIntControl : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			(void) inDeviceID;
+			ostringstream	oss;
+			oss	<< "Output 1 Vertical Enable: "		<< YesNo(inRegValue & BIT(0))					<< endl
+				<< "Input 1 Vertical Enable: "		<< YesNo(inRegValue & BIT(1))					<< endl
+				<< "Input 2 Vertical Enable: "		<< YesNo(inRegValue & BIT(2))					<< endl
+				<< "Audio Out Wrap Interrupt Enable: "	<< YesNo(inRegValue & BIT(4))				<< endl
+				<< "Audio In Wrap Interrupt Enable: "	<< YesNo(inRegValue & BIT(5))				<< endl
+				<< "Wrap Rate Interrupt Enable: "	<< YesNo(inRegValue & BIT(6))					<< endl
+				<< "UART Tx Interrupt Enable"		<< YesNo(inRegValue & BIT(7))					<< endl
+				<< "UART Rx Interrupt Enable"		<< YesNo(inRegValue & BIT(8))					<< endl
+				<< "UART Rx Interrupt Clear"		<< ActInact(inRegValue & BIT(15))				<< endl
+				<< "UART 2 Tx Interrupt Enable"		<< YesNo(inRegValue & BIT(17))					<< endl
+				<< "Output 2 Vertical Enable: "		<< YesNo(inRegValue & BIT(18))					<< endl
+				<< "Output 3 Vertical Enable: "		<< YesNo(inRegValue & BIT(19))					<< endl
+				<< "Output 4 Vertical Enable: "		<< YesNo(inRegValue & BIT(20))					<< endl
+				<< "Output 4 Vertical Clear: "		<< ActInact(inRegValue & BIT(21))				<< endl
+				<< "Output 3 Vertical Clear: "		<< ActInact(inRegValue & BIT(22))				<< endl
+				<< "Output 2 Vertical Clear: "		<< ActInact(inRegValue & BIT(23))				<< endl
+				<< "UART Tx Interrupt Clear"		<< ActInact(inRegValue & BIT(24))				<< endl
+				<< "Wrap Rate Interrupt Clear"		<< ActInact(inRegValue & BIT(25))				<< endl
+				<< "UART 2 Tx Interrupt Clear"		<< ActInact(inRegValue & BIT(26))				<< endl
+				<< "Audio Out Wrap Interrupt Clear"	<< ActInact(inRegValue & BIT(27))				<< endl
+				<< "Input 2 Vertical Clear: "		<< ActInact(inRegValue & BIT(29))				<< endl
+				<< "Input 1 Vertical Clear: "		<< ActInact(inRegValue & BIT(30))				<< endl
+				<< "Output 1 Vertical Clear: "		<< ActInact(inRegValue & BIT(31));
+			return oss.str();
+		}
+		virtual	~DecodeVidIntControl()	{}
+	}	mDecodeVidIntControl;
+	
+	struct DecodeVidIntControl2 : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{
+			(void) inRegNum;
+			(void) inDeviceID;
+			ostringstream	oss;
+			oss	<< "Input 3 Vertical Enable: "		<< YesNo(inRegValue & BIT(1))					<< endl
+				<< "Input 4 Vertical Enable: "		<< YesNo(inRegValue & BIT(2))					<< endl
+				<< "Input 5 Vertical Enable: "		<< YesNo(inRegValue & BIT(8))					<< endl
+				<< "Input 6 Vertical Enable: "		<< YesNo(inRegValue & BIT(9))					<< endl
+				<< "Input 7 Vertical Enable: "		<< YesNo(inRegValue & BIT(10))					<< endl
+				<< "Input 8 Vertical Enable: "		<< YesNo(inRegValue & BIT(11))					<< endl
+				<< "Output 5 Vertical Enable: "		<< YesNo(inRegValue & BIT(12))					<< endl
+				<< "Output 6 Vertical Enable: "		<< YesNo(inRegValue & BIT(13))					<< endl
+				<< "Output 7 Vertical Enable: "		<< YesNo(inRegValue & BIT(14))					<< endl
+				<< "Output 8 Vertical Enable: "		<< YesNo(inRegValue & BIT(15))					<< endl
+				<< "Output 8 Vertical Clear: "		<< ActInact(inRegValue & BIT(16))				<< endl
+				<< "Output 7 Vertical Clear: "		<< ActInact(inRegValue & BIT(17))				<< endl
+				<< "Output 6 Vertical Clear: "		<< ActInact(inRegValue & BIT(18))				<< endl
+				<< "Output 5 Vertical Clear: "		<< ActInact(inRegValue & BIT(19))				<< endl
+				<< "Input 8 Vertical Clear: "		<< ActInact(inRegValue & BIT(25))				<< endl
+				<< "Input 7 Vertical Clear: "		<< ActInact(inRegValue & BIT(26))				<< endl
+				<< "Input 6 Vertical Clear: "		<< ActInact(inRegValue & BIT(27))				<< endl
+				<< "Input 5 Vertical Clear: "		<< ActInact(inRegValue & BIT(28))				<< endl
+				<< "Input 4 Vertical Clear: "		<< ActInact(inRegValue & BIT(29))				<< endl
+				<< "Input 3 Vertical Clear: "		<< ActInact(inRegValue & BIT(30));
+			return oss.str();
+		}
+		virtual	~DecodeVidIntControl2()	{}
+	}	mDecodeVidIntControl2;
 
 	struct DecodeStatusReg : public Decoder
 	{
@@ -2133,12 +2267,11 @@ private:
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
 		{
 			(void) inDeviceID;
-			uint16_t		numSpigots	(0);
-			uint16_t		startSpigot	(0);
+			uint16_t		numSpigots(0), startSpigot(0), doTsiMuxSync(0);
 			ostringstream	oss;
 			switch (inRegNum)
 			{
-				case kRegSDIInput3GStatus:		numSpigots = 2;		startSpigot = 1;	break;
+				case kRegSDIInput3GStatus:		numSpigots = 2;		startSpigot = 1;	doTsiMuxSync = 1;	break;
 				case kRegSDIInput3GStatus2:		numSpigots = 2;		startSpigot = 3;	break;
 				case kRegSDI5678Input3GStatus:	numSpigots = 4;		startSpigot = 5;	break;
 			}
@@ -2171,6 +2304,10 @@ private:
 				if (++spigotNdx < numSpigots)
 					oss << endl;
 			}	//	for each spigot
+			if (doTsiMuxSync  &&  ::NTV2DeviceCanDo425Mux(inDeviceID))
+				for (UWord tsiMux(0);  tsiMux < 4;  ++tsiMux)
+					oss	<< endl
+						<< "TsiMux" << DEC(tsiMux+1) << " Sync Fail: " << ((inRegValue & (0x00010000UL << tsiMux)) ? "FAILED" : "OK");
 			return oss.str();
 		}
 		virtual	~DecodeSDIInputStatusReg()	{}
@@ -2801,6 +2938,53 @@ private:
 		virtual	~DecodeXptGroupReg()	{}
 	}	mDecodeXptGroupReg;
 	
+	struct DecodeXptValidReg : public Decoder
+	{
+		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
+		{	(void) inDeviceID;
+			NTV2_ASSERT(inRegNum >= uint32_t(kRegFirstValidXptROMRegister)  &&  inRegNum < uint32_t(kRegInvalidValidXptROMRegister));
+			const ULWord rawInputXptID ((inRegNum - ULWord(kRegFirstValidXptROMRegister)) / 4UL + ULWord(NTV2_FIRST_INPUT_CROSSPOINT));	//	4 regs per inputXpt
+			const UWord outputXptShift (32U * UWord((inRegNum - ULWord(kRegFirstValidXptROMRegister)) % 4));	//	Num bits to shift for outputXpts
+			const NTV2InputXptID inputXpt (static_cast<NTV2InputXptID>(rawInputXptID));
+			ostringstream	oss;
+			if (NTV2_IS_VALID_InputCrosspointID(inputXpt))
+			{
+				NTV2WidgetID	widgetID (NTV2_WIDGET_INVALID);
+				CNTV2SignalRouter::GetWidgetForInput (inputXpt, widgetID, inDeviceID);
+				oss	<< "Input Crosspoint ID: "	<< DEC(rawInputXptID) << " (" << xHEX0N(rawInputXptID,2) << ")"		<< endl
+					<< "Enum: "					<< ::NTV2InputCrosspointIDToString(inputXpt, false)					<< endl
+					<< "Name: "					<< "'" << ::NTV2InputCrosspointIDToString(inputXpt, true) << "'"	<< endl;
+				if (NTV2_IS_VALID_WIDGET(widgetID))
+					oss	<< "Parent Widget Enum: "	<< ::NTV2WidgetIDToString(widgetID, false)							<< endl
+						<< "Widget ID:"				<< DEC(UWord(widgetID)) << " (" << xHEX0N(UWord(widgetID),4) << ")" << endl
+						<< "Widget Name: '"			<< ::NTV2WidgetIDToString(widgetID, true) << "'"					<< endl;
+				NTV2StringList	outputXptNames;
+				for (UWord bitNdx(0);  bitNdx < 32;  bitNdx++)
+					if (inRegValue & ULWord((1 << bitNdx)))
+					{
+						const ULWord rawOutputXptID (1 << (bitNdx + outputXptShift));
+						const NTV2OutputXptID YUVoutputXptID(static_cast<NTV2OutputXptID>(rawOutputXptID));
+						NTV2_ASSERT(NTV2_IS_VALID_OutputCrosspointID(YUVoutputXptID));
+						const NTV2OutputXptID RGBoutputXptID(static_cast<NTV2OutputXptID>(rawOutputXptID | 0x00000080));
+						NTV2_ASSERT(NTV2_IS_VALID_OutputCrosspointID(RGBoutputXptID));
+						const string YUVstr(::NTV2OutputCrosspointIDToString(YUVoutputXptID,true));
+						const string RGBstr(::NTV2OutputCrosspointIDToString(RGBoutputXptID,true));
+						ostringstream yuvName, rgbName;
+						if (!YUVstr.empty())
+							{yuvName << "'" << YUVstr << "'";	outputXptNames.push_back(yuvName.str());}
+						if (!RGBstr.empty())
+							{rgbName << "'" << RGBstr << "'";	outputXptNames.push_back(rgbName.str());}
+					}
+				if (!outputXptNames.empty())
+					oss << "Legal Output Connections: " << outputXptNames;
+				return oss.str();
+			}
+			else
+				return Decoder::operator()(inRegNum, inRegValue, inDeviceID);
+		}
+		virtual	~DecodeXptValidReg()	{}
+	}	mDecodeXptValidReg;
+
 	struct DecodeHDMIOutputControl : public Decoder
 	{
 		virtual string operator()(const uint32_t inRegNum, const uint32_t inRegValue, const NTV2DeviceID inDeviceID) const
@@ -3074,10 +3258,15 @@ private:
 		{
 			(void) inRegNum;
 			(void) inDeviceID;
+			const bool	isReceivingRP188 (inRegValue & BIT(16));
+			const bool	isReceivingSelectedRP188 (inRegValue & BIT(17));
+			const bool	isReceivingLTC (inRegValue & BIT(18));
+			const bool	isReceivingVITC (inRegValue & BIT(19));
 			ostringstream	oss;
-			oss	<< "RP188: "	<< ((inRegValue & BIT(16)) ? (inRegValue & BIT(17) ? "Selected" : "Unselected") : "No") << " RP-188 received"	<< endl
-				<< "Bypass: "	<< (inRegValue & BIT(23) ? (inRegValue & BIT(22) ? "SDI In 2" : "SDI In 1") : "Disabled")						<< endl
-				<< "Filter: "	<< HEX0N((inRegValue & 0xFF000000) >> 24, 2)																		<< endl
+			oss	<< "RP188: "	<< (isReceivingRP188 ? (isReceivingSelectedRP188 ? "Selected" : "Unselected") : "No") << " RP-188 received"
+								<< (isReceivingLTC ? " +LTC" : "") << (isReceivingVITC ? " +VITC" : "")					<< endl
+				<< "Bypass: "	<< (inRegValue & BIT(23) ? (inRegValue & BIT(22) ? "SDI In 2" : "SDI In 1") : "Disabled")	<< endl
+				<< "Filter: "	<< HEX0N((inRegValue & 0xFF000000) >> 24, 2)												<< endl
 				<< "DBB: "		<< HEX0N((inRegValue & 0x0000FF00) >> 8, 2) << " " << HEX0N(inRegValue & 0x000000FF, 2);
 			return oss.str();
 		}

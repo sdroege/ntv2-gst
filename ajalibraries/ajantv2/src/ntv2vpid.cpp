@@ -1,7 +1,7 @@
 /**
 	@file		ntv2vpid.cpp
 	@brief		Implements the CNTV2VPID class. See the SMPTE 352 standard for details.
-	@copyright	(C) 2012-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2012-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2vpid.h"
@@ -121,7 +121,7 @@ class VPIDTableInitializer
 			stTable3840pSID[VPIDPictureRate_5000] = NTV2_FORMAT_4x1920x1080p_5000;
 			stTable3840pSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x1920x1080p_5994;
 			stTable3840pSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x1920x1080p_6000;
-
+			
 			stTable3840psfSID[VPIDPictureRate_2398] = NTV2_FORMAT_4x1920x1080psf_2398;
 			stTable3840psfSID[VPIDPictureRate_2400] = NTV2_FORMAT_4x1920x1080psf_2400;	
 			stTable3840psfSID[VPIDPictureRate_2500] = NTV2_FORMAT_4x1920x1080psf_2500;
@@ -141,7 +141,7 @@ class VPIDTableInitializer
 			stTable4096pSID[VPIDPictureRate_5000] = NTV2_FORMAT_4x2048x1080p_5000;
 			stTable4096pSID[VPIDPictureRate_5994] = NTV2_FORMAT_4x2048x1080p_5994;
 			stTable4096pSID[VPIDPictureRate_6000] = NTV2_FORMAT_4x2048x1080p_6000;
-
+			
 			stTable4096psfSID[VPIDPictureRate_2398] = NTV2_FORMAT_4x2048x1080psf_2398;
 			stTable4096psfSID[VPIDPictureRate_2400] = NTV2_FORMAT_4x2048x1080psf_2400;
 			stTable4096psfSID[VPIDPictureRate_2500] = NTV2_FORMAT_4x2048x1080psf_2500;
@@ -709,17 +709,15 @@ NTV2VideoFormat CNTV2VPID::GetVideoFormat (void) const
 	case VPIDStandard_2160_DualLink:
 	case VPIDStandard_2160_QuadLink_3Ga:
 	case VPIDStandard_2160_QuadDualLink_3Gb:
-	case VPIDStandard_2160_Single_6Gb:
-	case VPIDStandard_2160_Single_12Gb:
 		if (vpidProgTransport)
 		{
-		if (vpidHorizontal2048)
-		{
-			videoFormat = stTable4096pSID[vpidFrameRate];
-		}
-		else
-		{
-			videoFormat = stTable3840pSID[vpidFrameRate];
+			if (vpidHorizontal2048)
+			{
+				videoFormat = stTable4096pSID[vpidFrameRate];
+			}
+			else
+			{
+				videoFormat = stTable3840pSID[vpidFrameRate];
 			}
 		}
 		else
@@ -732,6 +730,17 @@ NTV2VideoFormat CNTV2VPID::GetVideoFormat (void) const
 			{
 				videoFormat = stTable3840psfSID[vpidFrameRate];
 			}
+		}
+		break;
+	case VPIDStandard_2160_Single_6Gb:
+	case VPIDStandard_2160_Single_12Gb:
+		if (vpidHorizontal2048)
+		{
+			videoFormat = stTable4096pTSI[vpidFrameRate];
+		}
+		else
+		{
+			videoFormat = stTable3840pTSI[vpidFrameRate];
 		}
 		break;
 	case VPIDStandard_4320_DualLink_12Gb:
