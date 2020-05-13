@@ -1,7 +1,7 @@
 /**
 	@file		file_io.h
+	@copyright	Copyright (C) 2011-2019 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Declares the AJAFileIO class.
-	@copyright	(C) 2011-2020 AJA Video Systems, Inc.  All rights reserved.
 **/
 
 #ifndef AJA_FILE_IO_H
@@ -49,8 +49,8 @@ typedef enum
 class  AJA_EXPORT AJAFileIO
 {
 public:
-	AJAFileIO();
-	~AJAFileIO();
+	AJAFileIO(void);
+	~AJAFileIO(void);
 
 	/**
 	 *	Open a file.
@@ -78,34 +78,24 @@ public:
 	 *	@return		AJA_STATUS_SUCCESS	The file was successfully closed
 	 *				AJA_STATUS_FAIL		The file could not be closed
 	 */
-	AJAStatus Close();
+	AJAStatus Close(void);
 
 	/**
 	 *	Tests for a valid open file.
 	 *
 	 *	@return		bool				'true' if a valid file is available
 	 */
-	bool IsOpen();
+	bool IsOpen(void);
 
 	/**
 	 *	Read the contents of the file.
 	 *
-	 *	@param[out]	pBuffer				The buffer to be written to
+	 *	@param[in]	pBuffer				The buffer to be written to
 	 *	@param[in]	length				The number of bytes to be read
 	 *
 	 *	@return		uint32_t			The number of bytes actually read
 	 */
 	uint32_t Read(uint8_t* pBuffer, const uint32_t length);
-
-	/**
-	 *	Read the contents of the file.
-	 *
-	 *	@param[out]	buffer				The buffer to be written to
-	 *	@param[in]	length				The number of bytes to be read
-	 *
-	 *	@return		uint32_t			The number of bytes actually read
-	 */
-	uint32_t Read(std::string& buffer, const uint32_t length);
 	
 	/**
 	 *	Write the contents of the file.
@@ -129,25 +119,22 @@ public:
 	/**
 	 *	Flush the cache 
 	 *
-	 *	@return		AJA_STATUS_SUCCESS	Was able to sync file
 	 */	
-	AJAStatus Sync();
+	void Sync(void);
 
 	/**
 	 *	Truncates the file.
 	 *
 	 *	@param[in]	offset			The size offset of the file
-	 *
-	 *	@return		AJA_STATUS_SUCCESS	Was able to truncate file
 	 */
-	AJAStatus Truncate(int32_t offset);
+	void Truncate(int32_t offset);
 
 	/**
 	 *	Retrieves the offset of the file pointer from the start of a file.
 	 *
 	 *	@return		int64_t			The position of the file pointer, -1 if error
 	 */
-	int64_t Tell();
+	int64_t Tell(void);
 
 	/**
 	 *	Moves the offset of the file pointer.
@@ -165,12 +152,10 @@ public:
 	 *	@param[out]	createTime			Time of file creation, measured in seconds since 1970
 	 *	@param[out]	modTime				Last time file was modified, measured in seconds since 1970
 	 *	@param[out]	size				Size of the file in bytes
-	 *  @param[out] filePath			Full path to the file specified in Open().
 	 *
 	 *	@return		AJA_STATUS_SUCCESS	Was able to get info from the file
 	 */
 	AJAStatus FileInfo(int64_t& createTime, int64_t& modTime, int64_t& size);
-	AJAStatus FileInfo(int64_t& createTime, int64_t& modTime, int64_t& size, std::string& filePath);
 
     /**
      *	Test file to see if it exists
@@ -252,29 +237,19 @@ public:
     static AJAStatus IsDirectoryEmpty(const std::string& directory);
     static AJAStatus IsDirectoryEmpty(const std::wstring& directory);
 
-	/**
-	 *	Retrieves a path to the temp directory
-	 *
-	 *	@param[out]	directory	The path to the temp directory
-	 *
-	 *	@return		AJA_STATUS_SUCCESS	If and only if a temp directory found
-	 */
-	static AJAStatus TempDirectory(std::string& directory);
-	static AJAStatus TempDirectory(std::wstring& directory);
-
-
-#if defined(AJA_WINDOWS)
-	void     *GetHandle(void) {return mFileDescriptor;}
-#else
+#if defined(AJA_LINUX) || defined(AJA_MAC)
 	void     *GetHandle(void) {return NULL;}
+#elif defined(AJA_WINDOWS)
+	void     *GetHandle(void) {return mFileDescriptor;}
 #endif
 
 private:
 
-#if defined(AJA_WINDOWS)
-    HANDLE       mFileDescriptor;
-#else
+#if defined(AJA_LINUX) || defined(AJA_MAC)
 	FILE*        mpFile;
+    int          mFileDescriptor;
+#elif defined(AJA_WINDOWS)
+    HANDLE       mFileDescriptor;
 #endif
 };
 

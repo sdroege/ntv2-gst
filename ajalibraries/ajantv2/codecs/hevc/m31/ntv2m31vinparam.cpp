@@ -1,7 +1,7 @@
 /**
 	@file		ntv2m31vinparam.cpp
 	@brief		Implementation of non-device-specific M31 class register getter/setter methods for "VIn" params.
-	@copyright	(C) 2015-2020 AJA Video Systems, Inc.  Proprietary and Confidential information.
+	@copyright	(C) 2015-2019 AJA Video Systems, Inc.  Proprietary and Confidential information.
 **/
 
 #include "ntv2m31vinparam.h"

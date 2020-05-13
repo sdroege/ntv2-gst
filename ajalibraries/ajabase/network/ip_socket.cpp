@@ -1,7 +1,7 @@
 /**
 	@file		ip_socket.cpp
+	@copyright	Copyright (C) 2011-2019 AJA Video Systems, Inc.  All rights reserved.
 	@brief		Implements the AJAIPSocket class.
-	@copyright	(C) 2011-2020 AJA Video Systems, Inc.  All rights reserved.
 **/
 
 /////////////////////////////
@@ -248,7 +248,6 @@ AJAIPSocket::SetSocketOption(int option, const void* pValue)
 				{
 					status = true;
 				}
-				break;
 			}
 
 			case SO_LINGER:
@@ -266,7 +265,6 @@ AJAIPSocket::SetSocketOption(int option, const void* pValue)
 				{
 					status = true;
 				}
-				break;
 			}
 
 			case IP_ADD_MEMBERSHIP:
@@ -285,7 +283,6 @@ AJAIPSocket::SetSocketOption(int option, const void* pValue)
 				{
 					status = true;
 				}
-				break;
 			}
 
 			default:

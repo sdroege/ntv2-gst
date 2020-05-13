@@ -1,7 +1,7 @@
 /**
 	@file		ntv2driverinterface.cpp
-	@brief		Implements the CNTV2DriverInterface class.
-	@copyright	(C) 2003-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@brief		Implements the CNTV2DriverInterface base class.
+	@copyright	(C) 2003-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ajatypes.h"
@@ -454,6 +454,7 @@ bool CNTV2DriverInterface::DriverGetBitFileInformation (BITFILE_INFO_STRUCT & bi
 				case DEVICE_ID_KONAIP_4CH_2SFP:				bitFileInfo.bitFileType = NTV2_BITFILE_KONAIP_4CH_2SFP;				break;
 				case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		bitFileInfo.bitFileType = NTV2_BITFILE_KONAIP_1RX_1TX_1SFP_J2K;		break;
 				case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			bitFileInfo.bitFileType = NTV2_BITFILE_KONAIP_2TX_1SFP_J2K;			break;
+				case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			bitFileInfo.bitFileType = NTV2_BITFILE_KONAIP_2RX_1SFP_J2K;         break;
 				case DEVICE_ID_CORVIDHBR:					bitFileInfo.bitFileType = NTV2_BITFILE_NUMBITFILETYPES;				break;
 				case DEVICE_ID_IO4KPLUS:					bitFileInfo.bitFileType = NTV2_BITFILE_IO4KPLUS_MAIN;				break;
                 case DEVICE_ID_IOIP_2022:					bitFileInfo.bitFileType = NTV2_BITFILE_IOIP_2022;					break;
@@ -464,12 +465,9 @@ bool CNTV2DriverInterface::DriverGetBitFileInformation (BITFILE_INFO_STRUCT & bi
                 case DEVICE_ID_KONAHDMI:					bitFileInfo.bitFileType = NTV2_BITFILE_KONAHDMI;					break;
 				case DEVICE_ID_KONA5:						bitFileInfo.bitFileType = NTV2_BITFILE_KONA5_MAIN;					break;
                 case DEVICE_ID_KONA5_8KMK:                  bitFileInfo.bitFileType = NTV2_BITFILE_KONA5_8KMK_MAIN;				break;
-				case DEVICE_ID_KONA5_2:						bitFileInfo.bitFileType = NTV2_BITFILE_KONA5_2_MAIN;				break;
 				case DEVICE_ID_CORVID44_8KMK:               bitFileInfo.bitFileType = NTV2_BITFILE_CORVID44_8KMK_MAIN;			break;
 				case DEVICE_ID_KONA5_8K:                    bitFileInfo.bitFileType = NTV2_BITFILE_KONA5_8K_MAIN;				break;
 				case DEVICE_ID_CORVID44_8K:                 bitFileInfo.bitFileType = NTV2_BITFILE_CORVID44_8K_MAIN;			break;
-				case DEVICE_ID_CORVID44_8K_2:                bitFileInfo.bitFileType = NTV2_BITFILE_CORVID44_8K_2_MAIN;			break;
-				case DEVICE_ID_T3TAP:						bitFileInfo.bitFileType = NTV2_BITFILE_T3TAP_MAIN;					break;
                 case DEVICE_ID_NOTFOUND:					bitFileInfo.bitFileType = NTV2_BITFILE_TYPE_INVALID;				break;
 			#if !defined (_DEBUG)
 				default:					break;
@@ -527,7 +525,8 @@ bool CNTV2DriverInterface::GetPackageInformation(PACKAGE_INFO_STRUCT & packageIn
     else
     {
         ULWord baseAddress = (16 * 1024 * 1024) - (3 * 256 * 1024);
-		const ULWord dwordSizeCount = 256/4;
+        ULWord* bitFilePtr =  new ULWord[256/4];
+        ULWord dwordSizeCount = 256/4;
 
         WriteRegister(kRegXenaxFlashAddress, (ULWord)1);   // bank 1
         WriteRegister(kRegXenaxFlashControlStatus, 0x17);
@@ -548,7 +547,6 @@ bool CNTV2DriverInterface::GetPackageInformation(PACKAGE_INFO_STRUCT & packageIn
         if (timeoutCount == 0)
             return false;
 
-		ULWord* bitFilePtr =  new ULWord[dwordSizeCount];
         for ( ULWord count = 0; count < dwordSizeCount; count++, baseAddress += 4 )
         {
             WriteRegister(kRegXenaxFlashAddress, baseAddress);
@@ -568,16 +566,11 @@ bool CNTV2DriverInterface::GetPackageInformation(PACKAGE_INFO_STRUCT & packageIn
                     busy = false;
             } while(busy == true && timeoutCount > 0);
             if (timeoutCount == 0)
-			{
-				delete [] bitFilePtr;
                 return false;
-			}
             ReadRegister(kRegXenaxFlashDOUT, bitFilePtr[count]);
         }
 
         packInfo = (char*)bitFilePtr;
-
-		delete [] bitFilePtr;
     }
 
     istringstream iss(packInfo);
@@ -649,7 +642,8 @@ void CNTV2DriverInterface::InitMemberVariablesOnOpen (NTV2FrameGeometry frameGeo
 bool CNTV2DriverInterface::ParseFlashHeader (BITFILE_INFO_STRUCT & bitFileInfo)
 {
 	ULWord baseAddress = 0;
-	const ULWord dwordSizeCount = 256/4;
+	ULWord* bitFilePtr =  new ULWord[256/4];
+	ULWord dwordSizeCount = 256/4;
 
 	if(!IsDeviceReady(false))
 	{
@@ -690,8 +684,6 @@ bool CNTV2DriverInterface::ParseFlashHeader (BITFILE_INFO_STRUCT & bitFileInfo)
 			return false;
 	}
 
-	ULWord* bitFilePtr =  new ULWord[dwordSizeCount];
-
 	for ( ULWord count = 0; count < dwordSizeCount; count++, baseAddress += 4 )
 	{
 		WriteRegister(kRegXenaxFlashAddress, baseAddress);
@@ -711,10 +703,7 @@ bool CNTV2DriverInterface::ParseFlashHeader (BITFILE_INFO_STRUCT & bitFileInfo)
 				busy = false;
 		} while(busy == true && timeoutCount > 0);
 		if (timeoutCount == 0)
-		{
-			delete [] bitFilePtr;
 			return false;
-		}
 		ReadRegister(kRegXenaxFlashDOUT, bitFilePtr[count]);
 	}
 

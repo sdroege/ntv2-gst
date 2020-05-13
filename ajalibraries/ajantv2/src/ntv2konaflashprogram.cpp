@@ -1,7 +1,7 @@
 /**
 	@file		ntv2konaflashprogram.cpp
 	@brief		Implementation of CNTV2KonaFlashProgram class.
-	@copyright	(C) 2010-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2010-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2konaflashprogram.h"
@@ -673,7 +673,7 @@ uint32_t CNTV2KonaFlashProgram::ReadDeviceID()
 	{
 		WriteRegister(kRegXenaxFlashControlStatus, READID_COMMAND);
 		WaitForFlashNOTBusy();
-		ReadRegister(kRegXenaxFlashDOUT, deviceID);
+		ReadRegister(61, deviceID);
 	}
 	return (deviceID & 0xFFFFFF);
 }
@@ -1341,8 +1341,8 @@ bool CNTV2KonaFlashProgram::ReadMACAddresses(MacAddr & mac1, MacAddr & mac2)
 
         SetBankSelect(BANK_0);
 
-        //if (lo == 0xffffffff && hi == 0xffffffff && lo2 == 0xffffffff && hi2 == 0xffffffff)
-           //return false;
+        if (lo == 0xffffffff && hi == 0xffffffff && lo2 == 0xffffffff && hi2 == 0xffffffff)
+            return false;
 
         mac1.mac[0] = (lo & 0xff000000) >> 24;
         mac1.mac[1] = (lo & 0x00ff0000) >> 16;

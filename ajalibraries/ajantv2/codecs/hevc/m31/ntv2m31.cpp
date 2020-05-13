@@ -1,7 +1,7 @@
 /**
 	@file		ntv2m31.cpp
 	@brief		Implementation of non-device-specific M31 class methods.
-	@copyright	(C) 2015-2020 AJA Video Systems, Inc.  Proprietary and Confidential information.
+	@copyright	(C) 2015-2019 AJA Video Systems, Inc.  Proprietary and Confidential information.
 **/
 
 #include "ntv2m31.h"
