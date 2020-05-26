@@ -1,8 +1,8 @@
 /**
 	@file		ajatypes.h
-	@copyright	Copyright (C) 2004-2019 AJA Video Systems, Inc.  Proprietary and Confidential information.
 	@brief		Declares the most fundamental data types used by NTV2. Since Windows NT was the first principal
 				development platform, many typedefs are Windows-centric.
+	@copyright	(C) 2004-2020 AJA Video Systems, Inc.  Proprietary and Confidential information.
 **/
 #ifndef AJATYPES_H
 #define AJATYPES_H
@@ -25,8 +25,9 @@
 //#define NTV2_DEPRECATE_15_0		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.0
 //#define NTV2_DEPRECATE_15_1		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.1
 //#define NTV2_DEPRECATE_15_2		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.2
-//#define NTV2_DEPRECATE_15_3		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.3
+//#define NTV2_DEPRECATE_15_3		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.3 (never released)
 //#define NTV2_DEPRECATE_15_5		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.5
+//#define NTV2_DEPRECATE_15_6		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.6
 
 #define NTV2_NUB_CLIENT_SUPPORT		//	If defined, includes nub client support;  otherwise, excludes it
 #define	AJA_VIRTUAL		virtual		//	Force use of virtual functions in CNTV2Card, etc.
@@ -34,27 +35,38 @@
 
 #if defined(__CPLUSPLUS__) || defined(__cplusplus)
 	#if defined(AJAMac)
-		//	On MacOS...
-		//		... when building for CLANG_CXX_LIBRARY=libc++		...then 'nullptr' is defined.
-		//		... when building for CLANG_CXX_LIBRARY=libstdc++	...then 'nullptr' is NOT defined.
-		//		TBD FIX FIX FIX     How to tell when building for libc++ versus libstdc++ ?!?!?!?!
-		#define AJA_NULL	NULL
+		#if defined(__clang__)
+			#ifndef __has_feature
+				#define __has_feature(__x__)	0
+			#endif
+			#if __has_feature(cxx_nullptr)
+				#define AJA_CXX11_NULLPTR_AVAILABLE
+			#endif
+		#endif
 	#elif defined(AJALinux)
-		//	On Linux...
-		//		... when building libajacc, using 'nullptr' fails.
-		//		TBD FIX FIX FIX
-		#define AJA_NULL	NULL
+		#if defined(__clang__)
+			#ifndef __has_feature
+				#define __has_feature(__x__)	0
+			#endif
+			#if __has_feature(cxx_nullptr)
+				#define AJA_CXX11_NULLPTR_AVAILABLE
+			#endif
+		#elif defined(__GNUC__)
+			#if __GNUC__ >= 6
+				#define AJA_CXX11_NULLPTR_AVAILABLE
+			#endif
+		#endif
 	#elif defined(MSWindows)
 		#if defined(_MSC_VER) && _MSC_VER >= 1700		//	VS2012 or later:
-			#define AJA_NULL	nullptr
-		#else
-			#define AJA_NULL	NULL
+			#define AJA_CXX11_NULLPTR_AVAILABLE
 		#endif
-	#else
-		#define AJA_NULL	NULL
 	#endif
+#endif
+
+#if defined(AJA_CXX11_NULLPTR_AVAILABLE)
+	#define AJA_NULL	nullptr
 #else
-	#define AJA_NULL		NULL
+	#define AJA_NULL	NULL
 #endif
 
 #if defined(__clang__)
@@ -363,19 +375,22 @@
 		#define NTV2_DEPRECATE_14_3
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_0)
-		#define NTV2_DEPRECATE_15_0		//	(future ready)
+		#define NTV2_DEPRECATE_15_0
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_1)
-		#define NTV2_DEPRECATE_15_1		//	(future ready)
+		#define NTV2_DEPRECATE_15_1
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_2)
-		#define NTV2_DEPRECATE_15_2		//	(future ready)
+		#define NTV2_DEPRECATE_15_2
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_3)
-		#define NTV2_DEPRECATE_15_3		//	(future ready)
+		#define NTV2_DEPRECATE_15_3
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_5)
 		#define NTV2_DEPRECATE_15_5		//	(future ready)
+	#endif
+	#if !defined(NTV2_DEPRECATE_15_6)
+		#define NTV2_DEPRECATE_15_6		//	(future ready)
 	#endif
 #endif
 

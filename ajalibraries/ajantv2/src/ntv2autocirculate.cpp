@@ -1,7 +1,7 @@
 /**
 	@file		ntv2autocirculate.cpp
 	@brief		Implements the CNTV2Card AutoCirculate API functions.
-	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2card.h"
@@ -629,31 +629,20 @@ bool CNTV2Card::AutoCirculateInitForInput (	const NTV2Channel		inChannel,
 	AJAAutoLock	autoLock (&gFBAllocLock);	//	Avoid AutoCirculate buffer collisions
 	LWord	startFrameNumber(static_cast <LWord>(inStartFrameNumber));
 	LWord	endFrameNumber	(static_cast <LWord>(inEndFrameNumber));
-	if (inFrameCount)
+	if (!endFrameNumber  &&  !startFrameNumber)
 	{
-		if (inEndFrameNumber - inStartFrameNumber)
-			ACWARN ("Start and End frame numbers (" << DEC(startFrameNumber) << ", " << DEC(endFrameNumber)
-					<< ") specified with non-zero frame count (" << DEC(uint16_t(inFrameCount)) << ")");
-
+		if (!inFrameCount)
+			{ACFAIL("Zero frames requested");  return false;}
 		if (!FindUnallocatedFrames (inFrameCount, startFrameNumber, endFrameNumber))
 			return false;
 	}
-	else if (endFrameNumber == 0  &&  startFrameNumber == 0)
-	{
-		ACFAIL ("Zero frames requested");
-		return false;	//	inFrameCount zero
-	}
-
-	if (endFrameNumber < startFrameNumber)
-	{
-		ACFAIL ("End frame (" << DEC(endFrameNumber) << ") < Start frame (" << DEC(startFrameNumber) << ")");
-		return false;	//	endFrame must be > startFrame
-	}
-	if ((endFrameNumber - startFrameNumber + 1) < 2)
-	{
-		ACFAIL ("Frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber) << " < 2 frames");
-		return false;	//	must be at least 2 frames
-	}
+	if (inFrameCount)
+		ACWARN ("FrameCount " << DEC(inFrameCount) << " ignored -- using start/end " << DEC(inStartFrameNumber)
+				<< "/" << DEC(inEndFrameNumber) << " frame numbers");
+	if (endFrameNumber < startFrameNumber)	//	endFrame must be > startFrame
+		{ACFAIL("EndFrame(" << DEC(endFrameNumber) << ") precedes StartFrame(" << DEC(startFrameNumber) << ")");  return false;}
+	if ((endFrameNumber - startFrameNumber + 1) < 2)	//	must be at least 2 frames
+		{ACFAIL("Frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber) << " < 2 frames"); return false;}
 
 	//	Warn about interference from other channels...
 	for (UWord chan(0);  chan < ::NTV2DeviceGetNumFrameStores(_boardID);  chan++)
@@ -666,7 +655,7 @@ bool CNTV2Card::AutoCirculateInitForInput (	const NTV2Channel		inChannel,
 				if (GetMode(NTV2Channel(chan), mode)  &&  mode == NTV2_MODE_INPUT)	//	Channel is capturing
 					if (GetInputFrame(NTV2Channel(chan), frameNum))
 						if (frameNum >= ULWord(startFrameNumber)  &&  frameNum <= ULWord(endFrameNumber))	//	Frame in range
-							ACWARN ("FrameStore " << DEC(chan+1) << " is writing frame " << DEC(frameNum)
+							ACWARN("FrameStore " << DEC(chan+1) << " is writing frame " << DEC(frameNum)
 									<< " -- will corrupt AutoCirculate channel " << DEC(inChannel+1) << " input frames "
 									<< DEC(startFrameNumber) << "-" << DEC(endFrameNumber));
 	}
@@ -684,13 +673,13 @@ bool CNTV2Card::AutoCirculateInitForInput (	const NTV2Channel		inChannel,
 		autoCircData.bVal1 = false;
 	else
 		autoCircData.bVal1 = NTV2_IS_VALID_AUDIO_SYSTEM (inAudioSystem) ? true : false;
-	autoCircData.bVal2 = inOptionFlags & AUTOCIRCULATE_WITH_RP188 ? true : false;
-	autoCircData.bVal3 = inOptionFlags & AUTOCIRCULATE_WITH_FBFCHANGE ? true : false;
-	autoCircData.bVal4 = inOptionFlags & AUTOCIRCULATE_WITH_FBOCHANGE ? true : false;
-	autoCircData.bVal5 = inOptionFlags & AUTOCIRCULATE_WITH_COLORCORRECT ? true : false;
-	autoCircData.bVal6 = inOptionFlags & AUTOCIRCULATE_WITH_VIDPROC ? true : false;
-	autoCircData.bVal7 = inOptionFlags & AUTOCIRCULATE_WITH_ANC ? true : false;
-	autoCircData.bVal8 = inOptionFlags & AUTOCIRCULATE_WITH_LTC ? true : false;
+	autoCircData.bVal2 = inOptionFlags & AUTOCIRCULATE_WITH_RP188			? true : false;
+	autoCircData.bVal3 = inOptionFlags & AUTOCIRCULATE_WITH_FBFCHANGE		? true : false;
+	autoCircData.bVal4 = inOptionFlags & AUTOCIRCULATE_WITH_FBOCHANGE		? true : false;
+	autoCircData.bVal5 = inOptionFlags & AUTOCIRCULATE_WITH_COLORCORRECT	? true : false;
+	autoCircData.bVal6 = inOptionFlags & AUTOCIRCULATE_WITH_VIDPROC			? true : false;
+	autoCircData.bVal7 = inOptionFlags & AUTOCIRCULATE_WITH_ANC				? true : false;
+	autoCircData.bVal8 = inOptionFlags & AUTOCIRCULATE_WITH_LTC				? true : false;
 
 	const bool result (AutoCirculate(autoCircData));	//	Call the OS-specific method
 	if (result)
@@ -720,32 +709,22 @@ bool CNTV2Card::AutoCirculateInitForOutput (const NTV2Channel		inChannel,
 	AJAAutoLock	autoLock (&gFBAllocLock);	//	Avoid AutoCirculate buffer collisions
 	LWord	startFrameNumber(static_cast <LWord>(inStartFrameNumber));
 	LWord	endFrameNumber	(static_cast <LWord>(inEndFrameNumber));
-	if (inFrameCount)
+	if (!endFrameNumber  &&  !startFrameNumber)
 	{
-		if (inEndFrameNumber - inStartFrameNumber)
-			ACWARN ("Start and End frame numbers (" << DEC(startFrameNumber) << ", " << DEC(endFrameNumber)
-					<< ") specified with non-zero frame count (" << DEC(uint16_t(inFrameCount)) << ")");
-
+		if (!inFrameCount)
+			{ACFAIL("Zero frames requested");  return false;}
 		if (!FindUnallocatedFrames (inFrameCount, startFrameNumber, endFrameNumber))
 			return false;
 	}
-	else if (endFrameNumber == 0  &&  startFrameNumber == 0)
-	{
-		ACFAIL ("Zero frames requested");
-		return false;	//	inFrameCount zero
-	}
+	else if (inFrameCount)
+		ACWARN ("FrameCount " << DEC(inFrameCount) << " ignored -- using start/end " << DEC(inStartFrameNumber)
+				<< "/" << DEC(inEndFrameNumber) << " frame numbers");
+	if (endFrameNumber < startFrameNumber)	//	endFrame must be > startFrame
+		{ACFAIL("EndFrame(" << DEC(endFrameNumber) << ") precedes StartFrame(" << DEC(startFrameNumber) << ")");  return false;}
+	if ((endFrameNumber - startFrameNumber + 1) < 2)	//	must be at least 2 frames
+		{ACFAIL("Frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber) << " < 2 frames"); return false;}
 
-	if (endFrameNumber < startFrameNumber)
-	{
-		ACFAIL ("End frame (" << DEC(endFrameNumber) << ") < Start frame (" << DEC(startFrameNumber) << ")");
-		return false;	//	endFrame must be > startFrame
-	}
-	if ((endFrameNumber - startFrameNumber + 1) < 2)
-	{
-		ACFAIL ("Frames " << DEC(startFrameNumber) << "-" << DEC(endFrameNumber) << " < 2 frames");
-		return false;	//	must be at least 2 frames
-	}
-
+	//	Warn about interference from other channels...
 	for (UWord chan(0);  chan < ::NTV2DeviceGetNumFrameStores(_boardID);  chan++)
 	{
 		ULWord		frameNum(0);
@@ -1093,6 +1072,13 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 		}	//	else KonaIP 2110 playout
 		S2110DeviceAncToXferBuffers(inChannel, inOutXferInfo);
 	}	//	if SMPTE 2110 playout
+	else if (::NTV2DeviceCanDo2110(_boardID)  &&  NTV2_IS_INPUT_CROSSPOINT(crosspoint))
+	{	//	Need local host buffers to receive 2110 Anc VPID & ATC
+		if (inOutXferInfo.acANCBuffer.IsNULL())
+			tmpLocalF1AncBuffer = inOutXferInfo.acANCBuffer.Allocate(2048);
+		if (inOutXferInfo.acANCField2Buffer.IsNULL())
+			tmpLocalF2AncBuffer = inOutXferInfo.acANCField2Buffer.Allocate(2048);
+	}	//	if SMPTE 2110 capture
 
 	/////////////////////////////////////////////////////////////////////////////
 	//	Call the driver...
@@ -1104,10 +1090,6 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 	{
 		if (::NTV2DeviceCanDo2110(_boardID))
 		{	//	S2110:  decode VPID and timecode anc packets from RTP, and put into A/C Xfer and device regs
-			if (inOutXferInfo.acANCBuffer.IsNULL())
-				tmpLocalF1AncBuffer = inOutXferInfo.acANCBuffer.Allocate(2048);
-			if (inOutXferInfo.acANCField2Buffer.IsNULL())
-				tmpLocalF2AncBuffer = inOutXferInfo.acANCField2Buffer.Allocate(2048);
 			S2110DeviceAncFromXferBuffers(inChannel, inOutXferInfo);
 		}
 		if (taskMode == NTV2_STANDARD_TASKS)

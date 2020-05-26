@@ -1,3 +1,9 @@
+/**
+	@file		ntv2mailbox.h
+	@brief		Declares the CNTV2MailBox class.
+	@copyright	(C) 2014-2020 AJA Video Systems, Inc.  Proprietary and Confidential information.  All rights reserved.
+**/
+
 #ifndef CNTV2MAILBOX_H
 #define CNTV2MAILBOX_H
 
@@ -34,8 +40,6 @@
 
 class AJAExport CNTV2MailBox
 {
-    friend class CNTV2MBController;
-
 public:
     CNTV2MailBox(CNTV2Card & device);
     ~CNTV2MailBox();
@@ -91,7 +95,9 @@ private:
     uint32_t    chanNumber;
 
     uint32_t    bOffset;             // base offset
-    uint32_t    txBuf[FIFO_SIZE+1];
+protected:
+    uint32_t    txBuf[FIFO_SIZE+1];	//	CNTV2MBController needs access to this
+private:
     uint32_t    rxBuf[FIFO_SIZE+1];
 
     uint64_t    _startTime;
