@@ -1,7 +1,7 @@
 /**
 	@file		ntv2hdmi.cpp
 	@brief		Implements most of CNTV2Card's HDMI-related functions.
-	@copyright	(C) 2004-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #include "ntv2card.h"
@@ -388,13 +388,17 @@ bool CNTV2Card::SetHDMIOutBitDepth (const NTV2HDMIBitDepth value)
 
 bool CNTV2Card::GetHDMIOutBitDepth (NTV2HDMIBitDepth & outValue)
 {
-	ULWord d10(0), d12(0);
-	outValue = NTV2_INVALID_HDMIBitDepth;
+	ULWord d10;
+	ULWord d12;
+	bool ret = true;
+	
 	if (::NTV2DeviceGetNumHDMIVideoOutputs(GetDeviceID()) == 0)
 		return false;
 
-	if (!(ReadRegister(kRegHDMIOutControl, d10, kLHIRegMaskHDMIOutBitDepth, kLHIRegShiftHDMIOutBitDepth)
-			&&  ReadRegister (kRegHDMIInputControl, d12,  kRegMaskHDMIOut12Bit, kRegShiftHDMIOut12Bit)))
+	ret &= CNTV2DriverInterface::ReadRegister (kRegHDMIOutControl, d10, kLHIRegMaskHDMIOutBitDepth, kLHIRegShiftHDMIOutBitDepth);
+	ret &= CNTV2DriverInterface::ReadRegister (kRegHDMIInputControl, d12,  kRegMaskHDMIOut12Bit, kRegShiftHDMIOut12Bit);
+
+	if (!ret)
 		return false;
 	
 	if (d12 > 0)
@@ -403,6 +407,7 @@ bool CNTV2Card::GetHDMIOutBitDepth (NTV2HDMIBitDepth & outValue)
 		outValue = NTV2_HDMI10Bit;
 	else
 		outValue = NTV2_HDMI8Bit;
+
 	return true;
 }
 

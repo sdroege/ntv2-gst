@@ -115,9 +115,7 @@ inline char * stpcpy (char *dest, const char * src) {
 
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#if defined (AJA_LINUX)
-	#pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#endif
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 

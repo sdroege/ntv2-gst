@@ -1,8 +1,18 @@
-/**
-	@file		ntv2m31publicinterface.h
-	@brief		Declares structs used for the Corvid HEVC.
-	@copyright	(C) 2012-2020 AJA Video Systems, Inc.  Proprietary and Confidential information.  All rights reserved.
-**/
+/**************************************************************************
+
+    ntv2m31publicinterface.h
+
+    Copyright (C) 2012 AJA Video Systems, Inc.  
+    Proprietary and Confidential information.
+
+    Purpose:
+
+        Defines that are shared between usermode software and driver
+        software
+
+    Platform Independent
+
+**************************************************************************/
 
 #ifndef NTV2M31PUBLICINTERFACE_H
 #define NTV2M31PUBLICINTERFACE_H

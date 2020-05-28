@@ -50,7 +50,6 @@ A_NONAJA_PATH       := $(A_ROOT)/non-aja
 A_APPS_XPLAT_PATH   := $(A_APPS_PATH)/crossplatform
 A_APPS_LINUX_PATH	:= $(A_APPS_PATH)/lin
 A_DEMOAPPS_PATH     := $(A_APPS_XPLAT_PATH)/demoapps
-A_NDIAPPS_PATH		:= $(A_APPS_XPLAT_PATH)/ndiapps
 
 A_LINUX_DRIVER_PATH := $(A_DRIVER_PATH)/linux
 
@@ -67,8 +66,6 @@ A_LIB_NTV2_SRC_LINUX:= $(A_LIB_NTV2_PATH)/src/lin
 
 A_NONAJA_FLTK_PATH  := $(A_NONAJA_PATH)/fltk1.3
 A_NONAJA_FLTK_LIB_PATH:= $(A_NONAJA_FLTK_PATH)/lib
-
-A_NONAJA_NDI_PATH	:= $(A_NONAJA_PATH)/newtek-ndi
 
 A_LIBCMD 		:= ar crsv
 A_LIBCMD_SO		:= ar crsv

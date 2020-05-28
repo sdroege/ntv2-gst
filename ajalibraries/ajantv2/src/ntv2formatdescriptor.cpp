@@ -1,7 +1,7 @@
 /**
 	@file		ntv2formatdescriptor.cpp
 	@brief		Implementation of the NTV2FormatDescriptor class.
-	@copyright	(C) 2016-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 #include "ntv2formatdescriptor.h"
 #include "ntv2utils.h"
@@ -933,17 +933,6 @@ void NTV2FormatDescriptor::MakeInvalid (void)
 	mLinePitch[0] = mLinePitch[1] = mLinePitch[2] = mLinePitch[3] = 0;
 	mNumPlanes		= 0;
 	mFrameGeometry	= NTV2_FG_INVALID;
-}
-
-ULWord NTV2FormatDescriptor::GetTotalBytes (void) const
-{
-	ULWord bytes(0);
-	UWord plane(0);
-	do
-	{
-		bytes += GetTotalRasterBytes(plane);
-	} while (++plane < GetNumPlanes());
-	return bytes;
 }
 
 bool NTV2FormatDescriptor::Is2KFormat (void) const

@@ -1,8 +1,13 @@
-/**
-	@file		performance.cpp
-	@brief		Monitors the operational performance, timing, and stats of an arbitrary module.
-	@copyright	(C) 2011-2020 AJA Video Systems, Inc.  All rights reserved.
-**/
+/////////////////////////////////////////////////////////////////////
+//                          performance.cpp
+//
+// Description: This module will monitor the operational performance,
+// the timing, and the statistics of an arbitrary module.
+//
+// Copyright (C) 2011 AJA Video Systems, Inc.
+// Proprietary and Confidential information.  All rights reserved.
+//
+/////////////////////////////////////////////////////////////////////
 
 /////////////////////////////
 // Includes
