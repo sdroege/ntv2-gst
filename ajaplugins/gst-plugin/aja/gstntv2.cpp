@@ -1851,12 +1851,16 @@ NTV2GstAV::SetupHostBuffers (void)
       mHevcInputCircularBuffer.Add (&mHevcInputBuffer[bufferNdx]);
     }
   }
+
+  GstAllocator *alloc = gst_aja_allocator_new(&mDevice);
+
   // These video buffers are actually passed out of this class so we need to assign them unique numbers
   // so they can be tracked and also they have a state
   mVideoBufferPool = gst_aja_buffer_pool_new ();
   GstStructure *config = gst_buffer_pool_get_config (mVideoBufferPool);
   gst_buffer_pool_config_set_params (config, NULL, mVideoBufferSize,
       VIDEO_ARRAY_SIZE, 0);
+  gst_buffer_pool_config_set_allocator (config, alloc, NULL);
   gst_structure_set (config, "is-video", G_TYPE_BOOLEAN, TRUE, "is-hevc",
       G_TYPE_BOOLEAN, mHevcOutput, NULL);
   gst_buffer_pool_set_config (mVideoBufferPool, config);
@@ -1866,11 +1870,13 @@ NTV2GstAV::SetupHostBuffers (void)
   config = gst_buffer_pool_get_config (mAudioBufferPool);
   gst_buffer_pool_config_set_params (config, NULL, mAudioBufferSize,
       AUDIO_ARRAY_SIZE, 0);
+  gst_buffer_pool_config_set_allocator (config, alloc, NULL);
   gst_structure_set (config, "is-video", G_TYPE_BOOLEAN, FALSE, "is-hevc",
       G_TYPE_BOOLEAN, FALSE, NULL);
   gst_buffer_pool_set_config (mAudioBufferPool, config);
   gst_buffer_pool_set_active (mAudioBufferPool, TRUE);
 
+  gst_object_unref (alloc);
 }                               //    SetupHostBuffers
 
 

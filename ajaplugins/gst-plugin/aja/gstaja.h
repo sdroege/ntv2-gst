@@ -393,4 +393,35 @@ GstBufferPool * gst_aja_buffer_pool_new (void);
 AjaVideoBuff * gst_aja_buffer_get_video_buff (GstBuffer * buffer);
 AjaAudioBuff * gst_aja_buffer_get_audio_buff (GstBuffer * buffer);
 
+#define GST_TYPE_AJA_ALLOCATOR \
+(gst_aja_allocator_get_type())
+#define GST_AJA_ALLOCATOR(obj) \
+(G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_AJA_ALLOCATOR,GstAjaAllocator))
+#define GST_AJA_ALLOCATOR_CLASS(klass) \
+(G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_AJA_ALLOCATOR,GstAjaAllocatorClass))
+#define GST_IS_Aja_ALLOCATOR(obj) \
+(G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_AJA_ALLOCATOR))
+#define GST_IS_Aja_ALLOCATOR_CLASS(klass) \
+(G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_AJA_ALLOCATOR))
+#define GST_AJA_ALLOCATOR_CAST(obj) \
+((GstAjaAllocator*)(obj))
+
+typedef struct _GstAjaAllocator GstAjaAllocator;
+typedef struct _GstAjaAllocatorClass GstAjaAllocatorClass;
+
+struct _GstAjaAllocator
+{
+    GstAllocator allocator;
+
+    CNTV2Card *device;
+};
+
+struct _GstAjaAllocatorClass
+{
+    GstAllocatorClass parent_class;
+};
+
+GType gst_aja_allocator_get_type (void);
+GstAllocator * gst_aja_allocator_new (CNTV2Card *device);
+
 #endif
