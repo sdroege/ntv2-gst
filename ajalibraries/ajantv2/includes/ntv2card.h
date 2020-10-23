@@ -1,7 +1,7 @@
 /**
 	@file		ntv2card.h
-	@brief		Declares the CNTV2Card class and the NTV2VideoFormatSet.
-	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@brief		Declares the CNTV2Card class.
+	@copyright	(C) 2004-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2CARD_H
@@ -246,8 +246,8 @@ AJAExport std::ostream &	operator << (std::ostream & inOutStr, const NTV2DIDSet 
 //////////////////////////////////////////////////////////
 
 typedef std::bitset<16>		NTV2AudioChannelsMuted16;				///< @brief	Per-audio-channel mute state for up to 16 audio channels.
-const NTV2AudioChannelsMuted16	NTV2AudioChannelsMuteAll(0xFFFF);	///< @brief	All 16 audio channels muted/disabled.
-const NTV2AudioChannelsMuted16	NTV2AudioChannelsEnableAll(0x0000);	///< @brief	All 16 audio channels unmuted/enabled.
+const NTV2AudioChannelsMuted16	NTV2AudioChannelsMuteAll = NTV2AudioChannelsMuted16(0xFFFF);	///< @brief	All 16 audio channels muted/disabled.
+const NTV2AudioChannelsMuted16	NTV2AudioChannelsEnableAll = NTV2AudioChannelsMuted16(0x0000);	///< @brief	All 16 audio channels unmuted/enabled.
 
 
 
@@ -435,11 +435,11 @@ public:
     **/
 	AJA_VIRTUAL bool	DeviceCanDoHDMIQuadRasterConversion (void);
 
-    /**
-		@brief		Returns true if the device having the given ID supports the audio mixer.
-		@return		True if the device supports the given input source.
-	**/
 	AJA_VIRTUAL bool	DeviceIsDNxIV (void);
+
+    /**
+		@return		Returns true if the device has a microphone input connector.
+	**/
 	AJA_VIRTUAL bool	DeviceHasMicInput (void);
 
 	/**
@@ -553,19 +553,19 @@ public:
 		@param[in]	pFrameBuffer		Specifies the non-NULL address of the host buffer that is to supply the frame data.
 										The memory it points to must be writeable.
 		@param[in]	inOffsetBytes		Specifies the initial device memory byte offset for the first bytes transferred.
-		@param[in]	inByteCount			Specifies the total number of bytes to transfer.
+		@param[in]	inBytesPerSegment	Specifies the number of bytes per segment to transfer.
 		@param[in]	inNumSegments		Specifies the number of segments to transfer.
 		@param[in]	inSegmentHostPitch	Specifies the number of bytes to increment the host memory pointer after each segment is transferred.
 		@param[in]	inSegmentCardPitch	Specifies the number of bytes to increment the on-device memory pointer after each segment is transferred.
 		@return		True if successful; otherwise false.
-		@note		The host buffer should be at least inByteCount + inOffsetBytes in size, or a host memory access violation may occur.
+		@note		The host buffer should be at least inBytesPerSegment*inNumSegments+inOffsetBytes in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
 		@see		CNTV2Card::DMAWriteSegments, CNTV2Card::DMARead, CNTV2Card::DMAReadFrame, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAReadSegments (	const ULWord		inFrameNumber,
 											ULWord *			pFrameBuffer,
 											const ULWord		inOffsetBytes,
-											const ULWord		inByteCount,
+											const ULWord		inBytesPerSegment,
 											const ULWord		inNumSegments,
 											const ULWord		inSegmentHostPitch,
 											const ULWord		inSegmentCardPitch);
@@ -576,19 +576,19 @@ public:
 		@param[in]	pFrameBuffer		Specifies the non-NULL address of the host buffer that is to supply the frame data.
 										The memory it points to must be readable.
 		@param[in]	inOffsetBytes		Specifies the initial device memory byte offset for the first bytes transferred.
-		@param[in]	inByteCount			Specifies the total number of bytes to transfer.
+		@param[in]	inBytesPerSegment	Specifies the number of bytes per segment to transfer.
 		@param[in]	inNumSegments		Specifies the number of segments to transfer.
 		@param[in]	inSegmentHostPitch	Specifies the number of bytes to increment the host memory pointer after each segment is transferred.
 		@param[in]	inSegmentCardPitch	Specifies the number of bytes to increment the on-device memory pointer after each segment is transferred.
 		@return		True if successful; otherwise false.
-		@note		The host buffer should be at least inByteCount + inOffsetBytes in size, or a host memory access violation may occur.
+		@note		The host buffer should be at least inBytesPerSegment*inNumSegments+inOffsetBytes in size, or a host memory access violation may occur.
 		@note		This function will block and not return until the transfer has finished or failed.
 		@see		CNTV2Card::DMAReadSegments, CNTV2Card::DMAWrite, CNTV2Card::DMAWriteFrame, \ref vidop-fbaccess
 	**/
 	AJA_VIRTUAL bool	DMAWriteSegments (	const ULWord		inFrameNumber,
 											const ULWord *		pFrameBuffer,
 											const ULWord		inOffsetBytes,
-											const ULWord		inByteCount,
+											const ULWord		inBytesPerSegment,
 											const ULWord		inNumSegments,
 											const ULWord		inSegmentHostPitch,
 											const ULWord		inSegmentCardPitch);
@@ -707,26 +707,56 @@ public:
 	/**
 		@brief		Page-locks the given host buffer to reduce transfer time and CPU usage of DMA transfers.
 		@param[in]	inBuffer	Specifies the host buffer to lock.
-								If inBuffer.IsNULL(), the driver will unlock all host buffers.
+		@param[in]	inMap		Also try to lock the segment map.
 		@return		True if successful; otherwise false.
 	**/
-	AJA_VIRTUAL bool	DMABufferLock (const NTV2_POINTER & inBuffer);
+	AJA_VIRTUAL bool	DMABufferLock (const NTV2_POINTER & inBuffer, bool inMap = false);
 
 	/**
 		@brief		Page-locks the given host buffer to reduce transfer time and CPU usage of DMA transfers.
 		@param[in]	pInBuffer		Specifies the starting address of the host buffer to lock.
 		@param[in]	inByteCount		Specifies the total length of the host buffer.
-		@note		Specifying NULL for "pInBuffer" and 0 for "inByteCount" will command the driver to unlock all buffers.
+		@param[in]	inMap			Also try to lock the segment map.
 		@return		True if successful; otherwise false.
 	**/
-	AJA_VIRTUAL inline bool	DMABufferLock (const ULWord * pInBuffer, const ULWord inByteCount)	{return DMABufferLock(NTV2_POINTER(pInBuffer, inByteCount));}
+	AJA_VIRTUAL inline bool	DMABufferLock (const ULWord * pInBuffer, const ULWord inByteCount, bool inMap = false)
+	{
+		return DMABufferLock(NTV2_POINTER(pInBuffer, inByteCount), inMap);
+	}
 
+
+	/**
+		@brief		Unlocks the given host buffer to reduce transfer time and CPU usage of DMA transfers.
+		@param[in]	inBuffer	Specifies the host buffer to unlock.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	DMABufferUnlock (const NTV2_POINTER & inBuffer);
+
+	/**
+		@brief		Unlocks the given host buffer to reduce transfer time and CPU usage of DMA transfers.
+		@param[in]	pInBuffer		Specifies the starting address of the host buffer to unlock.
+		@param[in]	inByteCount		Specifies the total length of the host buffer.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL inline bool	DMABufferUnlock (const ULWord * pInBuffer, const ULWord inByteCount)
+	{
+		return DMABufferUnlock(NTV2_POINTER(pInBuffer, inByteCount));
+	}
 
 	/**
 		@brief		Unlocks all buffers used for DMA transfers.
 		@return		True if successful; otherwise false.
 	**/
 	AJA_VIRTUAL bool	DMABufferUnlockAll ();
+
+	/**
+		@brief		Control automatic buffer locking.
+		@param[in]	inEnable		Specify auto locking state.
+        @param[in]	inMap			Also try to lock the segment map.
+        @param[in]	inMaxLockSize	Specify maximum number of locked bytes.
+		@return		True if successful; otherwise false.
+	**/
+    AJA_VIRTUAL bool	DMABufferAutoLock (const bool inEnable, const bool inMap = false, const ULWord64 inMaxLockSize = 0);
 
 
 	/**
@@ -740,6 +770,28 @@ public:
 	AJA_VIRTUAL bool	DMAClearAncRegion (	const UWord inStartFrameNumber,
 											const UWord inEndFrameNumber,
 											const NTV2AncillaryDataRegion inAncRegion = NTV2_AncRgn_All);
+
+	/**
+		@brief		Answers with the address and size of the given frame.
+		@param[in]	inFrameNumber	Specifies the zero-based frame number of the frame of interest.
+		@param[in]	inChannel		Specifies the channel of interest (for multi-format).
+									Specify NTV2_CHANNEL1 for uni-format.
+		@param[out]	outAddress		Receives the device memory address of the first byte of the given frame.
+		@param[out]	outLength		Receives the frame size, in bytes.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	GetDeviceFrameInfo (	const UWord inFrameNumber,  const NTV2Channel inChannel,
+												uint64_t & outAddress,  uint64_t & outLength);
+
+	/**
+		@brief		Answers with the frame number that contains the given address.
+		@param[in]	inAddress		Specifies the device memory address of the first byte of the given frame.
+		@param[out]	outFrameNumber	Receives the zero-based frame number.
+		@param[in]	inChannel		Optionally specifies the channel of interest (for multi-format).
+									Defaults to NTV2_CHANNEL1 for uni-format.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	DeviceAddressToFrameNumber (const uint64_t inAddress,  UWord & outFrameNumber,  const NTV2Channel inChannel = NTV2_CHANNEL1);
 
 	/**
 		@brief		Answers with the offset and size of an ancillary data region within a device frame buffer.
@@ -846,7 +898,7 @@ public:
 		@param[in]	inRefSource		Specifies the ::NTV2ReferenceSource to use.
 					
 	**/
-	AJA_VIRTUAL bool		SetReference (NTV2ReferenceSource inRefSource, bool inKeepFramePulseSelect = false);
+	AJA_VIRTUAL bool		SetReference (NTV2ReferenceSource inRefSource);
 
 	/**
 		@brief			Answers with the device's current clock reference source. See \ref deviceclockingandsync for more information.
@@ -856,51 +908,23 @@ public:
 	AJA_VIRTUAL bool		GetReference (NTV2ReferenceSource & outRefSource);
 
 	/**
-		@brief		Enables the device's frame pulse reference select. See \ref deviceclockingandsync for more information.
-		@return		True if successful; otherwise false.
-		@param[in]	inRefSource		Specifies the ::NTV2ReferenceSource to use.
-					
-	**/
-	AJA_VIRTUAL	bool		EnableFramePulseReference (bool enable);
-	
-	/**
-		@brief			Answers with the device's current frame pulse reference source. See \ref deviceclockingandsync for more information.
-		@return			True if successful; otherwise false.
-		@param[out]		outRefSource	Receives the ::NTV2ReferenceSource value.
-	**/
-	AJA_VIRTUAL	bool		GetEnableFramePulseReference (bool & outValue);
-	
-	/**
-		@brief		Sets the device's frame pulse reference source. See \ref deviceclockingandsync for more information.
-		@return		True if successful; otherwise false.
-		@param[in]	inRefSource		Specifies the ::NTV2ReferenceSource to use.
-					
-	**/
-	AJA_VIRTUAL	bool		SetFramePulseReference (NTV2ReferenceSource value);
-	
-	/**
-		@brief			Answers with the device's current frame pulse reference source. See \ref deviceclockingandsync for more information.
-		@return			True if successful; otherwise false.
-		@param[out]		outRefSource	Receives the ::NTV2ReferenceSource value.
-	**/
-	AJA_VIRTUAL	bool		GetFramePulseReference (NTV2ReferenceSource & outValue);
-
-	/**
 		@brief		Retrieves the device's current "retail service" task mode.
 		@return		True if successful; otherwise false.
 		@param[out]	outMode		Receives the device's current "every frame task mode" setting. If successful, the
 								variable will contain ::NTV2_DISABLE_TASKS, ::NTV2_STANDARD_TASKS, or ::NTV2_OEM_TASKS.
+		@see		CNTV2DriverInterface::GetStreamingApplication, \ref devicesharing
 	**/
 	AJA_VIRTUAL bool		GetEveryFrameServices (NTV2EveryFrameTaskMode & outMode);
 
 	/**
-		@brief		Enables or disables all or part of the retail mode service task that continuously controls
-					the "retail mode" device configuration. See \ref devicesharing for more information.
+		@brief		Sets the device's task mode.
 		@return		True if successful; otherwise false.
-		@param[in]	mode		Specifies the "every frame task mode" the device is to assume,
-								and must be one of the following values: ::NTV2_DISABLE_TASKS, ::NTV2_STANDARD_TASKS, or ::NTV2_OEM_TASKS.
+		@param[in]	inMode		Specifies the task mode the device is to assume, and must be one of the following values:
+								::NTV2_DISABLE_TASKS, ::NTV2_STANDARD_TASKS, or ::NTV2_OEM_TASKS.
+		@warning	Do not use task mode ::NTV2_STANDARD_TASKS for OEM applications.
+		@see		CNTV2DriverInterface::GetStreamingApplication, \ref devicesharing
 	**/
-	AJA_VIRTUAL bool		SetEveryFrameServices (NTV2EveryFrameTaskMode mode);
+	AJA_VIRTUAL bool		SetEveryFrameServices (const NTV2EveryFrameTaskMode inMode);
 
 	AJA_VIRTUAL bool		SetDefaultVideoOutMode (ULWord mode);
 	AJA_VIRTUAL bool		GetDefaultVideoOutMode (ULWord & outMode);
@@ -1136,6 +1160,14 @@ public:
 	**/
 	AJA_VIRTUAL bool		GetTsiFrameEnable (bool & outIsEnabled, const NTV2Channel inChannel);
 
+	/**
+		@brief		Answers if the SMPTE 425 two-sample-interleave mux/demux input sync has failed or not.
+		@return		True if successful; otherwise false.
+		@param[out]	outSyncFailed	Receives true if the device's Tsi Mux input sync detect is indicating failure.
+		@param[in]	inWhichTsiMux	Specifies the Tsi Mux of interest. Use NTV2_CHANNEL1 for Tsi Mux 1, etc.
+	**/
+	AJA_VIRTUAL bool		GetTsiMuxSyncFail (bool & outSyncFailed, const NTV2Channel inWhichTsiMux);
+
 	AJA_VIRTUAL bool		SetFrameBufferQuarterSizeMode (NTV2Channel inChannel, NTV2QuarterSizeExpandMode inValue);
 	AJA_VIRTUAL bool		GetFrameBufferQuarterSizeMode (NTV2Channel inChannel, NTV2QuarterSizeExpandMode & outValue);
 
@@ -1188,6 +1220,12 @@ public:
 		@note		Setting a new value takes effect at the next output VBI. For example, if line 300 of frame 5 is currently
 					going "out the jack" at the instant this function is called with frame 6, frame 6 won't go "out the jack"
 					until the output VBI fires after the last line of frame 5 has gone out the spigot.
+		@warning	If the designated FrameStore/channel is enabled and in playout mode, and the given frame is within
+					the frame range being used by another FrameStore/channel, this will likely result in wrong/torn/bad
+					output video. \see vidop-fbconflict
+		@warning	If the designated FrameStore/channel is enabled and in playout mode, and the given frame is in
+					Audio Buffer memory that's in use by a running Audio System, this will likely result in wrong/torn/bad
+					output video. \see audioclobber
 		@see		CNTV2Card::GetOutputFrame, \ref vidop-fs
 	**/
 	AJA_VIRTUAL bool		SetOutputFrame (const NTV2Channel inChannel, const ULWord inValue);
@@ -1215,6 +1253,12 @@ public:
 					currently being written in device memory at the instant this function is called with frame 6,
 					video won't be written into frame 6 in device memory until the input VBI fires after the last line
 					of frame 5 has been written.
+		@warning	If the designated FrameStore/channel is enabled and in capture mode, and the given frame is within
+					the frame range being used by another FrameStore/channel, this will likely result in torn/bad video
+					in either or both channels. \see vidop-fbconflict
+		@warning	If the designated FrameStore/channel is enabled and in capture mode, and the given frame is in
+					Audio Buffer memory that's in use by a running Audio System, this will likely result in torn/bad video
+					and/or bad audio. \see audioclobber
 		@see		CNTV2Card::GetInputFrame, \ref vidop-fs
 	**/
 	AJA_VIRTUAL bool		SetInputFrame (const NTV2Channel inChannel, const ULWord inValue);
@@ -1231,10 +1275,10 @@ public:
 	**/
 	AJA_VIRTUAL bool		GetInputFrame (const NTV2Channel inChannel, ULWord & outValue);
 
-	AJA_VIRTUAL bool		SetDualLinkOutputEnable (bool inIsEnabled);
+	AJA_VIRTUAL bool		SetDualLinkOutputEnable (const bool inIsEnabled);
 	AJA_VIRTUAL bool		GetDualLinkOutputEnable (bool & outIsEnabled);
 
-	AJA_VIRTUAL bool		SetDualLinkInputEnable (bool inIsEnabled);
+	AJA_VIRTUAL bool		SetDualLinkInputEnable (const bool inIsEnabled);
 	AJA_VIRTUAL bool		GetDualLinkInputEnable (bool & outIsEnabled);
 
 	AJA_VIRTUAL bool		SetVideoLimiting (const NTV2VideoLimiting inValue);
@@ -3442,41 +3486,43 @@ public:
 
 	/**
 		@brief		Prepares for subsequent AutoCirculate ingest, designating a contiguous block of frame buffers on the device for use
-					by the FrameStore/channel, and also specifies other optional behaviors.
-					Upon successful return, the driver's AutoCirculate status for the given channel will be ::NTV2_AUTOCIRCULATE_INIT.
-					Callers can bypass the default frame buffer allocator by specifying zero for \c inFrameCount, and explicitly
-					specify a frame number range using the \c inStartFrameNumber and \c inEndFrameNumber parameters.
+					by the FrameStore/channel, and specifies other optional behaviors.
+					Upon successful return, the channel's ::NTV2AutoCirculateState is set to ::NTV2_AUTOCIRCULATE_INIT where
+					it will remain until a subsequent call is made to CNTV2Card::AutoCirculateStart or CNTV2Card::AutoCirculateStop.
 		@return		\c true if successful; otherwise \c false.
-		@param[in]	inChannel				Specifies the ::NTV2Channel to use. Call ::NTV2DeviceGetNumFrameStores to discover how many
-											Frame Stores (and therefore channels) are available on the device.
-		@param[in]	inFrameCount			Specifies the number of contiguous device frame buffers to be continuously cycled through.
-											Defaults to 7. Specify zero to explicitly specify the starting and ending frame numbers
-											and avoid using the default frame buffer allocator (see "inStartFrameNumber" and "inEndFrameNumber"
-											parameters below).
-		@param[in]	inAudioSystem			Specifies the Audio System to use, if any. Defaults to ::NTV2_AUDIOSYSTEM_INVALID (no audio).
-		@param[in]	inOptionFlags			A bit mask that specifies additional AutoCirculate options (e.g., ::AUTOCIRCULATE_WITH_RP188,
-											::AUTOCIRCULATE_WITH_LTC, ::AUTOCIRCULATE_WITH_ANC, etc.). Defaults to zero (no options).
-		@param[in]	inNumChannels			Optionally specifies the number of channels to operate on when CNTV2Card::AutoCirculateStart or
-											CNTV2Card::AutoCirculateStop are called. Defaults to 1. Must be greater than zero.
-		@param[in]	inStartFrameNumber		Optionally specifies the starting frame number as a zero-based unsigned decimal integer.
-											Defaults to zero. This parameter is ignored if "inFrameCount" is non-zero.
-		@param[in]	inEndFrameNumber		Optionally specifies the ending frame number as a zero-based unsigned decimal integer.
-											Defaults to zero. This parameter is ignored if "inFrameCount" is non-zero.
-		@details	If this function returns \c true, the driver will have designated a contiguous set of device frame buffers for use by the
-					FrameStore, and placed the channel into the ::NTV2_AUTOCIRCULATE_INIT state. The channel will then be ready for a subsequent
-					call to CNTV2Card::AutoCirculateStart or CNTV2Card::AutoCirculateTransfer.
-					AutoCirculateInitForInput's behavior depends on the device's ::NTV2EveryFrameTaskMode (\see CNTV2Card::GetEveryFrameServices).
-					If the task mode is ::NTV2_OEM_TASKS, the driver will perform most of the device setup, including setting the input format,
-					enabling the frame store, setting the frame store's mode, etc. The driver will not, however, perform routing changes.
-					All widget routing must be completed prior to calling CNTV2Card::AutoCirculateInitForInput.
-					If the device's task mode is ::NTV2_DISABLE_TASKS, the driver won't perform most of the device setup. In this case, the caller
-					must manage <i>all</i> aspects of the device -- the Frame Store ::NTV2Mode, ::NTV2VideoFormat, etc. -- must be configured properly
-					before calling CNTV2Card::AutoCirculateInitForInput.
-					If the device's task mode is ::NTV2_STANDARD_TASKS, and the AJA Agent service (daemon) is running on the host, the device
-					configuration is dictated by the device's current <b>AJA ControlPanel</b> settings. In this case, the <b>AJA ControlPanel</b>
-					settings should agree with what CNTV2Card::AutoCirculateInitForInput is being asked to do. For example, setting the device
-					output to "Test Pattern" in the <b>AJA ControlPanel</b>, then calling CNTV2Card::AutoCirculateInitForInput is contradictory,
-					because AutoCirculate is being asked to capture from a device that's configured for playout.
+		@param[in]	inChannel			Specifies the ::NTV2Channel to use. Call ::NTV2DeviceGetNumFrameStores to discover how many
+										Frame Stores (and therefore channels) are available on the device.
+		@param[in]	inFrameCount		Optionally specifies the number of contiguous device frame buffers to be continuously cycled
+										through if zero is specified for both \c inStartFrameNumber and \c inEndFrameNumber.
+										Defaults to 7. This value is ignored if a legitimate frame range is specified in the
+										\c inStartFrameNumber and \c inEndFrameNumber parameters (see below).
+		@param[in]	inAudioSystem		Specifies the Audio System to use, if any. Defaults to ::NTV2_AUDIOSYSTEM_INVALID (no audio).
+		@param[in]	inOptionFlags		A bit mask that specifies additional AutoCirculate options (e.g., ::AUTOCIRCULATE_WITH_RP188,
+										::AUTOCIRCULATE_WITH_LTC, ::AUTOCIRCULATE_WITH_ANC, etc.). Defaults to zero (no options).
+		@param[in]	inNumChannels		Optionally specifies the number of channels to operate on when CNTV2Card::AutoCirculateStart or
+										CNTV2Card::AutoCirculateStop are called. Defaults to 1. Must be greater than zero.
+		@param[in]	inStartFrameNumber	Specifies the starting frame number as a zero-based unsigned decimal integer. Defaults to zero.
+										This parameter always overrides \c inFrameCount if, when specified with \c inEndFrameNumber,
+										are both non-zero. If specified, must be less than \c inEndFrameNumber.
+		@param[in]	inEndFrameNumber	Specifies the ending frame number as a zero-based unsigned decimal integer. Defaults to zero.
+										This parameter always overrides \c inFrameCount if, when specified with \c inEndFrameNumber,
+										are both non-zero. If specified, must be less than \c inStartFrameNumber.
+		@note		For Multi-Channel or 4K/8K applications (i.e. where more than one channel is used for streaming video), AJA
+					recommends specifying zero for \c inFrameCount, and explicitly specifying a frame range using \c inStartFrameNumber
+					and \c inEndFrameNumber parameters.
+		@note		Smaller frame counts increase the likelihood of frame drops.
+		@note		All widget routing should be completed prior to calling this function.
+		@details	If this function succeeds, the driver will have designated a contiguous set of device frame buffers to be written by
+					the FrameStore, and placed the channel into the ::NTV2_AUTOCIRCULATE_INIT state. The channel will then be ready for
+					a subsequent call to CNTV2Card::AutoCirculateStart or CNTV2Card::AutoCirculateTransfer.
+					If the device's ::NTV2EveryFrameTaskMode (see CNTV2Card::GetEveryFrameServices ) is ::NTV2_OEM_TASKS, the driver
+					will perform most of the device setup, including configuring the frame store, etc.;
+					otherwise (if ::NTV2_DISABLE_TASKS ), the caller must manage <i>all</i> aspects of the FrameStore ( ::NTV2Mode,
+					::NTV2VideoFormat, etc.) before calling this function.
+		@warning	If the frame range overlaps or includes other frames used by any other enabled FrameStore/channel, this will likely
+					result in torn/bad video. \see vidop-fbconflict
+		@warning	If the frame range runs into Audio Buffer memory that's used by a running Audio System, this will likely result in
+					torn/bad video and/or bad audio. \see audioclobber
 		@see		CNTV2Card::AutoCirculateStop, CNTV2Card::AutoCirculateInitForOutput, \ref autocirculatecapture
 	**/
 
@@ -3490,41 +3536,43 @@ public:
 
 	/**
 		@brief		Prepares for subsequent AutoCirculate playout, designating a contiguous block of frame buffers on the device for use
-					by the FrameStore/channel, and also specifies other optional behaviors.
-					Upon successful return, the driver's AutoCirculate status for the given channel will be ::NTV2_AUTOCIRCULATE_INIT.
-					Callers can bypass the default frame buffer allocator by specifying zero for \c inFrameCount, and explicitly
-					specify a frame number range using the \c inStartFrameNumber and \c inEndFrameNumber parameters.
+					by the FrameStore/channel, and specifies other optional behaviors.
+					Upon successful return, the channel's ::NTV2AutoCirculateState is set to ::NTV2_AUTOCIRCULATE_INIT where
+					it will remain until a subsequent call is made to CNTV2Card::AutoCirculateStart or CNTV2Card::AutoCirculateStop.
 		@return		\c true if successful; otherwise \c false.
-		@param[in]	inChannel				Specifies the ::NTV2Channel to use. Call ::NTV2DeviceGetNumFrameStores to discover how many
-											Frame Stores (and therefore channels) are available on the device.
-		@param[in]	inFrameCount			Specifies the number of contiguous device frame buffers to be continuously cycled through.
-											Defaults to 7. Specify zero to explicitly specify the starting and ending frame numbers
-											and avoid using the default frame buffer allocator (see "inStartFrameNumber" and "inEndFrameNumber"
-											parameters below).
-		@param[in]	inAudioSystem			Specifies the Audio System to use, if any. Defaults to ::NTV2_AUDIOSYSTEM_INVALID (no audio).
-		@param[in]	inOptionFlags			A bit mask that specifies additional AutoCirculate options (e.g., ::AUTOCIRCULATE_WITH_RP188,
-											::AUTOCIRCULATE_WITH_LTC, ::AUTOCIRCULATE_WITH_ANC, etc.). Defaults to zero (no options).
-		@param[in]	inNumChannels			Optionally specifies the number of channels to operate on when CNTV2Card::AutoCirculateStart or
-											CNTV2Card::AutoCirculateStop are called. Defaults to 1. Must be greater than zero.
-		@param[in]	inStartFrameNumber		Optionally specifies the starting frame number as a zero-based unsigned decimal integer.
-											Defaults to zero. This parameter is ignored if "inFrameCount" is non-zero.
-		@param[in]	inEndFrameNumber		Optionally specifies the ending frame number as a zero-based unsigned decimal integer.
-											Defaults to zero. This parameter is ignored if "inFrameCount" is non-zero.
-		@details	If this function returns \c true, the driver will have designated a contiguous set of device frame buffers for use by the
-					FrameStore, and placed the channel into the ::NTV2_AUTOCIRCULATE_INIT state. The channel will then be ready for a subsequent
-					call to CNTV2Card::AutoCirculateStart or CNTV2Card::AutoCirculateTransfer.
-					AutoCirculateInitForOutput's behavior depends on the device's ::NTV2EveryFrameTaskMode (\see CNTV2Card::GetEveryFrameServices).
-					If the task mode is ::NTV2_OEM_TASKS, the driver will perform most of the device setup, including setting the output standard,
-					enabling the frame store, setting the frame store's mode, etc. The driver will not, however, perform routing changes.
-					All widget routing must be completed prior to calling CNTV2Card::AutoCirculateInitForOutput.
-					If the device's task mode is ::NTV2_DISABLE_TASKS, the driver won't perform most of the device setup. In this case, the caller
-					must manage <i>all</i> aspects of the device -- the Frame Store ::NTV2Mode, ::NTV2VideoFormat, etc. -- must be configured properly
-					before calling CNTV2Card::AutoCirculateInitForOutput.
-					If the device's task mode is ::NTV2_STANDARD_TASKS, and the AJA Agent service (daemon) is running on the host, the device
-					configuration is dictated by the device's current <b>AJA ControlPanel</b> settings. In this case, the <b>AJA ControlPanel</b>
-					settings should agree with what CNTV2Card::AutoCirculateInitForOutput is being asked to do. For example, setting the device
-					output to "Input Passthrough" in the <b>AJA ControlPanel</b>, then calling CNTV2Card::AutoCirculateInitForOutput is contradictory,
-					because AutoCirculate is being asked to play video from a device that's configured for input.
+		@param[in]	inChannel			Specifies the ::NTV2Channel to use. Call ::NTV2DeviceGetNumFrameStores to discover how many
+										Frame Stores (and therefore channels) are available on the device.
+		@param[in]	inFrameCount		Optionally specifies the number of contiguous device frame buffers to be continuously cycled
+										through if zero is specified for both \c inStartFrameNumber and \c inEndFrameNumber.
+										Defaults to 7. This value is ignored if a legitimate frame range is specified in the
+										\c inStartFrameNumber and \c inEndFrameNumber parameters (see below).
+		@param[in]	inAudioSystem		Specifies the Audio System to use, if any. Defaults to ::NTV2_AUDIOSYSTEM_INVALID (no audio).
+		@param[in]	inOptionFlags		A bit mask that specifies additional AutoCirculate options (e.g., ::AUTOCIRCULATE_WITH_RP188,
+										::AUTOCIRCULATE_WITH_LTC, ::AUTOCIRCULATE_WITH_ANC, etc.). Defaults to zero (no options).
+		@param[in]	inNumChannels		Optionally specifies the number of channels to operate on when CNTV2Card::AutoCirculateStart or
+										CNTV2Card::AutoCirculateStop are called. Defaults to 1. Must be greater than zero.
+		@param[in]	inStartFrameNumber	Specifies the starting frame number as a zero-based unsigned decimal integer. Defaults to zero.
+										This parameter always overrides \c inFrameCount if, when specified with \c inEndFrameNumber,
+										are both non-zero. If specified, must be less than \c inEndFrameNumber.
+		@param[in]	inEndFrameNumber	Specifies the ending frame number as a zero-based unsigned decimal integer. Defaults to zero.
+										This parameter always overrides \c inFrameCount if, when specified with \c inEndFrameNumber,
+										are both non-zero. If specified, must be less than \c inStartFrameNumber.
+		@note		For Multi-Channel or 4K/8K applications (i.e. where more than one channel is used for streaming video), AJA
+					recommends specifying zero for \c inFrameCount, and explicitly specifying a frame range using \c inStartFrameNumber
+					and \c inEndFrameNumber parameters.
+		@note		Smaller frame counts increase the likelihood of frame drops.
+		@note		All widget routing should be completed prior to calling this function.
+		@warning	If the frame range overlaps or includes other frames used by any other enabled FrameStore/channel, this will likely
+					result in torn/bad video. \see vidop-fbconflict
+		@warning	If the frame range runs into Audio Buffer memory that's used by a running Audio System, this will likely result in
+					torn/bad video. \see audioclobber
+		@details	If this function succeeds, the driver will have designated a contiguous set of device frame buffers to be read by
+					the FrameStore, and placed the channel into the ::NTV2_AUTOCIRCULATE_INIT state. The channel will then be ready for
+					a subsequent call to CNTV2Card::AutoCirculateStart or CNTV2Card::AutoCirculateTransfer.
+					If the device's ::NTV2EveryFrameTaskMode (see CNTV2Card::GetEveryFrameServices ) is ::NTV2_OEM_TASKS, the driver
+					will perform most of the device setup, including configuring the frame store, setting the output standard, etc.;
+					otherwise (if ::NTV2_DISABLE_TASKS ), the caller must manage <i>all</i> aspects of the FrameStore ( ::NTV2Mode,
+					::NTV2VideoFormat, etc.) before calling this function.
 		@see		CNTV2Card::AutoCirculateStop, CNTV2Card::AutoCirculateInitForInput, \ref autocirculateplayout
 	**/
 
@@ -3827,7 +3875,7 @@ public:
 					the device to 16MB frames, which would result in the capture of several "glitched" frames in Channel 1. To prevent
 					the glitch, call this function to set 16MB frames before starting capture in Channel 1.
 	**/
-	AJA_VIRTUAL bool	SetFrameBufferSize(NTV2Channel inChannel, NTV2Framesize inValue);
+	AJA_VIRTUAL bool	SetFrameBufferSize (const NTV2Channel inChannel, const NTV2Framesize inValue);
 
 	/**
 		@brief		Answers with the frame size currently being used on the device.
@@ -3835,7 +3883,7 @@ public:
 		@param[out]	outValue	Receives the device's current frame size.
 		@return		True if successful;  otherwise false.
 	**/
-	AJA_VIRTUAL bool	GetFrameBufferSize (NTV2Channel inChannel, NTV2Framesize & outValue);
+	AJA_VIRTUAL bool	GetFrameBufferSize (const NTV2Channel inChannel, NTV2Framesize & outValue);
 #if !defined(NTV2_DEPRECATE_14_3)
 	AJA_VIRTUAL inline NTV2_DEPRECATED_f(bool	GetFrameBufferSize (NTV2Channel inChannel, NTV2Framesize * pOutValue))	{return pOutValue ? GetFrameBufferSize (inChannel, *pOutValue) : false;}	///< @deprecated	Use the alternate function that has the non-constant reference output parameter instead.
 #endif	//	NTV2_DEPRECATE_14_3
@@ -4664,8 +4712,7 @@ public:
 		@param[in]	inOutputXpt		Specifies the output (signal source) of interest.
 		@param[out]	outCanConnect	Receives true if the input can be connected to the specified output;  otherwise false.
 		@return		True if successful;  otherwise false.
-		@bug		This function is not currently implemented.
-		@todo		This needs to be implemented.
+		@note		This function will return false (failure) if the device firmware doesn't support route validation.
 		@see		ntv2signalrouting, CNTV2Card::Connect
 	**/
 	AJA_VIRTUAL bool	CanConnect (const NTV2InputCrosspointID inInputXpt, const NTV2OutputCrosspointID inOutputXpt, bool & outCanConnect);
@@ -4690,6 +4737,27 @@ public:
 		@see		ntv2signalrouting, CNTV2SignalRouter
 	**/
 	AJA_VIRTUAL bool	ApplySignalRoute (const CNTV2SignalRouter & inRouter, const bool inReplace = false);
+
+
+	/**
+		@brief		Applies the given widget routing connections to the AJA device.
+		@return		True if successful; otherwise false.
+		@param[in]	inConnections	Specifies the routing connections to be applied to the device.
+		@param[in]	inReplace		If true, replaces the device's existing widget routing with the given one.
+									If false, augments the device's existing widget routing.
+									Defaults to false.
+		@details	Most modern AJA devices do not have fixed interconnections between inputs, outputs, frame stores
+					and the various video processing widgets (e.g., colorspace converters, mixer/keyers, etc.).
+					Instead, these routing configurations are designated by a set of registers, one for each input
+					of each widget. The register's value determines which widget output node (crosspoint) the input
+					is connected to. A zero value in the register means that the input is not connected to anything.
+					To simplify this process of routing widgets on the device, a set of signal paths (i.e., interconnects)
+					are built and then applied to the device in this function call.
+					This function iterates over each connection that's specified in the given routing table and updates
+					the appropriate register in the device.
+		@see		ntv2signalrouting
+	**/
+	AJA_VIRTUAL bool	ApplySignalRoute (const NTV2XptConnections & inConnections, const bool inReplace = false);
 
 	/**
 		@brief		Removes all existing signal path connections between any and all widgets on the AJA device.
@@ -4716,6 +4784,8 @@ public:
 		@see		ntv2signalrouting, CNTV2SignalRouter, CNTV2Card::GetRouting, CNTV2Card::ApplySignalRoute
 	**/
 	AJA_VIRTUAL bool	GetRoutingForChannel (const NTV2Channel inChannel, CNTV2SignalRouter & outRouting);
+
+	AJA_VIRTUAL bool	HasCanConnectROM (void);	///< @return	True if the device firmware has ROM containing legal xpt routes
 
 	#if !defined (NTV2_DEPRECATE)
 		AJA_VIRTUAL NTV2_DEPRECATED_f(bool	OutputRoutingTable (const NTV2RoutingTable * pInRoutingTable));	///< @deprecated	Use the ApplySignalRoute call instead.
@@ -5381,165 +5451,115 @@ public:
 	**/
 	///@{
 	/**
-		@brief	Passes back an enum specifying if the watchdog timer would put
-				the SDI relays into bypass or send the signals through the device.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the current state of the watchdog
-									timer, either NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE.
-		@note	The watchdog timer will not change the state of the relays
-				if they are under manual control.
+		@brief		Answers if the bypass relays between connectors 1/2 or 3/4 are currently
+					in bypass or routing the signals through the device.
+		@return		True if successful; otherwise false.
+		@param[out]	outValue	Receives the current state of the relays (::NTV2_DEVICE_BYPASSED
+								or ::NTV2_THROUGH_DEVICE).
+		@param[in]	inIndex0	Specifies the relay/connector pair of interest.
+								Use 0 for SDI 1&2, or 1 for SDI 3&4.
+	**/
+	AJA_VIRTUAL bool	GetSDIRelayPosition (NTV2RelayState & outValue, const UWord inIndex0);
+
+	/**
+		@brief		Answers if the bypass relays between connectors 1 and 2 would be in
+					bypass or would route signals through the device, if under manual control.
+		@param[out]	outValue	Receives the relay state (::NTV2_DEVICE_BYPASSED or ::NTV2_THROUGH_DEVICE).
+		@param[in]	inIndex0	Specifies the relay/connector pair of interest.
+								Use 0 for SDI 1&2, or 1 for SDI 3&4.
+		@return		True if successful; otherwise false.
+		@note		Manual control will not change the state of the relays if
+					the watchdog timer for the relays is enabled.
+	**/
+	AJA_VIRTUAL bool	GetSDIRelayManualControl (NTV2RelayState & outValue, const UWord inIndex0);
+
+	/**
+		@brief		Sets the state of the given connector pair relays to ::NTV2_DEVICE_BYPASSED
+					(or ::NTV2_THROUGH_DEVICE if under manual control).
+		@param[in]	inValue		Specifies the desired relay state.
+		@param[in]	inIndex0	Specifies the relay/connector pair of interest.
+								Use 0 for SDI 1&2, or 1 for SDI 3&4.
+		@return		True if successful; otherwise false.
+		@note		Manual control won't change the state of the relays if the watchdog timer for the relays
+					is enabled. Because this call modifies the control register, it sends a "kick" sequence,
+					which has the side effect of restarting the timeout counter.
+	**/
+	AJA_VIRTUAL bool	SetSDIRelayManualControl (const NTV2RelayState inValue, const UWord inIndex0);
+
+	/**
+		@brief		Answers true if the given connector pair relays are under watchdog timer control,
+					or false if they're under manual control.
+		@param[out]	outIsEnabled	Receives 'true' if the watchdog timer is controlling the relays;
+									receives 'false' if the relays are under manual control.
+		@param[in]	inIndex0	Specifies the relay/connector pair of interest.
+								Use 0 for SDI 1&2, or 1 for SDI 3&4.
+		@return		True if successful; otherwise false.
+	**/
+	AJA_VIRTUAL bool	GetSDIWatchdogEnable (bool & outIsEnabled, const UWord inIndex0);
+
+	/**
+		@brief		Sets the connector pair relays to be under watchdog timer control or manual control.
+		@param[in] 	inEnable	Specify true to have the watchdog timer control the relays.
+								Specify false to manually control the relays.
+		@param[in]	inIndex0	Specifies the relay/connector pair of interest.
+								Use 0 for SDI 1&2, or 1 for SDI 3&4.
+		@return		True if successful; otherwise false.
+		@note		Because this call modifies the control register, it sends a kick sequence,
+					which restarts the timeout counter.
+		@note		If the board's jumpers aren't set in the position to enable the watchdog timer,
+					this call will have no effect. See the <b>Hardware Jumpers</b> section in the
+					\ref corvid24 documentation for more information.
+	**/
+	AJA_VIRTUAL bool	SetSDIWatchdogEnable (const bool inEnable, const UWord inIndex0);
+
+	/**
+		@brief		Answers if the watchdog timer would put the SDI relays into ::NTV2_DEVICE_BYPASSED
+					or ::NTV2_THROUGH_DEVICE.
+		@param[out]	outValue	Receives the current state of the watchdog timer.
+		@return		True if successful; otherwise false.
+		@note		The watchdog timer won't change the state of the relays if they're under manual control.
 	**/
 	AJA_VIRTUAL bool	GetSDIWatchdogStatus (NTV2RelayState & outValue);
 
 	/**
-		@brief	Answers if the bypass relays between connectors 1 and 2 are currently
-				in bypass or routing the signals through the device.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the current state of the relays (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
-	**/
-	AJA_VIRTUAL bool	GetSDIRelayPosition12 (NTV2RelayState & outValue);
-
-	/**
-		@brief	Answers if the bypass relays between connectors 3 and 4 are currently
-				in bypass or routing the signals through the device.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the current state of the relays (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
-	**/
-	AJA_VIRTUAL bool	GetSDIRelayPosition34 (NTV2RelayState & outValue);
-
-	/**
-		@brief	Answers if the bypass relays between connectors 1 and 2 would be in
-				bypass or would route signals through the device, if under manual control.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
-		@note	Manual control will not change the state of the relays if
-				the watchdog timer for the relays is enabled.
-	**/
-	AJA_VIRTUAL bool	GetSDIRelayManualControl12 (NTV2RelayState & outValue);
-
-	/**
-		@brief	Sets the state of the relays between connectors 1 and 2 to
-				bypass or through the device, if under manual control.
-		@return	True if successful; otherwise false.
-		@param[in]	inValue		Specifies the desired relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
-		@note	Manual control will not change the state of the relays if
-				the watchdog timer for the relays is enabled. Because this
-				call modifies the control register, it sends a kick
-				sequence, which has the side effect of restarting the
-				timeout counter.
-	**/
-	AJA_VIRTUAL bool	SetSDIRelayManualControl12 (const NTV2RelayState inValue);
-
-	/**
-		@brief	Answers if the bypass relays between connectors 3 and 4 would be
-				in bypass or would route through the device, if under manual control.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives the relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
-		@note	Manual control will not change the state of the relays if
-				the watchdog timer for the relays is enabled.
-	**/
-	AJA_VIRTUAL bool	GetSDIRelayManualControl34 (NTV2RelayState & outValue);
-
-	/**
-		@brief	Sets the state of the relays between connectors 3 and 4 to
-				bypass or through the device, if under manual control.
-		@return	True if successful; otherwise false.
-		@param[in]	inValue		Specifies the relay state (NTV2_DEVICE_BYPASSED or NTV2_THROUGH_DEVICE).
-		@note	Manual control will not change the state of the relays if
-				the watchdog timer for the relays is enabled. Because this
-				call modifies the control register, it sends a kick
-				sequence, which has the side effect of restarting the
-				timeout counter.
-	**/
-	AJA_VIRTUAL bool	SetSDIRelayManualControl34 (const NTV2RelayState inValue);
-
-	/**
-		@brief	Answers true if the relays between connectors 1 and 2 are under
-				watchdog timer control, or false if they are under manual control.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives 'true' if the watchdog timer is in control
-				of the relays; otherwise false if the relays are under manual control.
-	**/
-	AJA_VIRTUAL bool	GetSDIWatchdogEnable12 (bool & outValue);
-
-	/**
-		@brief	Specifies if the relays between connectors 1 and 2 should be under
-				watchdog timer control or manual control.
-		@return	True if successful; otherwise false.
-		@param[in] 	inValue	Specify true if if the watchdog timer is to be in control
-							of the relays, or false if the relays are to be under
-							manual control.
-		@note	Because this call modifies the control register, it sends
-				a kick sequence, which has the side effect of restarting
-				the timeout counter.
-	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogEnable12 (const bool inValue);
-
-	/**
-		@brief	Answers true if the relays between connectors 3 and 4 are under
-				watchdog timer control, or false if they are under manual control.
-		@return	True if successful; otherwise false.
-		@param[out]		outValue	Receives 'true' if the watchdog timer is in control
-									of the relays; otherwise 'false' if the relays are under
-									manual control.
-	**/
-	AJA_VIRTUAL bool	GetSDIWatchdogEnable34 (bool & outValue);
-
-	/**
-		@brief	Specifies if the relays between connectors 3 and 4 should be under
-				watchdog timer control or manual control.
-		@return	True if successful; otherwise false.
-		@param[in]	inValue		Specify true if if the watchdog timer is to be in control
-								of the relays, or false if the relays are to be under
-								manual control.
-		@note	Because this call modifies the control register, it sends
-				a kick sequence, which has the side effect of restarting
-				the timeout counter.
-	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogEnable34 (const bool inValue);
-
-	/**
-		@brief	Answers with the amount of time that must elapse before the watchdog
-				timer times out.
-		@return	True if successful; otherwise false.
-	 	@param[out]		outValue	Receives the time value in units of 8 nanoseconds.
-		@note	The timeout interval begins or is reset when a kick
-				sequence is received.
+		@brief		Answers with the amount of time that must elapse before the watchdog timer times out.
+	 	@param[out]	outValue	Receives the time value in units of 8 nanoseconds.
+		@return		True if successful; otherwise false.
+		@note		The timeout interval begins or is reset when a kick sequence is received.
 	**/
 	AJA_VIRTUAL bool	GetSDIWatchdogTimeout (ULWord & outValue);
 
 	/**
-		@brief	Specifies the amount of time that must elapse before the watchdog
-				timer times out.
-		@return	True if successful; otherwise false.
+		@brief		Specifies the amount of time that must elapse before the watchdog timer times out.
 		@param[in]	inValue		Specifies the timeout interval in units of 8 nanoseconds.
-		@note	The timeout interval begins or is reset when a kick
-				sequence is received. This call resets the timeout counter
-				to zero, which will then start counting up until this value
-				is reached, triggering the watchdog timer if it's enabled.
+		@return		True if successful; otherwise false.
+		@note		The timeout interval begins or is reset when a kick sequence is received.
+					This call resets the timeout counter to zero, which will then start counting
+					until this value is reached, triggering the watchdog timer (if it's enabled).
 	**/
 	AJA_VIRTUAL bool	SetSDIWatchdogTimeout (const ULWord inValue);
 
 	/**
-		@brief	Restarts the countdown timer to prevent the watchdog timer from
-				timing out.
-		@return	True if successful; otherwise false.
+		@brief		Restarts the countdown timer to prevent the watchdog timer from timing out.
+		@return		True if successful; otherwise false.
 	**/
 	AJA_VIRTUAL bool	KickSDIWatchdog (void);
 
-	/**
-		@brief	Answers with the current state of all the control registers.
-		@return	True if successful; otherwise false.
-		@param[out]		outState	Receives the state of the control registers.
-	**/
-	AJA_VIRTUAL bool	GetSDIWatchdogState (NTV2SDIWatchdogState & outState);
-
-	/**
-		@brief	Sets all of the control registers to a given state.
-		@return	True if successful; otherwise false.
-		@param[in]	inState		Specifies the new control register state.
-	**/
-	AJA_VIRTUAL bool	SetSDIWatchdogState (const NTV2SDIWatchdogState & inState);
+	#if !defined(NTV2_DEPRECATE_15_6)
+		//	Old APIs
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIRelayPosition12 (NTV2RelayState & outValue))			{return GetSDIRelayPosition(outValue,0);}		///< @deprecated	Use GetSDIRelayPosition instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIRelayPosition34 (NTV2RelayState & outValue))			{return GetSDIRelayPosition(outValue,1);}		///< @deprecated	Use GetSDIRelayPosition instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIRelayManualControl12 (NTV2RelayState & outValue))		{return GetSDIRelayManualControl(outValue,0);}	///< @deprecated	Use GetSDIRelayManualControl instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIRelayManualControl34 (NTV2RelayState & outValue))		{return GetSDIRelayManualControl(outValue,1);}	///< @deprecated	Use GetSDIRelayManualControl instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIWatchdogEnable12 (bool & outIsEnabled))				{return GetSDIWatchdogEnable(outIsEnabled,0);}	///< @deprecated	Use GetSDIWatchdogEnable instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIWatchdogEnable34 (bool & outIsEnabled))				{return GetSDIWatchdogEnable(outIsEnabled,1);}	///< @deprecated	Use GetSDIWatchdogEnable instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool SetSDIRelayManualControl12 (const NTV2RelayState inValue))	{return SetSDIRelayManualControl(inValue,0);}	///< @deprecated	Use SetSDIRelayManualControl instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool SetSDIRelayManualControl34 (const NTV2RelayState inValue))	{return SetSDIRelayManualControl(inValue,1);}	///< @deprecated	Use SetSDIRelayManualControl instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool SetSDIWatchdogEnable12 (const bool inEnable))				{return SetSDIWatchdogEnable(inEnable,0);}		///< @deprecated	Use SetSDIWatchdogEnable instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool SetSDIWatchdogEnable34 (const bool inEnable))				{return SetSDIWatchdogEnable(inEnable,1);}		///< @deprecated	Use SetSDIWatchdogEnable instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool GetSDIWatchdogState (NTV2SDIWatchdogState & outState));		///< @deprecated	Use the other GetSDI... functions instead.
+		AJA_VIRTUAL NTV2_DEPRECATED_f(bool SetSDIWatchdogState (const NTV2SDIWatchdogState & inState));	///< @deprecated	Use the other SetSDI... functions instead.
+	#endif	//	!defined(NTV2_DEPRECATE_15_6)
 	///@}
 
 	/**
@@ -6058,6 +6078,13 @@ public:
 	AJA_VIRTUAL bool			GetInstalledBitfileInfo (ULWord & outNumBytes, std::string & outDateStr, std::string & outTimeStr);
 
 	/**
+		@brief		Generates and returns an info string with date, time and name for the given inBifFileInfo.
+		@param[in]	inBitFileInfo	BitFile Info structure to get information from, no validity checks are made on the structure before use.
+		@return		A string containing the bitfile information.
+	**/
+	AJA_VIRTUAL std::string		GetBitfileInfoString (const BITFILE_INFO_STRUCT & inBitFileInfo);
+
+	/**
 		@brief		Answers whether or not the "fail-safe" (aka "safe-boot") bitfile is currently loaded and running in the FPGA.
 		@param[out]	outIsFailSafe	Receives true if the "fail-safe" bitfile is currently loaded and running in the FPGA;
 									otherwise receives false. This return value cannot be trusted if the function result
@@ -6135,7 +6162,7 @@ public:
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(void							RenderTestPatternToBuffer (UWord testPatternNumber, ULWord * buffer));					///< Originally in CNTV2TestPattern.
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(bool							RenderTestPatternBuffer (NTV2Channel channel, UByte * buffer, NTV2VideoFormat videoFormat, NTV2FrameBufferFormat fbFormat, ULWord width, ULWord height, ULWord rowBytes));	///< @deprecated	Originally in CNTV2TestPattern.
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(void							DownloadTestPatternBuffer (ULWord * buffer, ULWord size = 0));							///< Originally in CNTV2TestPattern.
-	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(ULWord						GetPatternBufferSize (ULWord * width = 0, ULWord * height = 0, ULWord * rowBytes = 0, ULWord * firstLine = 0));	///< Originally in CNTV2TestPattern.
+	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(ULWord						GetPatternBufferSize (ULWord * width = AJA_NULL, ULWord * height = AJA_NULL, ULWord * rowBytes = AJA_NULL, ULWord * firstLine = AJA_NULL));	///< Originally in CNTV2TestPattern.
 	
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(int							MakeSineWaveVideo (double radians, bool bChroma));										///< Originally in CNTV2TestPattern.
 	AJA_VIRTUAL NTV2_SHOULD_BE_DEPRECATED(void							ConvertLinePixelFormat (UWord * unPackedBuffer, ULWord * packedBuffer, int numPixels));	///< Originally in CNTV2TestPattern.
@@ -6500,8 +6527,11 @@ public:
 	AJA_VIRTUAL bool SetHDMIHDRDCIP3 (void);
 	
 	AJA_VIRTUAL bool SetVPIDTransferCharacteristics (const NTV2VPIDTransferCharacteristics inValue, const NTV2Channel inChannel);
+	AJA_VIRTUAL bool GetVPIDTransferCharacteristics (NTV2VPIDTransferCharacteristics & outValue, const NTV2Channel inChannel);
 	AJA_VIRTUAL bool SetVPIDColorimetry (const NTV2VPIDColorimetry inValue, const NTV2Channel inChannel);
+	AJA_VIRTUAL bool GetVPIDColorimetry (NTV2VPIDColorimetry & outValue, const NTV2Channel inChannel);
 	AJA_VIRTUAL bool SetVPIDVPIDLuminance (const NTV2VPIDLuminance inValue, const NTV2Channel inChannel);
+	AJA_VIRTUAL bool GetVPIDVPIDLuminance (NTV2VPIDLuminance & outValue, const NTV2Channel inChannel);
 
 	///@}
 
@@ -6698,6 +6728,7 @@ private:
 	AJA_VIRTUAL bool	GetFBSizeAndCountFromHW(ULWord* size, ULWord* count);
 
 	AJA_VIRTUAL bool	IsMultiFormatActive (void);	///< @return	True if the device supports the multi format feature and it's enabled; otherwise false.
+
 	/**
 		@brief		Answers with the NTV2RegInfo of the register associated with the given boolean (i.e., "Can Do") device feature.
 		@param[in]	inParamID		Specifies the device features parameter of interest.

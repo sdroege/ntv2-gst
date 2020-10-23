@@ -1,7 +1,7 @@
 /**
     @file		ntv2registerexpert.h
     @brief		Declares the CNTV2RegisterExpert class.
-    @copyright	(C) 2016-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
+    @copyright	(C) 2016-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
 **/
 
 #ifndef NTV2REGEXPERT_H
@@ -63,6 +63,7 @@
 #define	kRegClass_ReadOnly	std::string ("kRegClass_ReadOnly")
 #define	kRegClass_WriteOnly	std::string ("kRegClass_WriteOnly")
 #define	kRegClass_Virtual	std::string ("kRegClass_Virtual")
+#define kRegClass_Interrupt	std::string ("kRegClass_Interrupt")
 
 
 /**

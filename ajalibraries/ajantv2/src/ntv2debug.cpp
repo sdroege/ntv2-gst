@@ -1,7 +1,7 @@
 /**
 	@file		ntv2debug.cpp
 	@brief		Implements the NTV2 debug output functions.
-	@copyright	(C) 2004-2019 AJA Video Systems, Inc.	Proprietary and confidential information.
+	@copyright	(C) 2004-2020 AJA Video Systems, Inc.	Proprietary and confidential information.
 	@note		Because this module is compiled into the driver, it must remain straight ANSI 'C' -- no C++ or STL.
 **/
 
@@ -57,7 +57,6 @@ const char * NTV2DeviceIDString (const NTV2DeviceID id)
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONAIP_4CH_2SFP);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONAIP_2TX_1SFP_J2K);
-		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONAIP_2RX_1SFP_J2K);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONAIP_1RX_1TX_2110);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONAIP_2110);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_IO4KPLUS);
@@ -68,8 +67,11 @@ const char * NTV2DeviceIDString (const NTV2DeviceID id)
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONA5);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONA5_8KMK);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONA5_8K);
+		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_KONA5_2);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_CORVID44_8KMK);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_CORVID44_8K);
+		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_CORVID44_8K_2);
+		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_T3TAP);
 		NTV2DEBUG_ENUM_CASE_RETURN_STR(DEVICE_ID_NOTFOUND);
 	}
 	return "";
@@ -104,7 +106,6 @@ const char * NTV2DeviceString (const NTV2DeviceID id)
 		case DEVICE_ID_KONAIP_4CH_2SFP:				return "KonaIP_4ch2SFP";
 		case DEVICE_ID_KONAIP_1RX_1TX_1SFP_J2K:		return "KonaIP_1Rx1Tx1SFPJ2K";
 		case DEVICE_ID_KONAIP_2TX_1SFP_J2K:			return "KonaIP_2Tx1SFPJ2K";
-		case DEVICE_ID_KONAIP_2RX_1SFP_J2K:			return "KonaIP_2Rx1SFPJ2K";
 		case DEVICE_ID_KONAIP_1RX_1TX_2110:			return "KonaIP_1Rx1Tx2110";
 		case DEVICE_ID_KONAIP_2110:					return "KonaIP_2110";
 		case DEVICE_ID_IO4KPLUS:					return "DNxIV";
@@ -115,8 +116,11 @@ const char * NTV2DeviceString (const NTV2DeviceID id)
 		case DEVICE_ID_KONA5:						return "Kona5";
 		case DEVICE_ID_KONA5_8KMK:					return "Kona5_8KMK";
 		case DEVICE_ID_KONA5_8K:					return "Kona5_8K";
+		case DEVICE_ID_KONA5_2:						return "Kona5_2";
 		case DEVICE_ID_CORVID44_8KMK:				return "Corvid44_8KMK";
 		case DEVICE_ID_CORVID44_8K:					return "Corvid44_8K";
+		case DEVICE_ID_CORVID44_8K_2:					return "Corvid44_8K_2";
+		case DEVICE_ID_T3TAP:						return "T3Tap";
 		case DEVICE_ID_NOTFOUND:					return "Unknown";
 	}
 
@@ -584,7 +588,7 @@ const char * ntv2RegStrings[] =
 	"kRegRP188InOut2DBB",							//  64
 	"kRegRP188InOut2Bits0_31",						//  65
 	"kRegRP188InOut2Bits32_63",						//  66
-	"kRegReserved67",								//  67
+	"kRegCanDoStatus",								//  67
 	"kRegCh1ColorCorrectioncontrol",				//  68
 	"kRegCh2ColorCorrectioncontrol",				//  69
 	"kRegRS422Transmit",							//  70
