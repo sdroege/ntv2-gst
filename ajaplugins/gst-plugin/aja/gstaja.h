@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include <gst/gst.h>
+#include <gst/base/base.h>
 #include "gstntv2.h"
 
 #include "ntv2enums.h"
@@ -414,6 +415,9 @@ struct _GstAjaAllocator
     GstAllocator allocator;
 
     CNTV2Card *device;
+    gsize alloc_size;
+    guint num_prealloc, num_allocated;
+    GstQueueArray *free_list;
 };
 
 struct _GstAjaAllocatorClass
@@ -422,6 +426,6 @@ struct _GstAjaAllocatorClass
 };
 
 GType gst_aja_allocator_get_type (void);
-GstAllocator * gst_aja_allocator_new (CNTV2Card *device);
+GstAllocator * gst_aja_allocator_new (CNTV2Card *device, gsize alloc_size, guint num_prealloc);
 
 #endif
