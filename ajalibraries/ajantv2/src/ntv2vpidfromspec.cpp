@@ -10,20 +10,15 @@
 
 #if !defined(NTV2_BUILDING_DRIVER)
 	#include "ntv2utils.h"
-#elif defined(AJALinux)
-	#define GetNTV2FrameRateFromVideoFormat GetNTV2ActualFrameRateFromVideoFormat
-	NTV2Standard    GetNTV2StandardFromVideoFormat  (NTV2VideoFormat videoFormat);
-	NTV2FrameRate   GetNTV2ActualFrameRateFromVideoFormat (NTV2VideoFormat videoFormat);
-#elif defined(AJAWindows)
-	#include "ntv2device.h"
-	#define GetNTV2StandardFromVideoFormat	CNTV2Device::GetNTV2StandardFromVideoFormat
-	#define GetNTV2FrameRateFromVideoFormat	CNTV2Device::GetNTV2ActualFrameRateFromVideoFormat
-#elif defined(AJAMac)
-	#include "MacDriver.h"
-	#define GetNTV2StandardFromVideoFormat	MacDriver::GetNTV2StandardFromVideoFormat
-	#define GetNTV2FrameRateFromVideoFormat	MacDriver::GetNTV2FrameRateFromVideoFormat
 #else
-	#error "Unimplemented platform"
+	#ifdef __cplusplus
+		extern "C"
+		{
+	#endif
+			#include "ntv2kona.h"
+	#ifdef __cplusplus
+		}
+	#endif
 #endif
 
 bool SetVPIDFromSpec (ULWord * const			pOutVPID,
@@ -35,6 +30,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	NTV2VPIDTransferCharacteristics transferCharacteristics = NTV2_VPID_TC_SDR_TV;
 	NTV2VPIDColorimetry		colorimetry		= NTV2_VPID_Color_Rec709;
 	NTV2VPIDLuminance		luminance		= NTV2_VPID_Luminance_YCbCr;
+	NTV2VPIDRGBRange		rgbRange		= NTV2_VPID_Range_Narrow;
 
 	bool	isProgressivePicture	= false;
 	bool	isProgressiveTransport	= false;
@@ -48,6 +44,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	bool	is6G					= false;
 	bool	is12G					= false;
 	bool	enableBT2020			= false;
+	bool	isMultiLink				= false;
 	VPIDChannel vpidChannel			= VPIDChannel_1;
 
 	uint8_t	byte1 = 0;
@@ -79,6 +76,8 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	transferCharacteristics = pInVPIDSpec->transferCharacteristics;
 	colorimetry				= pInVPIDSpec->colorimetry;
 	luminance				= pInVPIDSpec->luminance;
+	rgbRange				= pInVPIDSpec->rgbRange;
+	isMultiLink				= pInVPIDSpec->isMultiLink;
 
 
 	if (! NTV2_IS_WIRE_FORMAT (outputFormat))
@@ -194,8 +193,8 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_1080p_2K_5994_B:
 	case NTV2_FORMAT_1080p_2K_6000_A:
 	case NTV2_FORMAT_1080p_2K_6000_B:
-		if (isDualLink)
-			byte1 = isLevelB ? (uint8_t) VPIDStandard_1080_DualLink_3Gb : (uint8_t) VPIDStandard_1080_DualLink;		//	0x8A : 0x87
+		if (isRGB)
+			byte1 = isLevelB ? (uint8_t) VPIDStandard_1080_Dual_3Gb : (uint8_t) VPIDStandard_1080_Dual_3Ga;		//	0x95 : 0x94
 		else
 			byte1 = isLevelB ? (uint8_t) VPIDStandard_1080_DualLink_3Gb : (uint8_t) VPIDStandard_1080_3Ga;			//	0x8A : 0x89
 		break;
@@ -216,26 +215,6 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x2048x1080p_2500:
 	case NTV2_FORMAT_4x2048x1080p_2997:
 	case NTV2_FORMAT_4x2048x1080p_3000:
-    case NTV2_FORMAT_3840x2160psf_2398:
-    case NTV2_FORMAT_3840x2160psf_2400:
-    case NTV2_FORMAT_3840x2160psf_2500:
-    case NTV2_FORMAT_3840x2160p_2398:
-    case NTV2_FORMAT_3840x2160p_2400:
-    case NTV2_FORMAT_3840x2160p_2500:
-    case NTV2_FORMAT_3840x2160p_2997:
-    case NTV2_FORMAT_3840x2160p_3000:
-    case NTV2_FORMAT_3840x2160psf_2997:
-    case NTV2_FORMAT_3840x2160psf_3000:
-    case NTV2_FORMAT_4096x2160psf_2398:
-    case NTV2_FORMAT_4096x2160psf_2400:
-    case NTV2_FORMAT_4096x2160psf_2500:
-    case NTV2_FORMAT_4096x2160p_2398:
-    case NTV2_FORMAT_4096x2160p_2400:
-    case NTV2_FORMAT_4096x2160p_2500:
-    case NTV2_FORMAT_4096x2160p_2997:
-    case NTV2_FORMAT_4096x2160p_3000:
-    case NTV2_FORMAT_4096x2160psf_2997:
-    case NTV2_FORMAT_4096x2160psf_3000:
 		if (isTSI)
 		{
 			if(is12G)
@@ -265,6 +244,38 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 				byte1 = isDualLink? (uint8_t) VPIDStandard_1080_DualLink : (uint8_t) VPIDStandard_1080;  //  0x87 : 0x85
 		}
 		break;
+    case NTV2_FORMAT_3840x2160psf_2398:
+    case NTV2_FORMAT_3840x2160psf_2400:
+    case NTV2_FORMAT_3840x2160psf_2500:
+    case NTV2_FORMAT_3840x2160p_2398:
+    case NTV2_FORMAT_3840x2160p_2400:
+    case NTV2_FORMAT_3840x2160p_2500:
+    case NTV2_FORMAT_3840x2160p_2997:
+    case NTV2_FORMAT_3840x2160p_3000:
+    case NTV2_FORMAT_3840x2160psf_2997:
+    case NTV2_FORMAT_3840x2160psf_3000:
+    case NTV2_FORMAT_4096x2160psf_2398:
+    case NTV2_FORMAT_4096x2160psf_2400:
+    case NTV2_FORMAT_4096x2160psf_2500:
+    case NTV2_FORMAT_4096x2160p_2398:
+    case NTV2_FORMAT_4096x2160p_2400:
+    case NTV2_FORMAT_4096x2160p_2500:
+    case NTV2_FORMAT_4096x2160p_2997:
+    case NTV2_FORMAT_4096x2160p_3000:
+    case NTV2_FORMAT_4096x2160psf_2997:
+    case NTV2_FORMAT_4096x2160psf_3000:
+		if(isMultiLink)
+		{
+			if (isLevelB)
+				byte1 = isDualLink? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_DualLink;  //  0x98 : 0x96
+			else
+				byte1 = (uint8_t) VPIDStandard_2160_QuadLink_3Ga;  //  0x97
+		}
+		else
+		{
+			byte1 = isDualLink ? (uint8_t) VPIDStandard_2160_Single_12Gb : (uint8_t) VPIDStandard_2160_Single_6Gb; //0xCE : 0xC0
+		}
+		break;
 
 	case NTV2_FORMAT_4x1920x1080p_5000:
 	case NTV2_FORMAT_4x1920x1080p_5994:
@@ -274,6 +285,20 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x2048x1080p_5000:
 	case NTV2_FORMAT_4x2048x1080p_5994:
 	case NTV2_FORMAT_4x2048x1080p_6000:
+		if (isTSI)
+		{
+			if(is12G)
+				byte1 = VPIDStandard_2160_Single_12Gb; // 0xCE
+			else if(is6G)
+				byte1 = VPIDStandard_2160_Single_6Gb; // 0xC0
+			else
+				byte1 = isLevelB ? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_QuadLink_3Ga;	//	0x98 : 0x97
+		}
+		else
+		{
+			byte1 = isLevelB ? (uint8_t) VPIDStandard_1080_DualLink_3Gb : (uint8_t) VPIDStandard_1080_3Ga;		//	0x8A : 0x89
+		}
+		break;
     case NTV2_FORMAT_3840x2160p_5000:
     case NTV2_FORMAT_3840x2160p_5994:
     case NTV2_FORMAT_3840x2160p_6000:
@@ -284,21 +309,16 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
     case NTV2_FORMAT_4096x2160p_6000:
     case NTV2_FORMAT_4096x2160p_11988:
     case NTV2_FORMAT_4096x2160p_12000:
-		if (isTSI)
+		if(isMultiLink)
 		{
-			if(is12G)
-				byte1 = VPIDStandard_2160_Single_12Gb;
-			else if(is6G)
-				byte1 = VPIDStandard_2160_Single_6Gb;
-			else
-				byte1 = isLevelB ? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_QuadLink_3Ga;	//	0x98 : 0x97
+			byte1 = isLevelB ? (uint8_t) VPIDStandard_2160_QuadDualLink_3Gb : (uint8_t) VPIDStandard_2160_QuadLink_3Ga;	//	0x98 : 0x97
 		}
 		else
 		{
-			byte1 = isLevelB ? (uint8_t) VPIDStandard_1080_DualLink_3Gb : (uint8_t) VPIDStandard_1080_3Ga;		//	0x8A : 0x89
+			byte1 = isDualLink ? (uint8_t) VPIDStandard_2160_DualLink_12Gb : (uint8_t) VPIDStandard_2160_Single_12Gb; // 0xD1 : 0xCE
 		}
 		break;
-		
+
 	case NTV2_FORMAT_4x3840x2160p_2398:
 	case NTV2_FORMAT_4x3840x2160p_2400:
 	case NTV2_FORMAT_4x3840x2160p_2500:
@@ -309,7 +329,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x4096x2160p_2500:
 	case NTV2_FORMAT_4x4096x2160p_2997:
 	case NTV2_FORMAT_4x4096x2160p_3000:
-		byte1 = isRGB ? (uint8_t)VPIDStandard_4320_QuadLink_12Gb : (uint8_t)VPIDStandard_4320_DualLink_12Gb;
+		byte1 = isRGB ? (uint8_t)VPIDStandard_4320_QuadLink_12Gb : (uint8_t)VPIDStandard_4320_DualLink_12Gb; // 0xD2 : 0xD0
 		break;
 		
 	case NTV2_FORMAT_4x3840x2160p_5000:
@@ -328,7 +348,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	case NTV2_FORMAT_4x4096x2160p_5000_B:
 	case NTV2_FORMAT_4x4096x2160p_5994_B:
 	case NTV2_FORMAT_4x4096x2160p_6000_B:
-		byte1 = VPIDStandard_4320_QuadLink_12Gb;
+		byte1 = VPIDStandard_4320_QuadLink_12Gb; // 0xD2
         break;
             
 	default:
@@ -531,7 +551,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	//	VPID channel
 	if (pInVPIDSpec->isTwoSampleInterleave)
 	{
-		if (isLevelB && NTV2_IS_4K_HFR_VIDEO_FORMAT (outputFormat))
+		if ((isLevelB && NTV2_IS_4K_HFR_VIDEO_FORMAT (outputFormat)) || isRGB)
 			byte4 |= vpidChannel << 5;
 		else
 			byte4 |= vpidChannel << 6;
@@ -566,7 +586,7 @@ bool SetVPIDFromSpec (ULWord * const			pOutVPID,
 	if(NTV2_IS_VALID_FBF(pixelFormat))
 	{
 		bool is12Bit = (pixelFormat == NTV2_FBF_48BIT_RGB || pixelFormat == NTV2_FBF_12BIT_RGB_PACKED) ? true : false;
-		byte4 |= is12Bit ? VPIDBitDepth_12 : VPIDBitDepth_10;
+		byte4 |= is12Bit ? (rgbRange == NTV2_VPID_Range_Narrow ? VPIDBitDepth_12 : VPIDBitDepth_12_Full) : (rgbRange == NTV2_VPID_Range_Narrow ? VPIDBitDepth_10 : VPIDBitDepth_10_Full);
 	}
 	else
 	{

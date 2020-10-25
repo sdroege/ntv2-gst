@@ -12,6 +12,7 @@
 
 #if defined(AJA_WINDOWS)
 	// Windows includes
+	#include <direct.h>
 #else
 	// Posix includes
 	#include <fcntl.h>
@@ -50,7 +51,7 @@ using std::vector;
 	}
 #else
 	// Posix helper functions
-	string GetEnvVar(string const & key)
+	static string GetEnvVar(string const & key)
 	{
 		char * val = getenv( key.c_str() );
 		return val == NULL ? string("") : string(val);
@@ -1149,4 +1150,103 @@ AJAFileIO::TempDirectory(std::wstring& directory)
 	}
 	return status;
 #endif
+}
+
+AJAStatus
+AJAFileIO::GetWorkingDirectory(std::string& cwd)
+{
+	AJAStatus status = AJA_STATUS_SUCCESS;
+
+	char buf[AJA_MAX_PATH+1] = "";
+
+#if defined(AJA_WINDOWS)
+	_getcwd(buf, AJA_MAX_PATH);
+#else
+	getcwd(buf, AJA_MAX_PATH);
+#endif
+
+	if (buf != NULL)
+	{
+		cwd = std::string(buf);
+	}
+	else
+	{
+		cwd = std::string();
+		status = AJA_STATUS_NULL;
+	}
+
+	return status;
+}
+
+AJAStatus
+AJAFileIO::GetWorkingDirectory(std::wstring& directory)
+{
+	bool ok = false;
+	std::string buf;
+	if (GetWorkingDirectory(buf) == AJA_STATUS_SUCCESS)
+		ok = aja::string_to_wstring(buf, directory);
+	else
+		directory = L"";
+
+	return ok ? AJA_STATUS_SUCCESS : AJA_STATUS_FAIL;
+}
+
+AJAStatus
+AJAFileIO::GetDirectoryName(const std::string& path, std::string& directory)
+{
+	const size_t lastSlashIndex = path.rfind(AJA_PATHSEP);
+
+	directory = "";
+
+	if (std::string::npos != lastSlashIndex) {
+		directory = path.substr(0, lastSlashIndex);
+		return AJA_STATUS_SUCCESS;
+	}
+
+	return AJA_STATUS_NOT_FOUND;
+}
+
+AJAStatus
+AJAFileIO::GetDirectoryName(const std::wstring& path, std::wstring& directory)
+{
+	const size_t lastSlashIndex = path.rfind(AJA_PATHSEP_WIDE);
+
+	directory = L"";
+
+	if (std::wstring::npos != lastSlashIndex) {
+		directory = path.substr(0, lastSlashIndex);
+		return AJA_STATUS_SUCCESS;
+	}
+
+	return AJA_STATUS_NOT_FOUND;
+}
+
+AJAStatus
+AJAFileIO::GetFileName(const std::string& path, std::string& filename)
+{
+	const size_t lastSlashIndex = path.rfind(AJA_PATHSEP);
+
+	filename = "";
+
+	if (std::string::npos != lastSlashIndex) {
+		filename = path.substr(lastSlashIndex + 1, path.length() - lastSlashIndex);
+		return AJA_STATUS_SUCCESS;
+	}
+
+	return AJA_STATUS_NOT_FOUND;
+}
+
+AJAStatus
+AJAFileIO::GetFileName(const std::wstring& path, std::wstring& filename)
+{
+	const size_t lastSlashIndex = path.rfind(AJA_PATHSEP_WIDE);
+
+	filename = L"";
+
+	if (std::wstring::npos != lastSlashIndex) {
+		filename = path.substr(lastSlashIndex + 1, path.length() - lastSlashIndex);
+		return AJA_STATUS_SUCCESS;
+	}
+
+	return AJA_STATUS_NOT_FOUND;
 }

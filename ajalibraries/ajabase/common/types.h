@@ -7,6 +7,8 @@
 #ifndef AJA_TYPES_H
 #define AJA_TYPES_H
 
+#define AJA_USE_CPLUSPLUS11	//	If defined, use C++11 features (requires C++11 compiler)
+
 #if defined(AJA_WINDOWS)
 
 	#if !defined(NULL)
@@ -14,6 +16,8 @@
 	#endif
 
 	#define AJA_PAGE_SIZE (4096)
+
+	#define AJA_MAX_PATH (256)
 
 	typedef signed __int8    int8_t;
 	typedef signed __int16   int16_t;
@@ -72,7 +76,13 @@
               #define NULL (0)
       #endif
 
+		#if defined(AJA_USE_CPLUSPLUS11)
+			#undef AJA_USE_CPLUSPLUS11	//	Linux c++11-in-SDK TBD
+		#endif
+
       #define AJA_PAGE_SIZE (4096)
+
+	  #define AJA_MAX_PATH (4096)
 
       #if defined(MODULE)
          // We're building the code as a kernel module
@@ -149,6 +159,7 @@
 #if defined(AJA_MAC)
 
 	#define AJA_PAGE_SIZE (4096)
+	#define AJA_MAX_PATH (1024)
 	#define AJA_LITTLE_ENDIAN
 
 	#include <stdint.h>

@@ -13,31 +13,31 @@
 #include <set>
 
 
-typedef std::set <NTV2OutputCrosspointID>			NTV2OutputCrosspointIDSet,			NTV2OutputXptIDSet;				///< @brief	A collection of distinct NTV2OutputCrosspointID values.
-typedef NTV2OutputCrosspointIDSet::const_iterator	NTV2OutputCrosspointIDSetConstIter,	NTV2OutputXptIDSetConstIter;	///< @brief	A const iterator for iterating over an NTV2OutputCrosspointIDSet.
-typedef NTV2OutputCrosspointIDSet::iterator			NTV2OutputCrosspointIDSetIter,		NTV2OutputXptIDSetIter;			///< @brief	A non-const iterator for iterating over an NTV2OutputCrosspointIDSet.
+typedef std::set <NTV2OutputXptID>			NTV2OutputCrosspointIDSet,			NTV2OutputXptIDSet;				///< @brief	A collection of distinct ::NTV2OutputXptID values.
+typedef NTV2OutputXptIDSet::const_iterator	NTV2OutputCrosspointIDSetConstIter,	NTV2OutputXptIDSetConstIter;	///< @brief	A const iterator for iterating over an ::NTV2OutputXptIDSet.
+typedef NTV2OutputXptIDSet::iterator		NTV2OutputCrosspointIDSetIter,		NTV2OutputXptIDSetIter;			///< @brief	A non-const iterator for iterating over an ::NTV2OutputXptIDSet.
 
 AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2OutputXptIDSet & inObj);
 
-typedef NTV2OutputCrosspointIDSet					NTV2CrosspointIDSet;				///< @deprecated	Use NTV2OutputCrosspointIDSet instead.
+typedef NTV2OutputCrosspointIDSet					NTV2CrosspointIDSet;		///< @deprecated	Use ::NTV2OutputXptIDSet instead.
 
-typedef std::set <NTV2InputCrosspointID>			NTV2InputCrosspointIDSet,			NTV2InputXptIDSet;			///< @brief	A collection of distinct NTV2InputCrosspointID values.
-typedef NTV2InputCrosspointIDSet::const_iterator	NTV2InputCrosspointIDSetConstIter,	NTV2InputXptIDSetConstIter;	///< @brief	A const iterator for iterating over an NTV2InputCrosspointIDSet.
-typedef NTV2InputCrosspointIDSet::iterator			NTV2InputCrosspointIDSetIter,		NTV2InputXptIDSetIter;		///< @brief	A non-const iterator for iterating over an NTV2InputCrosspointIDSet.
+typedef std::set <NTV2InputXptID>					NTV2InputCrosspointIDSet,			NTV2InputXptIDSet;			///< @brief	A collection of distinct ::NTV2InputXptID values.
+typedef NTV2InputXptIDSet::const_iterator			NTV2InputCrosspointIDSetConstIter,	NTV2InputXptIDSetConstIter;	///< @brief	A const iterator for iterating over an ::NTV2InputXptIDSet.
+typedef NTV2InputXptIDSet::iterator					NTV2InputCrosspointIDSetIter,		NTV2InputXptIDSetIter;		///< @brief	A non-const iterator for iterating over an ::NTV2InputXptIDSet.
 
-AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2InputCrosspointIDSet & inObj);
+AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2InputXptIDSet & inObj);
 
-typedef std::set <NTV2WidgetID>						NTV2WidgetIDSet;			///< @brief	A collection of distinct NTV2WidgetID values.
-typedef NTV2WidgetIDSet::const_iterator				NTV2WidgetIDSetConstIter;	///< @brief	An iterator for iterating over a read-only NTV2WidgetIDSet.
+typedef std::set <NTV2WidgetID>						NTV2WidgetIDSet;			///< @brief	A collection of distinct ::NTV2WidgetID values.
+typedef NTV2WidgetIDSet::const_iterator				NTV2WidgetIDSetConstIter;	///< @brief	An iterator for iterating over a read-only ::NTV2WidgetIDSet.
 
 AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2WidgetIDSet & inObj);
 
 
-typedef std::pair <NTV2InputCrosspointID, NTV2OutputCrosspointID>	NTV2SignalConnection, NTV2XptConnection, NTV2Connection;	///< @brief	This links an NTV2InputCrosspointID and an NTV2OutputCrosspointID.
-typedef std::map <NTV2InputCrosspointID, NTV2OutputCrosspointID>	NTV2XptConnections, NTV2ActualConnections;	///< @brief	A map of zero or more one-to-one actual NTV2InputCrosspointID to NTV2OutputCrosspointID connections.
-typedef NTV2XptConnections::const_iterator							NTV2XptConnectionsConstIter, NTV2ActualConnectionsConstIter;
-typedef std::multimap <NTV2InputCrosspointID, NTV2OutputXptID>		NTV2PossibleConnections;	///< @brief	A map of zero or more one-to-many possible NTV2InputCrosspointID to NTV2OutputCrosspointID connections.
-typedef NTV2PossibleConnections::const_iterator						NTV2PossibleConnectionsConstIter;
+typedef std::pair <NTV2InputXptID, NTV2OutputXptID>		NTV2SignalConnection, NTV2XptConnection, NTV2Connection;	///< @brief	This links an ::NTV2InputXptID and an ::NTV2OutputXptID.
+typedef std::map <NTV2InputXptID, NTV2OutputXptID>		NTV2XptConnections, NTV2ActualConnections;	///< @brief	A map of zero or more one-to-one actual ::NTV2InputXptID to ::NTV2OutputXptID connections.
+typedef NTV2XptConnections::const_iterator				NTV2XptConnectionsConstIter, NTV2ActualConnectionsConstIter;
+typedef std::multimap <NTV2InputXptID, NTV2OutputXptID>	NTV2PossibleConnections;	///< @brief	A map of zero or more one-to-many possible ::NTV2InputXptID to ::NTV2OutputXptID connections.
+typedef NTV2PossibleConnections::const_iterator			NTV2PossibleConnectionsConstIter;
 
 AJAExport std::ostream & operator << (std::ostream & inOutStream, const NTV2XptConnections & inObj);
 
@@ -70,20 +70,49 @@ typedef std::multimap <NTV2WidgetID, NTV2InputXptID>	Widget2InputXpts;
 typedef Widget2InputXpts::const_iterator				Widget2InputXptsConstIter;
 
 /**
+	@brief	Answers with the ::NTV2InputXptID and ::NTV2OutputXptIDSet for the given ROM register value.
+	@param[in]	inROMRegNum			Specifies the ROM register number.
+	@param[in]	inROMRegValue		Specifies the ROM register value.
+	@param[out]	outInputXpt			Receives the input crosspoint associated with the ROM register.
+	@param[out]	outOutputXpts		Receives the valid (implemented) output crosspoint routes.
+	@param[in]	inAppendOutputXpts	If true, appends output crosspoints to the output set;
+									otherwise clears the output crosspoint set (the default).
+	@return	True if successful;  otherwise false.
+**/
+AJAExport bool GetRouteROMInfoFromReg (const ULWord inROMRegNum, const ULWord inROMRegValue,
+										NTV2InputXptID & outInputXpt, NTV2OutputXptIDSet & outOutputXpts,
+										const bool inAppendOutputXpts = false);
+
+/**
+	@brief		Answers with the implemented crosspoint connections as obtained from the given ROM registers.
+	@param[in]	inROMRegisters	The ROM register numbers and values.
+	@param[out]	outConnections	Receives the legal implemented connections/routes.
+	@return	True if successful;  otherwise false.
+**/
+AJAExport bool GetPossibleConnections (const NTV2RegReads & inROMRegisters, NTV2PossibleConnections & outConnections);
+
+/**
+	@brief		Prepares an initialized, zeroed NTV2RegReads that's prepared to read all ROM registers from a device.
+	@param[out]	outROMRegisters	Receives the prepared NTV2RegReads.
+	@return		True if successful;  otherwise false.
+**/
+AJAExport bool MakeRouteROMRegisters (NTV2RegReads & outROMRegisters);
+
+/**
 	@brief	This class is a collection of widget input-to-output connections that can be applied all-at-once to an NTV2 device.
-			Call AddConnection to connect a widget input (specified by NTV2InputCrosspointID) to a widget's output (specified by NTV2OutputCrosspointID).
+			Call AddConnection to connect a widget input (specified by ::NTV2InputXptID) to a widget's output (specified by ::NTV2OutputXptID).
 			Call the CNTV2Card::ApplySignalRoute function to apply this route to the device.
 	@note	Use of this class is optional, as widget signal routing can always be performed using direct calls to NTV2Card::Connect.
 	@note	This class is not thread-safe.
-	@note	Public access to the NTV2RoutingEntry structs are deprecated. Please use NTV2InputCrosspointIDs instead.
+	@note	Public access to the NTV2RoutingEntry structs are deprecated. Please use ::NTV2InputXptID's instead.
 	@see	ntv2signalrouting
 **/
 class AJAExport CNTV2SignalRouter
 {
 	//	Instance Methods
 	public:
-		inline										CNTV2SignalRouter ()								{Reset ();}		///< @brief	My default constructor.
-		virtual inline								~CNTV2SignalRouter ()								{}				///< @brief	My default destructor.
+		inline										CNTV2SignalRouter ()			{Reset ();}		///< @brief	My default constructor.
+		virtual inline								~CNTV2SignalRouter ()			{}				///< @brief	My default destructor.
 
 		#if !defined (NTV2_DEPRECATE)
 			virtual NTV2_DEPRECATED_f(operator						NTV2RoutingTable () const);																///< @deprecated	This function is obsolete.
@@ -99,51 +128,51 @@ class AJAExport CNTV2SignalRouter
 		#endif	//	!defined (NTV2_DEPRECATE)
 
 		#if !defined (NTV2_DEPRECATE_12_5)
-			virtual NTV2_DEPRECATED_f(bool	addWithValue (const NTV2RoutingEntry & inEntry, const ULWord inValue));				///< @deprecated	Use AddConnection with NTV2InputCrosspointIDs instead.
-			virtual NTV2_DEPRECATED_f(bool	AddConnection (const NTV2RoutingEntry & inEntry, const NTV2OutputCrosspointID inSignalOutput = NTV2_XptBlack));	///< @deprecated	Use AddConnection(NTV2InputCrosspointID, NTV2OutputCrosspointID) instead.
+			virtual NTV2_DEPRECATED_f(bool	addWithValue (const NTV2RoutingEntry & inEntry, const ULWord inValue));				///< @deprecated	Use AddConnection with ::NTV2InputXptIDSet instead.
+			virtual NTV2_DEPRECATED_f(bool	AddConnection (const NTV2RoutingEntry & inEntry, const NTV2OutputCrosspointID inSignalOutput = NTV2_XptBlack));	///< @deprecated	Use AddConnection(::NTV2InputXptID, ::NTV2OutputXptID) instead.
 		#endif	//	!defined (NTV2_DEPRECATE_12_5)
 
 		/**
 			@brief		Adds a connection between a widget's signal input (sink) and another widget's signal output (source).
-			@param[in]	inSignalInput		Specifies the widget signal input (sink) as an NTV2InputCrosspointID.
-			@param[in]	inSignalOutput		Specifies the widget signal output (source) as an NTV2OutputCrosspointID. If not specified, uses NTV2_XptBlack.
+			@param[in]	inSignalInput		Specifies the widget signal input (sink) as an ::NTV2InputXptID.
+			@param[in]	inSignalOutput		Specifies the widget signal output (source) as an ::NTV2OutputXptID. If not specified, uses ::NTV2_XptBlack.
 			@return		True if successfully added;  otherwise false.
 			@see		CNTV2Card::Connect, CNTV2SignalRouter::RemoveConnection
 		**/
-		virtual bool								AddConnection (const NTV2InputCrosspointID inSignalInput, const NTV2OutputCrosspointID inSignalOutput = NTV2_XptBlack);
+		virtual bool								AddConnection (const NTV2InputXptID inSignalInput, const NTV2OutputXptID inSignalOutput = NTV2_XptBlack);
 
 		/**
 			@brief		Removes the connection between the specified input (signal sink) and output (signal source).
-			@param[in]	inSignalInput		Specifies the widget signal input (sink) as an NTV2InputCrosspointID.
-			@param[in]	inSignalOutput		Specifies the widget signal output (source) as an NTV2OutputCrosspointID.
+			@param[in]	inSignalInput		Specifies the widget signal input (sink) as an ::NTV2InputXptID.
+			@param[in]	inSignalOutput		Specifies the widget signal output (source) as an ::NTV2OutputXptID.
 			@return		True if successfully removed;  otherwise false.
 			@see		CNTV2Card::Disconnect, CNTV2SignalRouter::AddConnection
 		**/
-		virtual bool								RemoveConnection (const NTV2InputCrosspointID inSignalInput, const NTV2OutputCrosspointID inSignalOutput);
+		virtual bool								RemoveConnection (const NTV2InputXptID inSignalInput, const NTV2OutputXptID inSignalOutput);
 
 		/**
 			@brief		Answers true if I contain a connection between the specified input (signal sink) and output (signal source).
-			@param[in]	inSignalInput		Specifies the widget signal input (sink) as an NTV2InputCrosspointID.
-			@param[in]	inSignalOutput		Specifies the widget signal output (source) as an NTV2OutputCrosspointID.
+			@param[in]	inSignalInput		Specifies the widget signal input (sink) as an ::NTV2InputXptID.
+			@param[in]	inSignalOutput		Specifies the widget signal output (source) as an ::NTV2OutputXptID.
 			@return		True if I have such a connection;  otherwise false.
 			@see		CNTV2Card::IsConnected, CNTV2Card::IsConnectedTo
 		**/
-		virtual bool								HasConnection (const NTV2InputCrosspointID inSignalInput, const NTV2OutputCrosspointID inSignalOutput) const;
+		virtual bool								HasConnection (const NTV2InputXptID inSignalInput, const NTV2OutputXptID inSignalOutput) const;
 
 		/**
 			@brief		Answers true if I contain a connection that involves the given input (signal sink).
-			@param[in]	inSignalInput		Specifies the widget signal input (sink) of interest as an NTV2InputCrosspointID.
+			@param[in]	inSignalInput		Specifies the widget signal input (sink) of interest as an ::NTV2InputXptID.
 			@return		True if I have a connection involving the given input;  otherwise false.
 			@see		CNTV2Card::IsConnected, CNTV2Card::GetConnectedInput, CNTV2SignalRouter::HasConnection
 		**/
-		virtual bool								HasInput (const NTV2InputCrosspointID inSignalInput) const;
+		virtual bool								HasInput (const NTV2InputXptID inSignalInput) const;
 
 		/**
 			@return		The output crosspoint that the given input is connected to, or NTV2_XptBlack if not connected.
 			@param[in]	inSignalInput		Specifies the widget signal input (sink) of interest.
 			@see		CNTV2Card::GetConnectedOutput
 		**/
-		virtual NTV2OutputCrosspointID				GetConnectedOutput (const NTV2InputCrosspointID inSignalInput) const;
+		virtual NTV2OutputXptID						GetConnectedOutput (const NTV2InputXptID inSignalInput) const;
 
 		/**
 			@brief		Resets me, erasing any/all existing connections.
@@ -158,7 +187,7 @@ class AJAExport CNTV2SignalRouter
 			@return		True if successful;  otherwise false.
 			@see		CNTV2SignalRouter::Reset, CNTV2SignalRouter::GetRegisterWrites
 		**/
-		virtual bool								ResetFromRegisters (const NTV2InputCrosspointIDSet & inInputXpts, const NTV2RegisterReads & inRegReads);
+		virtual bool								ResetFromRegisters (const NTV2InputXptIDSet & inInputXpts, const NTV2RegisterReads & inRegReads);
 
 		/**
 			@brief		Resets me, replacing any/all existing connections with the given connections.
@@ -287,19 +316,19 @@ class AJAExport CNTV2SignalRouter
 	public:	//	CLASS METHODS
 		/**
 			@brief		Returns a string containing the most compact human-readable form for a given input crosspoint.
-			@param[in]	inInputXpt		Specifies the NTV2InputCrosspointID of interest.
+			@param[in]	inInputXpt		Specifies the ::NTV2InputXptID of interest.
 			@return		A string containing the most compact human-readable representation of the input crosspoint.
 			@see		CNTV2SignalRouter::NTV2OutputCrosspointIDToString, CNTV2SignalRouter::StringToNTV2InputCrosspointID
 		**/
-		static std::string			NTV2InputCrosspointIDToString (const NTV2InputCrosspointID inInputXpt);
+		static std::string			NTV2InputCrosspointIDToString (const NTV2InputXptID inInputXpt);
 
 		/**
 			@brief		Returns a string containing the most compact human-readable form for a given output crosspoint.
-			@param[in]	inOutputXpt		Specifies the NTV2OutputCrosspointID of interest.
+			@param[in]	inOutputXpt		Specifies the ::NTV2OutputXptID of interest.
 			@return		A string containing the most compact human-readable representation of the output crosspoint.
 			@see		CNTV2SignalRouter::NTV2InputCrosspointIDToString, CNTV2SignalRouter::StringToNTV2OutputCrosspointID
 		**/
-		static std::string			NTV2OutputCrosspointIDToString (const NTV2OutputCrosspointID inOutputXpt);
+		static std::string			NTV2OutputCrosspointIDToString (const NTV2OutputXptID inOutputXpt);
 
 		/**
 			@brief		Returns a string containing the most compact human-readable form for a given input crosspoint.
@@ -332,75 +361,75 @@ class AJAExport CNTV2SignalRouter
 										crosspoint (or an empty set upon failure).
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetWidgetsForOutput (const NTV2OutputCrosspointID inOutputXpt, NTV2WidgetIDSet & outWidgetIDs);
+		static bool					GetWidgetsForOutput (const NTV2OutputXptID inOutputXpt, NTV2WidgetIDSet & outWidgetIDs);
 
 		/**
 			@brief		Returns the widget that "owns" the specified output crosspoint.
 			@param[in]	inOutputXpt		Specifies the output crosspoint of interest.
-			@param[out]	outWidgetID		Receives the NTV2WidgetID of the widget that "owns" the output crosspoint
-										(or NTV2_WIDGET_INVALID upon failure).
+			@param[out]	outWidgetID		Receives the ::NTV2WidgetID of the widget that "owns" the output crosspoint
+										(or ::NTV2_WIDGET_INVALID upon failure).
 			@param[in]	inDeviceID		Optionally specifies a device ID to resolve any ambiguity if more than
-										one NTV2WidgetID is associated with the given NTV2OutputXptID.
+										one ::NTV2WidgetID is associated with the given ::NTV2OutputXptID.
 										Defaults to ::DEVICE_ID_NOTFOUND.
-			@note		The default behavior is to answer with the first NTV2WidgetID found in the NTV2WidgetIDSet.
+			@note		The default behavior is to answer with the first ::NTV2WidgetID found in the ::NTV2WidgetIDSet.
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetWidgetForOutput (const NTV2OutputCrosspointID inOutputXpt, NTV2WidgetID & outWidgetID, const NTV2DeviceID inDeviceID = DEVICE_ID_NOTFOUND);
+		static bool					GetWidgetForOutput (const NTV2OutputXptID inOutputXpt, NTV2WidgetID & outWidgetID, const NTV2DeviceID inDeviceID = DEVICE_ID_NOTFOUND);
 
 		/**
 			@brief		Returns the widgets that "own" the specified input crosspoint.
 			@param[in]	inInputXpt		Specifies the input crosspoint of interest.
-			@param[out]	outWidgetIDs	Receives the NTV2WidgetIDSet containing the widgets that "own" the input
+			@param[out]	outWidgetIDs	Receives the ::NTV2WidgetIDSet containing the widgets that "own" the input
 										crosspoint (or an empty set upon failure).
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetWidgetsForInput (const NTV2InputCrosspointID inInputXpt, NTV2WidgetIDSet & outWidgetIDs);
+		static bool					GetWidgetsForInput (const NTV2InputXptID inInputXpt, NTV2WidgetIDSet & outWidgetIDs);
 
 		/**
 			@brief		Returns the widget that "owns" the specified input crosspoint.
 			@param[in]	inInputXpt		Specifies the input crosspoint of interest.
-			@param[out]	outWidgetID		Receives the NTV2WidgetID of the widget that "owns" the input crosspoint
-										(or NTV2_WIDGET_INVALID upon failure).
+			@param[out]	outWidgetID		Receives the ::NTV2WidgetID of the widget that "owns" the input crosspoint
+										(or ::NTV2_WIDGET_INVALID upon failure).
 			@param[in]	inDeviceID		Optionally specifies a device ID to resolve any ambiguity if more than
-										one NTV2WidgetID is associated with the given NTV2InputXptID.
+										one ::NTV2WidgetID is associated with the given ::NTV2InputXptID.
 										Defaults to ::DEVICE_ID_NOTFOUND, which returns the first match.
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetWidgetForInput (const NTV2InputCrosspointID inInputXpt, NTV2WidgetID & outWidgetID, const NTV2DeviceID inDeviceID = DEVICE_ID_NOTFOUND);
+		static bool					GetWidgetForInput (const NTV2InputXptID inInputXpt, NTV2WidgetID & outWidgetID, const NTV2DeviceID inDeviceID = DEVICE_ID_NOTFOUND);
 
 		/**
 			@brief		Returns the input crosspoints known to be "owned" by the given widget.
-			@param[in]	inWidgetID		Specifies the NTV2WidgetID of the widget of interest.
-			@param[out]	outInputs		Receives the set of NTV2InputCrosspointIDs that are "owned" by the widget
+			@param[in]	inWidgetID		Specifies the ::NTV2WidgetID of the widget of interest.
+			@param[out]	outInputs		Receives the set of ::NTV2InputXptIDSet that are "owned" by the widget
 										(or empty upon failure).
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetWidgetInputs (const NTV2WidgetID inWidgetID, NTV2InputCrosspointIDSet & outInputs);
+		static bool					GetWidgetInputs (const NTV2WidgetID inWidgetID, NTV2InputXptIDSet & outInputs);
 
 		/**
 			@brief		Returns all known widget input crosspoints for the given device.
-			@param[in]	inDeviceID		Specifies the NTV2DeviceID of the device of interest.
-			@param[out]	outInputs		Receives the NTV2InputCrosspointIDs (or empty upon failure).
+			@param[in]	inDeviceID		Specifies the ::NTV2DeviceID of the device of interest.
+			@param[out]	outInputs		Receives the ::NTV2InputXptIDSet (or empty upon failure).
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetAllWidgetInputs (const NTV2DeviceID inDeviceID, NTV2InputCrosspointIDSet & outInputs);
+		static bool					GetAllWidgetInputs (const NTV2DeviceID inDeviceID, NTV2InputXptIDSet & outInputs);
 
 		/**
 			@brief		Returns all routing registers for the given set of input crosspoints.
 			@param[in]	inInputs		Specifies the input crosspoints.
-			@param[out]	outRegInfos		Receives the NTV2RegInfo collection (empty upon failure).
+			@param[out]	outRegInfos		Receives the ::NTV2RegInfo collection (empty upon failure).
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetAllRoutingRegInfos (const NTV2InputCrosspointIDSet & inInputs, NTV2RegisterWrites & outRegInfos);
+		static bool					GetAllRoutingRegInfos (const NTV2InputXptIDSet & inInputs, NTV2RegisterWrites & outRegInfos);
 
 		/**
 			@brief		Returns the output crosspoints known to be "owned" by the given widget.
-			@param[in]	inWidgetID		Specifies the NTV2WidgetID of the widget of interest.
-			@param[out]	outOutputs		Receives the set of NTV2OutputCrosspointIDs that are "owned" by the widget
+			@param[in]	inWidgetID		Specifies the ::NTV2WidgetID of the widget of interest.
+			@param[out]	outOutputs		Receives the set of ::NTV2OutputXptIDSet that are "owned" by the widget
 										(or empty upon failure).
 			@return		True if successful;  otherwise false.
 		**/
-		static bool					GetWidgetOutputs (const NTV2WidgetID inWidgetID, NTV2OutputCrosspointIDSet & outOutputs);
+		static bool					GetWidgetOutputs (const NTV2WidgetID inWidgetID, NTV2OutputXptIDSet & outOutputs);
 
 		/**
 			@brief		Converts a set of crosspoint registers into a set of crosspoint connections.
@@ -410,6 +439,24 @@ class AJAExport CNTV2SignalRouter
 			@return		True if successful;  otherwise false.
 		**/
 		static bool					GetConnectionsFromRegs (const NTV2InputXptIDSet & inInputXptIDs, const NTV2RegisterReads & inRegValues, NTV2XptConnections & outConnections);
+
+		/**
+			@param[in]	inInputXpt	Specifies the input crosspoint ID of interest.
+			@return		True if the input only accepts RGB;  otherwise false.
+		**/
+		static bool					IsRGBOnlyInputXpt (const NTV2InputXptID inInputXpt);
+
+		/**
+			@param[in]	inInputXpt	Specifies the input crosspoint ID of interest.
+			@return		True if the input only accepts YCbCr;  otherwise false.
+		**/
+		static bool					IsYUVOnlyInputXpt (const NTV2InputXptID inInputXpt);
+
+		/**
+			@param[in]	inInputXpt	Specifies the input crosspoint ID of interest.
+			@return		True if the input is a mask/key input;  otherwise false.
+		**/
+		static bool					IsKeyInputXpt (const NTV2InputXptID inInputXpt);
 
 		/**
 			@brief		Compares two sets of crosspoint connections.
@@ -445,6 +492,18 @@ class AJAExport CNTV2SignalRouter
 		**/
 		static bool					CreateFromString (const std::string & inString, CNTV2SignalRouter & outRouter);
 
+		/**
+			@brief		Converts the given map of crosspoint connections into source code.
+			@param[out]	outCode			Receives the generated source code.
+			@param[in]	inConnections	Receives the connections from what is successfully parsed from the string.
+										It will be empty if this function fails.
+			@param[in]	inConfig		Specifies how the source code will be generated.
+										If unspecified, uses the PrintCodeConfig's default settings.
+			@return		True if successful;  otherwise false.
+		**/
+		static bool					ToCodeString (std::string & outCode, const NTV2XptConnections & inConnections,
+													const PrintCodeConfig & inConfig = PrintCodeConfig());
+
 
 		#if !defined (NTV2_DEPRECATE_12_5)
 			static NTV2_DEPRECATED_f(const NTV2RoutingEntry &		GetInputSelectEntry (const NTV2InputCrosspointID inInputXpt));	///< @deprecated	NTV2RoutingEntry is deprecated.
@@ -475,48 +534,60 @@ class AJAExport CNTV2SignalRouter
 
 
 /**
-	@return		The appropriate NTV2InputCrosspointID for the given NTV2Channel.
-	@param[in]	inChannel	Specifies the NTV2Channel of interest.
-	@param[in]	inIsBInput	Specify true to obtain the "B" input crosspoint (for dual-link). Defaults to false (the "A" input crosspoint).
+	@return		The appropriate ::NTV2InputXptID for the given FrameStore.
+	@param[in]	inFrameStore	Specifies the FrameStore of interest, expressed as an ::NTV2Channel (a zero-based index value).
+	@param[in]	inIsBInput		Specify true to obtain the "B" input crosspoint (for dual-link). Defaults to false (the "A" input crosspoint).
 **/
-AJAExport NTV2InputCrosspointID		GetFrameBufferInputXptFromChannel (const NTV2Channel inChannel, const bool inIsBInput = false);
+AJAExport NTV2InputXptID			GetFrameBufferInputXptFromChannel (const NTV2Channel inFrameStore, const bool inIsBInput = false);
 
 /**
-	@return		The appropriate NTV2InputCrosspointID for the given color space converter (CSC) widget.
-	@param[in]	inChannel		Specifies the NTV2Channel of interest.
+	@return		The appropriate ::NTV2InputXptID for the given color space converter (CSC) widget.
+	@param[in]	inCSC			Specifies the CSC of interest, expressed as an ::NTV2Channel (a zero-based index value).
 	@param[in]	inIsKeyInput	Specify true to obtain the key (alpha) input crosspoint. Defaults to false (the video input crosspoint).
 **/
-AJAExport NTV2InputCrosspointID		GetCSCInputXptFromChannel (const NTV2Channel inChannel, const bool inIsKeyInput = false);
+AJAExport NTV2InputXptID			GetCSCInputXptFromChannel (const NTV2Channel inCSC, const bool inIsKeyInput = false);
 
 /**
-@return		The appropriate NTV2InputCrosspointID for the given dual link (DL) widget.
-@param[in]	inChannel		Specifies the NTV2Channel of interest.
+	@return		The appropriate ::NTV2InputXptID for the given LUT widget.
+	@param[in]	inLUT			Specifies the LUT of interest, expressed as an ::NTV2Channel (a zero-based index value).
+**/
+AJAExport NTV2InputXptID			GetLUTInputXptFromChannel (const NTV2Channel inLUT);
+
+/**
+@return		The appropriate ::NTV2InputXptID for the given Dual-Link Input widget.
+@param[in]	inChannel		Specifies the Dual-Link Input converter of interest, expressed as an ::NTV2Channel (a zero-based index value).
 @param[in]	inLinkB			Specifies whether to return the A or the B link crosspoint ID. Defaults to the A link crosspoint.
 **/
-AJAExport NTV2InputCrosspointID		GetDLInInputXptFromChannel(const NTV2Channel inChannel, const bool inLinkB = false);
+AJAExport NTV2InputXptID			GetDLInInputXptFromChannel (const NTV2Channel inChannel, const bool inLinkB = false);
 
 /**
-@return		The appropriate NTV2OutputCrosspointID for the given dual link (DL) widget.
-@param[in]	inChannel		Specifies the NTV2Channel of interest.
+@return		The appropriate ::NTV2InputXptID for the given Dual Link Output widget.
+@param[in]	inDLOutWidget		Specifies the Dual Link Output of interest, expressed as an ::NTV2Channel (a zero-based index value).
 **/
-AJAExport NTV2InputCrosspointID		GetDLOutInputXptFromChannel(const NTV2Channel inChannel);
+AJAExport NTV2InputXptID			GetDLOutInputXptFromChannel (const NTV2Channel inDLOutWidget);
 
 /**
 	@return		The appropriate NTV2OutputCrosspointID for the given color space converter (CSC) widget.
-	@param[in]	inChannel		Specifies the NTV2Channel of interest.
+	@param[in]	inCSC			Specifies the CSC of interest, expressed as an ::NTV2Channel (a zero-based index value).
 	@param[in]	inIsKey			Specify true to obtain the key (alpha) output crosspoint. Defaults to false (the video output crosspoint).
 	@param[in]	inIsRGB			Specify true to obtain the RGB video output crosspoint. Defaults to false (the YUV video output crosspoint).
 								Ignored if true passed to inIsKey.
 **/
-AJAExport NTV2OutputCrosspointID	GetCSCOutputXptFromChannel (const NTV2Channel inChannel, const bool inIsKey = false, const bool inIsRGB = false);
+AJAExport NTV2OutputCrosspointID	GetCSCOutputXptFromChannel (const NTV2Channel inCSC, const bool inIsKey = false, const bool inIsRGB = false);
 
 /**
-	@return		The appropriate NTV2OutputCrosspointID for the given NTV2Channel.
-	@param[in]	inChannel	Specifies the NTV2Channel of interest.
-	@param[in]	inIsRGB		Specify true to obtain the RGB output crosspoint. Defaults to false (the YUV output crosspoint).
-	@param[in]	inIs425		Specify true to obtain the 425 output crosspoint. Defaults to false (the normal non-425 output crosspoint).
+	@return		The appropriate NTV2OutputCrosspointID for the given LUT widget.
+	@param[in]	inLUT			Specifies the LUT of interest, expressed as an ::NTV2Channel (a zero-based index value).
 **/
-AJAExport NTV2OutputCrosspointID	GetFrameBufferOutputXptFromChannel (const NTV2Channel inChannel, const bool inIsRGB = false, const bool inIs425 = false);
+AJAExport NTV2OutputCrosspointID	GetLUTOutputXptFromChannel (const NTV2Channel inLUT);
+
+/**
+	@return		The appropriate NTV2OutputCrosspointID for the given FrameStore.
+	@param[in]	inFrameStore	Specifies the FrameStore of interest, expressed as an ::NTV2Channel (a zero-based index value).
+	@param[in]	inIsRGB			Specify true to obtain the RGB output crosspoint. Defaults to false (the YUV output crosspoint).
+	@param[in]	inIs425			Specify true to obtain the 425 output crosspoint. Defaults to false (the normal non-425 output crosspoint).
+**/
+AJAExport NTV2OutputCrosspointID	GetFrameBufferOutputXptFromChannel (const NTV2Channel inFrameStore, const bool inIsRGB = false, const bool inIs425 = false);
 
 /**
 	@return		The appropriate NTV2OutputCrosspointID for the given NTV2InputSource.
@@ -534,41 +605,43 @@ AJAExport NTV2OutputCrosspointID	GetInputSourceOutputXpt (const NTV2InputSource 
 																const bool inIsHDMI_RGB = false,  const UWord inHDMI_Quadrant = 0);
 
 /**
-	@return		The appropriate SDI input's ::NTV2OutputCrosspointID for the given ::NTV2Channel.
-	@param[in]	inChannel		Specifies the SDI Input widget of interest as an ::NTV2Channel (a zero-based index value).
+	@return		The appropriate SDI input's ::NTV2OutputCrosspointID for the given SDI Input.
+	@param[in]	inSDIInput		Specifies the SDI Input widget of interest, expressed as an ::NTV2Channel (a zero-based index value).
 	@param[in]	inIsDS2			Specify true to obtain the DS2 output crosspoint. Defaults to false (the DS1 output crosspoint).
 **/
-AJAExport NTV2OutputCrosspointID	GetSDIInputOutputXptFromChannel (const NTV2Channel inChannel,  const bool inIsDS2 = false);
+AJAExport NTV2OutputCrosspointID	GetSDIInputOutputXptFromChannel (const NTV2Channel inSDIInput,  const bool inIsDS2 = false);
 
 /**
-	@return		The appropriate Duallink Output's ::NTV2OutputCrosspointID for the given ::NTV2Channel.
-	@param[in]	inChannel		Specifies the Dual-Link Output widget of interest as an ::NTV2Channel (a zero-based index value).
+	@return		The ::NTV2OutputCrosspointID for the given Dual Link Output.
+	@param[in]	inDLOutput		Specifies the Dual-Link Output widget of interest, expressed as an ::NTV2Channel (a zero-based index value).
 	@param[in]	inIsLinkB		Specify true to obtain the DS2 output crosspoint. Defaults to false (the DS1 output crosspoint).
 **/
-AJAExport NTV2OutputCrosspointID	GetDLOutOutputXptFromChannel(const NTV2Channel inChannel, const bool inIsLinkB = false);
+AJAExport NTV2OutputCrosspointID	GetDLOutOutputXptFromChannel(const NTV2Channel inDLOutput, const bool inIsLinkB = false);
 
 /**
-	@return		The appropriate Duallink Input's ::NTV2OutputCrosspointID for the given ::NTV2Channel.
-	@param[in]	inChannel		Specifies the Dual-Link Input widget of interest as an ::NTV2Channel (a zero-based index value).
+	@return		The appropriate ::NTV2OutputCrosspointID for the given Dual Link Input.
+	@param[in]	inDLInput		Specifies the Dual-Link Input widget of interest, expressed as an ::NTV2Channel (a zero-based index value).
 **/
-AJAExport NTV2OutputCrosspointID	GetDLInOutputXptFromChannel(const NTV2Channel inChannel);
+AJAExport NTV2OutputCrosspointID	GetDLInOutputXptFromChannel(const NTV2Channel inDLInput);
 
 /**
-	@return		The appropriate ::NTV2InputCrosspointID for the given ::NTV2OutputDestination.
+	@return		The appropriate ::NTV2InputXptID for the given ::NTV2OutputDestination.
 	@param[in]	inOutputDest	Specifies the ::NTV2OutputDestination of interest.
 	@param[in]	inIsSDI_DS2		Specify true to obtain the DS2 input crosspoint (SDI output destinations only). Defaults to false (the DS1 input).
 								Ignored for non-SDI output destinations.
-	@param[in]	inHDMI_Quadrant	Specifies the 4K/UHD quadrant of interest (for HDMI output destinations), where 0=upperLeft, 1=upperRight, 2=lowerLeft, 3=lowerRight.
-								Defaults to 99 for non-4K/UHD. Ignored for non-HDMI output destinations.
+	@param[in]	inHDMI_Quadrant	Specifies the 4K/UHD quadrant of interest (for HDMI output destinations),
+								where 0=upperLeft, 1=upperRight, 2=lowerLeft, 3=lowerRight.
+								Values above 3 are deemed to be non-4K/UHD (the default).
+								Ignored for non-HDMI output destinations.
 **/
-AJAExport NTV2InputCrosspointID		GetOutputDestInputXpt (const NTV2OutputDestination inOutputDest,  const bool inIsSDI_DS2 = false,  const UWord inHDMI_Quadrant = 99);
+AJAExport NTV2InputXptID			GetOutputDestInputXpt (const NTV2OutputDestination inOutputDest,  const bool inIsSDI_DS2 = false,  const UWord inHDMI_Quadrant = 99);
 
 /**
-	@return		The appropriate SDI output's ::NTV2InputCrosspointID for the given ::NTV2Channel.
-	@param[in]	inChannel		Specifies the SDI Output widget of interest as an ::NTV2Channel (a zero-based index value).
+	@return		The appropriate ::NTV2InputXptID for the given SDI Output.
+	@param[in]	inSDIOutput		Specifies the SDI Output widget of interest, expressed as an ::NTV2Channel (a zero-based index value).
 	@param[in]	inIsDS2			Specify true to obtain the DS2 input crosspoint. Defaults to false (the DS1 input).
 **/
-AJAExport NTV2InputCrosspointID		GetSDIOutputInputXpt (const NTV2Channel inChannel,  const bool inIsDS2 = false);
+AJAExport NTV2InputXptID			GetSDIOutputInputXpt (const NTV2Channel inSDIOutput,  const bool inIsDS2 = false);
 
 /**
 	@return		The appropriate mixer's ::NTV2OutputCrosspointID for the given ::NTV2Channel.
@@ -579,35 +652,35 @@ AJAExport NTV2InputCrosspointID		GetSDIOutputInputXpt (const NTV2Channel inChann
 AJAExport NTV2OutputCrosspointID	GetMixerOutputXptFromChannel (const NTV2Channel inChannel, const bool inIsKey = false);
 
 /**
-	@return		The appropriate mixer's foreground ::NTV2InputCrosspointID for the given ::NTV2Channel.
+	@return		The appropriate mixer's foreground ::NTV2InputXptID for the given ::NTV2Channel.
 	@param[in]	inChannel		Specifies the ::NTV2Channel of interest. Mixer 1 is used for channels 1 & 2, mixer 2 for channels 3 & 4, etc.
 	@param[in]	inIsKey			Specify true to obtain the key input crosspoint. Defaults to false (the video input).
 	@see		::GetMixerBGInputXpt, ::GetMixerOutputXptFromChannel, \ref widget_mixkey
 **/
-AJAExport NTV2InputCrosspointID		GetMixerFGInputXpt (const NTV2Channel inChannel,  const bool inIsKey = false);
+AJAExport NTV2InputXptID			GetMixerFGInputXpt (const NTV2Channel inChannel,  const bool inIsKey = false);
 
 /**
-	@return		The appropriate mixer's background ::NTV2InputCrosspointID for the given ::NTV2Channel.
+	@return		The appropriate mixer's background ::NTV2InputXptID for the given ::NTV2Channel.
 	@param[in]	inChannel		Specifies the ::NTV2Channel of interest. Mixer 1 is used for channels 1 & 2, mixer 2 for channels 3 & 4, etc.
 	@param[in]	inIsKey			Specify true to obtain the key input crosspoint. Defaults to false (the video input).
 	@see		::GetMixerFGInputXpt, ::GetMixerOutputXptFromChannel, \ref widget_mixkey
 **/
-AJAExport NTV2InputCrosspointID		GetMixerBGInputXpt (const NTV2Channel inChannel,  const bool inIsKey = false);
+AJAExport NTV2InputXptID			GetMixerBGInputXpt (const NTV2Channel inChannel,  const bool inIsKey = false);
 
 /**
-    @return		The appropriate TSI Muxer's ::NTV2InputCrosspointID for the given ::NTV2Channel.
-    @param[in]	inChannel		Specifies the ::NTV2Channel of interest.
-    @param[in]	inLinkB			Specify true to obtain the second input crosspoint. Defaults to false.
+    @return		The appropriate ::NTV2InputXptID for the given TSI Muxer widget.
+    @param[in]	inTSIMuxer		Specifies the 425Mux widget of interest, expressed as an ::NTV2Channel (a zero-based index value).
+    @param[in]	inLinkB			Specify true to obtain the "B" input crosspoint. Defaults to false, the "A" input.
 **/
-AJAExport NTV2InputCrosspointID     GetTSIMuxInputXptFromChannel(const NTV2Channel inChannel, const bool inLinkB = false);
+AJAExport NTV2InputXptID		     GetTSIMuxInputXptFromChannel(const NTV2Channel inTSIMuxer, const bool inLinkB = false);
 
 /**
-    @return		The appropriate TSI Muxer's ::NTV2OutputCrosspointID for the given ::NTV2Channel.
-    @param[in]	inChannel		Specifies the ::NTV2Channel of interest.
-    @param[in]	inLinkB			Specify true to obtain the second output crosspoint. Defaults to false.
-    @param[in]	inIsRGB			Specify true to obtain the RGB output crosspoints. Defaults to false.
+    @return		The appropriate ::NTV2OutputXptID for the given TSI Muxer.
+    @param[in]	inTSIMuxer		Specifies the 425Mux widget of interest, expressed as an ::NTV2Channel (a zero-based index value).
+    @param[in]	inLinkB			Specify true to obtain the "B" output crosspoint. Defaults to false, the "A" output.
+    @param[in]	inIsRGB			Specify true to obtain the RGB output crosspoint. Defaults to false, the YUV output.
 **/
-AJAExport NTV2OutputCrosspointID GetTSIMuxOutputXptFromChannel (const NTV2Channel inChannel, const bool inLinkB = false, const bool inIsRGB = false);
+AJAExport NTV2OutputXptID			GetTSIMuxOutputXptFromChannel (const NTV2Channel inTSIMuxer, const bool inLinkB = false, const bool inIsRGB = false);
 
 
 //	Stream operators

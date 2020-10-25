@@ -10,6 +10,8 @@
 #include "ntv2endian.h"
 #include "ajabase/system/memory.h"
 #include "ajabase/system/debug.h"
+#include "ajabase/common/common.h"
+#include "ntv2registerexpert.h"
 #include <iomanip>
 #include <locale>		//	For std::locale, std::numpunct, std::use_facet
 #include <assert.h>
@@ -77,15 +79,15 @@ void NTV2SDIInputStatus::Clear (void)
 
 ostream & NTV2SDIInputStatus::Print (ostream & inOutStream) const
 {
-	inOutStream	<< "[CRCA="			<< mCRCTallyA
-				<< " CRCB="			<< mCRCTallyB
-				<< " unlk="			<< mUnlockTally
-				<< " frmRefClkCnt="	<< mFrameRefClockCount
-				<< " globalClkCnt="	<< mGlobalClockCount
-				<< " frmTRS="		<< mFrameTRSError
-				<< " locked="		<< mLocked
-				<< " VPIDA="		<< mVPIDValidA
-				<< " VPIDB="		<< mVPIDValidB
+	inOutStream	<< "[CRCA="			<< DEC(mCRCTallyA)
+				<< " CRCB="			<< DEC(mCRCTallyB)
+				<< " unlk="			<< xHEX0N(mUnlockTally,8)
+				<< " frmRefClkCnt="	<< xHEX0N(mFrameRefClockCount,16)
+				<< " globalClkCnt="	<< xHEX0N(mGlobalClockCount,16)
+				<< " frmTRS="		<< YesNo(mFrameTRSError)
+				<< " locked="		<< YesNo(mLocked)
+				<< " VPIDA="		<< YesNo(mVPIDValidA)
+				<< " VPIDB="		<< YesNo(mVPIDValidB)
 				<< "]";
 	return inOutStream;
 }
@@ -195,7 +197,7 @@ string NTV2_POINTER::AsString (UWord inDumpMaxBytes) const
 {
 	ostringstream	oss;
 	oss << xHEX0N(GetRawHostPointer(),16) << ":" << DEC(GetByteCount()) << " bytes";
-	if (inDumpMaxBytes)
+	if (inDumpMaxBytes  &&  GetHostPointer())
 	{
 		oss << ":";
 		if (inDumpMaxBytes > 64)
@@ -331,104 +333,14 @@ string & NTV2_POINTER::Dump (	string &		inOutputString,
 								const bool		inShowAscii,
 								const size_t	inAddrOffset) const
 {
-	if (IsNULL())
-		return inOutputString;
-	if (inRadix != 8 && inRadix != 10 && inRadix != 16 && inRadix != 2)
-		return inOutputString;
-	if (inAddressRadix != 0 && inAddressRadix != 8 && inAddressRadix != 10 && inAddressRadix != 16)
-		return inOutputString;
-	if (inBytesPerGroup == 0)
-		return inOutputString;
-
-	{
-		const void *	pInStartAddress		(GetHostAddress(ULWord(inStartOffset)));
-		size_t			bytesRemaining		(inByteCount ? inByteCount : GetByteCount());
-		size_t			bytesInThisGroup	(0);
-		size_t			groupsInThisRow		(0);
-		const unsigned	maxByteWidth		(inRadix == 8 ? 4 : (inRadix == 10 ? 3 : (inRadix == 2 ? 8 : 2)));
-		const UByte *	pBuffer				(reinterpret_cast <const UByte *> (pInStartAddress));
-		const size_t	asciiBufferSize		(inShowAscii && inGroupsPerRow ? (inBytesPerGroup * inGroupsPerRow + 1) * sizeof (UByte) : 0);	//	Size in bytes, not chars
-		UByte *			pAsciiBuffer		(asciiBufferSize ? new UByte[asciiBufferSize / sizeof(UByte)] : AJA_NULL);
-
-		if (!pInStartAddress)
-			return inOutputString;
-
-		if (pAsciiBuffer)
-			::memset (pAsciiBuffer, 0, asciiBufferSize);
-
-		if (inGroupsPerRow && inAddressRadix)
-		{	ostringstream ossA;
-			ossA << print_address_offset (inAddressRadix, ULWord64(pBuffer) - ULWord64(pInStartAddress) + ULWord64(inAddrOffset));
-			inOutputString += ossA.str();
-		}
-		while (bytesRemaining)
-		{
-			ostringstream	ossD;
-			if (inRadix == 2)
-				ossD << BIN08(*pBuffer);
-			else if (inRadix == 8)
-				ossD << oOCT(uint16_t(*pBuffer));
-			else if (inRadix == 10)
-				ossD << DEC0N(uint16_t(*pBuffer),maxByteWidth);
-			else if (inRadix == 16)
-				ossD << HEX0N(uint16_t(*pBuffer),2);
-
-			if (pAsciiBuffer)
-				pAsciiBuffer[groupsInThisRow * inBytesPerGroup + bytesInThisGroup] = isprint(*pBuffer) ? *pBuffer : '.';
-			pBuffer++;
-			bytesRemaining--;
-
-			bytesInThisGroup++;
-			if (bytesInThisGroup >= inBytesPerGroup)
-			{
-				groupsInThisRow++;
-				if (inGroupsPerRow && groupsInThisRow >= inGroupsPerRow)
-				{
-					if (pAsciiBuffer)
-					{
-						ossD << " " << pAsciiBuffer;
-						::memset (pAsciiBuffer, 0, asciiBufferSize);
-					}
-					ossD << endl;
-					if (inAddressRadix && bytesRemaining)
-						ossD << print_address_offset (inAddressRadix, reinterpret_cast <ULWord64> (pBuffer) - reinterpret_cast <ULWord64> (pInStartAddress) + ULWord64 (inAddrOffset));
-					groupsInThisRow = 0;
-				}	//	if time for new row
-				else
-					ossD << " ";
-				bytesInThisGroup = 0;
-			}	//	if time for new group
-			inOutputString += ossD.str();
-		}	//	loop til no bytes remaining
-
-		ostringstream	ossZ;
-		if (bytesInThisGroup && bytesInThisGroup < inBytesPerGroup && pAsciiBuffer)
-		{
-			groupsInThisRow++;
-			ossZ << string((inBytesPerGroup - bytesInThisGroup) * maxByteWidth + 1, ' ');
-		}
-
-		if (groupsInThisRow)
-		{
-			if (groupsInThisRow < inGroupsPerRow && pAsciiBuffer)
-				ossZ << string(((inGroupsPerRow - groupsInThisRow) * inBytesPerGroup * maxByteWidth + (inGroupsPerRow - groupsInThisRow)), ' ');
-			if (pAsciiBuffer)
-				ossZ << pAsciiBuffer;
-			ossZ << endl;
-		}
-		else if (bytesInThisGroup && bytesInThisGroup < inBytesPerGroup)
-			ossZ << endl;
-
-		inOutputString += ossZ.str();
-		if (pAsciiBuffer)
-			delete [] pAsciiBuffer;
-	}	//	else radix is 16, 10, 8 or 2
-
+	ostringstream oss;
+	Dump (oss, inStartOffset, inByteCount, inRadix, inBytesPerGroup, inGroupsPerRow, inAddressRadix, inShowAscii, inAddrOffset);
+	inOutputString = oss.str();
 	return inOutputString;
 }
 
 
-bool NTV2_POINTER::GetU64s (vector<uint64_t> & outUint64s, const size_t inU64Offset, const size_t inMaxSize, const bool inByteSwap) const
+bool NTV2_POINTER::GetU64s (ULWord64Sequence & outUint64s, const size_t inU64Offset, const size_t inMaxSize, const bool inByteSwap) const
 {
 	outUint64s.clear();
 	if (IsNULL())
@@ -465,7 +377,7 @@ bool NTV2_POINTER::GetU64s (vector<uint64_t> & outUint64s, const size_t inU64Off
 }
 
 
-bool NTV2_POINTER::GetU32s (vector<uint32_t> & outUint32s, const size_t inU32Offset, const size_t inMaxSize, const bool inByteSwap) const
+bool NTV2_POINTER::GetU32s (ULWordSequence & outUint32s, const size_t inU32Offset, const size_t inMaxSize, const bool inByteSwap) const
 {
 	outUint32s.clear();
 	if (IsNULL())
@@ -502,7 +414,7 @@ bool NTV2_POINTER::GetU32s (vector<uint32_t> & outUint32s, const size_t inU32Off
 }
 
 
-bool NTV2_POINTER::GetU16s (vector<uint16_t> & outUint16s, const size_t inU16Offset, const size_t inMaxSize, const bool inByteSwap) const
+bool NTV2_POINTER::GetU16s (UWordSequence & outUint16s, const size_t inU16Offset, const size_t inMaxSize, const bool inByteSwap) const
 {
 	outUint16s.clear();
 	if (IsNULL())
@@ -539,7 +451,7 @@ bool NTV2_POINTER::GetU16s (vector<uint16_t> & outUint16s, const size_t inU16Off
 }
 
 
-bool NTV2_POINTER::GetU8s (vector<uint8_t> & outUint8s, const size_t inU8Offset, const size_t inMaxSize) const
+bool NTV2_POINTER::GetU8s (UByteSequence & outUint8s, const size_t inU8Offset, const size_t inMaxSize) const
 {
 	outUint8s.clear();
 	if (IsNULL())
@@ -609,10 +521,12 @@ bool NTV2_POINTER::GetString (std::string & outString, const size_t inU8Offset, 
 }
 
 
-bool NTV2_POINTER::PutU64s (const vector<uint64_t> & inU64s, const size_t inU64Offset, const bool inByteSwap)
+bool NTV2_POINTER::PutU64s (const ULWord64Sequence & inU64s, const size_t inU64Offset, const bool inByteSwap)
 {
 	if (IsNULL())
 		return false;	//	No buffer or space
+	if (inU64s.empty())
+		return true;	//	Nothing to copy
 
 	size_t		maxU64s	(GetByteCount() / sizeof(uint64_t));
 	uint64_t *	pU64	(reinterpret_cast<uint64_t*>(GetHostAddress(ULWord(inU64Offset * sizeof(uint64_t)))));
@@ -635,10 +549,12 @@ bool NTV2_POINTER::PutU64s (const vector<uint64_t> & inU64s, const size_t inU64O
 }
 
 
-bool NTV2_POINTER::PutU32s (const vector<uint32_t> & inU32s, const size_t inU32Offset, const bool inByteSwap)
+bool NTV2_POINTER::PutU32s (const ULWordSequence & inU32s, const size_t inU32Offset, const bool inByteSwap)
 {
 	if (IsNULL())
 		return false;	//	No buffer or space
+	if (inU32s.empty())
+		return true;	//	Nothing to copy
 
 	size_t		maxU32s	(GetByteCount() / sizeof(uint32_t));
 	uint32_t *	pU32	(reinterpret_cast<uint32_t*>(GetHostAddress(ULWord(inU32Offset * sizeof(uint32_t)))));
@@ -661,10 +577,12 @@ bool NTV2_POINTER::PutU32s (const vector<uint32_t> & inU32s, const size_t inU32O
 }
 
 
-bool NTV2_POINTER::PutU16s (const vector<uint16_t> & inU16s, const size_t inU16Offset, const bool inByteSwap)
+bool NTV2_POINTER::PutU16s (const UWordSequence & inU16s, const size_t inU16Offset, const bool inByteSwap)
 {
 	if (IsNULL())
 		return false;	//	No buffer or space
+	if (inU16s.empty())
+		return true;	//	Nothing to copy
 
 	size_t		maxU16s	(GetByteCount() / sizeof(uint16_t));
 	uint16_t *	pU16	(reinterpret_cast<uint16_t*>(GetHostAddress(ULWord(inU16Offset * sizeof(uint16_t)))));
@@ -687,10 +605,12 @@ bool NTV2_POINTER::PutU16s (const vector<uint16_t> & inU16s, const size_t inU16O
 }
 
 
-bool NTV2_POINTER::PutU8s (const vector<uint8_t> & inU8s, const size_t inU8Offset)
+bool NTV2_POINTER::PutU8s (const UByteSequence & inU8s, const size_t inU8Offset)
 {
 	if (IsNULL())
 		return false;	//	No buffer or space
+	if (inU8s.empty())
+		return true;	//	Nothing to copy
 
 	size_t		maxU8s	(GetByteCount());
 	uint8_t *	pU8		(reinterpret_cast<uint8_t*>(GetHostAddress(ULWord(inU8Offset))));
@@ -706,11 +626,11 @@ bool NTV2_POINTER::PutU8s (const vector<uint8_t> & inU8s, const size_t inU8Offse
 	::memcpy(pU8, &inU8s[0], maxU8s);
 #else
 	for (unsigned ndx(0);  ndx < maxU8s;  ndx++)
-#if defined(_DEBUG)
+	#if defined(_DEBUG)
 		*pU8++ = inU8s.at(ndx);
-#else
+	#else
 		*pU8++ = inU8s[ndx];
-#endif
+	#endif
 #endif
 	return true;
 }
@@ -1035,19 +955,15 @@ NTV2GeometrySet & operator += (NTV2GeometrySet & inOutSet, const NTV2GeometrySet
 //	Implementation of NTV2FrameBufferFormatSet's ostream writer...
 ostream & operator << (ostream & inOStream, const NTV2InputSourceSet & inSet)
 {
-	NTV2InputSourceSetConstIter	iter	(inSet.begin ());
-
-	inOStream	<< inSet.size ()
-				<< (inSet.size () == 1 ? " input source:  " : " input sources:  ");
-
-	while (iter != inSet.end ())
+	NTV2InputSourceSetConstIter	iter(inSet.begin());
+	inOStream	<< inSet.size()
+				<< (inSet.size() == 1 ? " input:  " : " inputs:  ");
+	while (iter != inSet.end())
 	{
 		inOStream << ::NTV2InputSourceToString (*iter);
-		inOStream << (++iter == inSet.end ()  ?  ""  :  ", ");
+		inOStream << (++iter == inSet.end()  ?  ""  :  ", ");
 	}
-
 	return inOStream;
-
 }	//	operator <<
 
 
@@ -1055,6 +971,28 @@ NTV2InputSourceSet & operator += (NTV2InputSourceSet & inOutSet, const NTV2Input
 {
 	for (NTV2InputSourceSetConstIter iter (inSet.begin ());  iter != inSet.end ();  ++iter)
 		inOutSet.insert (*iter);
+	return inOutSet;
+}
+
+
+ostream & operator << (ostream & inOStream, const NTV2OutputDestinations & inSet)
+{
+	NTV2OutputDestinationsConstIter	iter(inSet.begin());
+	inOStream	<< inSet.size()
+				<< (inSet.size() == 1 ? " output:  " : " outputs:  ");
+	while (iter != inSet.end())
+	{
+		inOStream << ::NTV2OutputDestinationToString(*iter);
+		inOStream << (++iter == inSet.end()  ?  ""  :  ", ");
+	}
+	return inOStream;
+}
+
+
+NTV2OutputDestinations & operator += (NTV2OutputDestinations & inOutSet, const NTV2OutputDestinations & inSet)
+{
+	for (NTV2OutputDestinationsConstIter iter(inSet.begin());  iter != inSet.end();  ++iter)
+		inOutSet.insert(*iter);
 	return inOutSet;
 }
 
@@ -1084,18 +1022,20 @@ NTV2_TRAILER::NTV2_TRAILER ()
 }
 
 
+static const string sSegXferUnits[] = {"", " U8", " U16", "", " U32", "", "", "", " U64", ""};
+
 ostream & NTV2SegmentedXferInfo::Print (ostream & inStrm, const bool inDumpSegments) const
 {
 	if (!isValid())
 		return inStrm << "(invalid)";
 	if (inDumpSegments)
 	{
+		//	TBD
 	}
 	else
 	{
-		static const string sUnits[] = {"", " U8", " U16", "", " U32", "", "", "", " U64", ""};
 		inStrm	<< DEC(getSegmentCount()) << " x " << DEC(getSegmentLength())
-				<< sUnits[getElementLength()] << " segs";
+				<< sSegXferUnits[getElementLength()] << " segs";
 		if (getSourceOffset())
 			inStrm	<< " srcOff=" << DEC(getSourceOffset());
 		inStrm << " srcSpan=" << DEC(getSourcePitch()) << (isSourceBottomUp()?" VF":"");
@@ -1107,6 +1047,49 @@ ostream & NTV2SegmentedXferInfo::Print (ostream & inStrm, const bool inDumpSegme
 	return inStrm;
 }
 
+string NTV2SegmentedXferInfo::getSourceCode (const bool inInclDecl) const
+{
+	static string var("segInfo");
+	ostringstream oss;
+	string units("\t// bytes");
+	if (!isValid())
+		return "";
+	if (inInclDecl)
+		oss << "NTV2SegmentedXferInfo " << var << ";" << endl;
+	if (getElementLength() > 1)
+	{
+		units = "\t// " + sSegXferUnits[getElementLength()] + "s";
+		oss << var << ".setElementLength(" << getElementLength() << ");" << endl;
+	}
+	oss << var << ".setSegmentCount(" << DEC(getSegmentCount()) << ");" << endl;
+	oss << var << ".setSegmentLength(" << DEC(getSegmentLength()) << ");" << units << endl;
+	if (getSourceOffset())
+		oss << var << ".setSourceOffset(" << DEC(getSourceOffset()) << ");" << units << endl;
+	oss << var << ".setSourcePitch(" << DEC(getSourcePitch()) << ");" << units << endl;
+	if (isSourceBottomUp())
+		oss << var << ".setSourceDirection(false);" << endl;
+	if (getDestOffset())
+		oss << var << ".setDestOffset(" << DEC(getDestOffset()) << ");" << units << endl;
+	if (getDestPitch())
+		oss << var << ".setDestPitch(" << DEC(getDestPitch()) << ");" << units << endl;
+	if (isDestBottomUp())
+		oss << var << ".setDestDirection(false);" << endl;
+	return oss.str();
+}
+
+NTV2SegmentedXferInfo &	NTV2SegmentedXferInfo::reset (void)
+{
+	mFlags				= 0;
+	mNumSegments		= 0;
+	mElementsPerSegment	= 0;
+	mInitialSrcOffset	= 0;
+	mInitialDstOffset	= 0;
+	mSrcElementsPerRow	= 0;
+	mDstElementsPerRow	= 0;
+	setElementLength(1);
+	return *this;
+}
+
 NTV2SegmentedXferInfo & NTV2SegmentedXferInfo::swapSourceAndDestination (void)
 {
 	std::swap(mSrcElementsPerRow, mDstElementsPerRow);
@@ -1116,8 +1099,8 @@ NTV2SegmentedXferInfo & NTV2SegmentedXferInfo::swapSourceAndDestination (void)
 
 
 NTV2_POINTER::NTV2_POINTER (const void * pInUserPointer, const size_t inByteCount)
-	:	fUserSpacePtr		(NTV2_POINTER_TO_ULWORD64 (pInUserPointer)),
-		fByteCount			(static_cast <ULWord> (inByteCount)),
+	:	fUserSpacePtr		(inByteCount ? NTV2_POINTER_TO_ULWORD64(pInUserPointer) : 0),
+		fByteCount			(static_cast<ULWord>(pInUserPointer ? inByteCount : 0)),
 		fFlags				(0),
 	#if defined (AJAMac)
 		fKernelSpacePtr		(0),
@@ -1143,8 +1126,8 @@ NTV2_POINTER::NTV2_POINTER (const size_t inByteCount)
 	#endif
 {
 	if (inByteCount)
-		if (Allocate (inByteCount))
-			Fill (UByte (0));
+		if (Allocate(inByteCount))
+			Fill(UByte(0));
 }
 
 
@@ -1160,8 +1143,8 @@ NTV2_POINTER::NTV2_POINTER (const NTV2_POINTER & inObj)
 		fKernelHandle		(0)
 	#endif
 {
-	if (Allocate (inObj.GetByteCount ()))
-		SetFrom (inObj);
+	if (Allocate(inObj.GetByteCount()))
+		SetFrom(inObj);
 }
 
 
@@ -1169,13 +1152,14 @@ NTV2_POINTER & NTV2_POINTER::operator = (const NTV2_POINTER & inRHS)
 {
 	if (&inRHS != this)
 	{
-		if (inRHS.IsNULL ())
+		if (inRHS.IsNULL())
 			Set (AJA_NULL, 0);
+		else if (GetByteCount() == inRHS.GetByteCount())
+			SetFrom(inRHS);
+		else if (Allocate(inRHS.GetByteCount()))
+			SetFrom(inRHS);
 		else
-		{
-			if (Allocate (inRHS.GetByteCount ()))
-				SetFrom (inRHS);
-		}
+			;	//	Error
 	}
 	return *this;
 }
@@ -1226,20 +1210,16 @@ bool NTV2_POINTER::ByteSwap16 (void)
 bool NTV2_POINTER::Set (const void * pInUserPointer, const size_t inByteCount)
 {
 	Deallocate();
-	fUserSpacePtr = NTV2_POINTER_TO_ULWORD64 (pInUserPointer);
-	fByteCount = static_cast <ULWord> (inByteCount);
-	return true;
+	fUserSpacePtr = inByteCount ? NTV2_POINTER_TO_ULWORD64(pInUserPointer) : 0;
+	fByteCount = static_cast<ULWord>(pInUserPointer ? inByteCount : 0);
+	//	Return true only if both UserPointer and ByteCount are non-zero, or both are zero.
+	return (pInUserPointer && inByteCount)  ||  (!pInUserPointer && !inByteCount);
 }
 
 
 bool NTV2_POINTER::SetAndFill (const void * pInUserPointer, const size_t inByteCount, const UByte inValue)
 {
-	if (Set (pInUserPointer, inByteCount))
-	{
-		Fill (inValue);
-		return true;
-	}
-	return false;
+	return Set(pInUserPointer, inByteCount)  &&  Fill(inValue);
 }
 
 
@@ -1323,7 +1303,7 @@ bool NTV2_POINTER::SetFrom (const NTV2_POINTER & inBuffer)
 	if (inBuffer.GetByteCount() == GetByteCount()  &&  inBuffer.GetHostPointer() == GetHostPointer())
 		return true;	//	Same buffer
 
-	size_t	bytesToCopy	(inBuffer.GetByteCount());
+	size_t bytesToCopy(inBuffer.GetByteCount());
 	if (bytesToCopy > GetByteCount())
 		bytesToCopy = GetByteCount();
 	::memcpy (GetHostPointer(), inBuffer.GetHostPointer(), bytesToCopy);
@@ -1416,25 +1396,25 @@ bool NTV2_POINTER::SwapWith (NTV2_POINTER & inBuffer)
 
 bool NTV2_POINTER::IsContentEqual (const NTV2_POINTER & inBuffer, const ULWord inByteOffset, const ULWord inByteCount) const
 {
-	if (IsNULL () || inBuffer.IsNULL ())
+	if (IsNULL() || inBuffer.IsNULL())
 		return false;	//	NULL or empty
-	if (inBuffer.GetByteCount () != GetByteCount ())
+	if (inBuffer.GetByteCount() != GetByteCount())
 		return false;	//	Different byte counts
-	if (inBuffer.GetHostPointer () == GetHostPointer ())
+	if (inBuffer.GetHostPointer() == GetHostPointer())
 		return true;	//	Same buffer
 
-	ULWord	totalBytes	(GetByteCount());
+	ULWord	totalBytes(GetByteCount());
 	if (inByteOffset >= totalBytes)
 		return false;	//	Bad offset
 
 	totalBytes -= inByteOffset;
 
-	ULWord	byteCount	(inByteCount);
+	ULWord	byteCount(inByteCount);
 	if (byteCount > totalBytes)
 		byteCount = totalBytes;
 
-	const UByte *	pByte1 (reinterpret_cast <const UByte *> (GetHostPointer()));
-	const UByte *	pByte2 (reinterpret_cast <const UByte *> (inBuffer.GetHostPointer()));
+	const UByte *	pByte1 (reinterpret_cast<const UByte*>(GetHostPointer()));
+	const UByte *	pByte2 (reinterpret_cast<const UByte*>(inBuffer.GetHostPointer()));
 	pByte1 += inByteOffset;
 	pByte2 += inByteOffset;
 	return ::memcmp (pByte1, pByte2, byteCount) == 0;
@@ -1826,15 +1806,15 @@ NTV2SDIInStatistics::NTV2SDIInStatistics()
 	:	mHeader(AUTOCIRCULATE_TYPE_SDISTATS, sizeof(NTV2SDIInStatistics)),
 		mInStatistics(NTV2_MAX_NUM_CHANNELS * sizeof(NTV2SDIInputStatus))
 {
-	NTV2SDIInputStatus * pArray(reinterpret_cast <NTV2SDIInputStatus *> (mInStatistics.GetHostPointer()));
-	for (int i = 0; i < NTV2_MAX_NUM_CHANNELS; i++)
-		pArray[i].Clear();
+	Clear();
 	NTV2_ASSERT_STRUCT_VALID;
 }
 
 void NTV2SDIInStatistics::Clear(void)
 {
 	NTV2_ASSERT_STRUCT_VALID;
+	if (mInStatistics.IsNULL())
+		return;
 	NTV2SDIInputStatus * pArray(reinterpret_cast <NTV2SDIInputStatus *> (mInStatistics.GetHostPointer()));
 	for (int i = 0; i < NTV2_MAX_NUM_CHANNELS; i++)
 		pArray[i].Clear();
@@ -1854,6 +1834,21 @@ bool NTV2SDIInStatistics::GetSDIInputStatus(NTV2SDIInputStatus & outStatus, cons
 		return false;
 	outStatus = pArray[inSDIInputIndex0];
 	return true;
+}
+
+NTV2SDIInputStatus &	NTV2SDIInStatistics::operator [] (const size_t inSDIInputIndex0)
+{
+	NTV2_ASSERT_STRUCT_VALID;
+	static NTV2SDIInputStatus dummy;
+	const ULWord	numElements(mInStatistics.GetByteCount() / sizeof(NTV2SDIInputStatus));
+	NTV2SDIInputStatus * pArray(reinterpret_cast<NTV2SDIInputStatus*>(mInStatistics.GetHostPointer()));
+	if (!pArray)
+		return dummy;
+	if (numElements != 8)
+		return dummy;
+	if (inSDIInputIndex0 >= numElements)
+		return dummy;
+	return pArray[inSDIInputIndex0];
 }
 
 std::ostream &	NTV2SDIInStatistics::Print(std::ostream & inOutStream) const
@@ -2207,8 +2202,8 @@ static const NTV2_RP188		INVALID_TIMECODE_VALUE;
 bool AUTOCIRCULATE_TRANSFER::SetOutputTimeCodes (const NTV2TimeCodes & inValues)
 {
 	NTV2_ASSERT_STRUCT_VALID;
-	ULWord			maxNumValues	(acOutputTimeCodes.GetByteCount () / sizeof (NTV2_RP188));
-	NTV2_RP188 *	pArray	(reinterpret_cast <NTV2_RP188 *> (acOutputTimeCodes.GetHostPointer ()));
+	ULWord			maxNumValues (acOutputTimeCodes.GetByteCount() / sizeof(NTV2_RP188));
+	NTV2_RP188 *	pArray (reinterpret_cast<NTV2_RP188*>(acOutputTimeCodes.GetHostPointer()));
 	if (!pArray)
 		return false;
 	if (maxNumValues > NTV2_MAX_NUM_TIMECODE_INDEXES)
@@ -2216,9 +2211,9 @@ bool AUTOCIRCULATE_TRANSFER::SetOutputTimeCodes (const NTV2TimeCodes & inValues)
 
 	for (UWord ndx (0);  ndx < UWord(maxNumValues);  ndx++)
 	{
-		const NTV2TCIndex		tcIndex	(static_cast <const NTV2TCIndex> (ndx));
-		NTV2TimeCodesConstIter	iter	(inValues.find (tcIndex));
-		pArray [ndx] = (iter != inValues.end ())  ?  iter->second  :  INVALID_TIMECODE_VALUE;
+		const NTV2TCIndex		tcIndex	(static_cast<const NTV2TCIndex>(ndx));
+		NTV2TimeCodesConstIter	iter	(inValues.find(tcIndex));
+		pArray[ndx] = (iter != inValues.end())  ?  iter->second  :  INVALID_TIMECODE_VALUE;
 	}	//	for each possible NTV2TCSource value
 	return true;
 }
@@ -2227,16 +2222,16 @@ bool AUTOCIRCULATE_TRANSFER::SetOutputTimeCodes (const NTV2TimeCodes & inValues)
 bool AUTOCIRCULATE_TRANSFER::SetOutputTimeCode (const NTV2_RP188 & inTimeCode, const NTV2TCIndex inTCIndex)
 {
 	NTV2_ASSERT_STRUCT_VALID;
-	ULWord			maxNumValues	(acOutputTimeCodes.GetByteCount () / sizeof (NTV2_RP188));
-	NTV2_RP188 *	pArray			(reinterpret_cast <NTV2_RP188 *> (acOutputTimeCodes.GetHostPointer ()));
+	ULWord			maxNumValues (acOutputTimeCodes.GetByteCount() / sizeof(NTV2_RP188));
+	NTV2_RP188 *	pArray (reinterpret_cast<NTV2_RP188*>(acOutputTimeCodes.GetHostPointer()));
 	if (!pArray)
 		return false;
 	if (maxNumValues > NTV2_MAX_NUM_TIMECODE_INDEXES)
 		maxNumValues = NTV2_MAX_NUM_TIMECODE_INDEXES;
-	if (!NTV2_IS_VALID_TIMECODE_INDEX (inTCIndex))
+	if (!NTV2_IS_VALID_TIMECODE_INDEX(inTCIndex))
 		return false;
 
-	pArray [inTCIndex] = inTimeCode;
+	pArray[inTCIndex] = inTimeCode;
 	return true;
 }
 
@@ -2388,6 +2383,41 @@ ostream & NTV2BufferLock::Print (ostream & inOutStream) const
 	return inOutStream;
 }
 
+
+NTV2Bitstream::NTV2Bitstream()
+	:	mHeader	(NTV2_TYPE_AJABITSTREAM, sizeof(NTV2Bitstream))
+{
+	NTV2_ASSERT_STRUCT_VALID;
+}
+
+NTV2Bitstream::NTV2Bitstream (const NTV2_POINTER & inBuffer, const ULWord inFlags)
+	:	mHeader	(NTV2_TYPE_AJABITSTREAM, sizeof(NTV2Bitstream))
+{
+	NTV2_ASSERT_STRUCT_VALID;
+	SetBuffer(inBuffer);
+	SetFlags(inFlags);
+}
+
+NTV2Bitstream::NTV2Bitstream(const ULWord * pInBuffer, const ULWord inByteCount, const ULWord inFlags)
+	:	mHeader	(NTV2_TYPE_AJABITSTREAM, sizeof(NTV2Bitstream))
+{
+	NTV2_ASSERT_STRUCT_VALID;
+	SetBuffer (NTV2_POINTER(pInBuffer, inByteCount));
+	SetFlags (inFlags);
+}
+
+bool NTV2Bitstream::SetBuffer (const NTV2_POINTER & inBuffer)
+{	//	Just use address & length (don't deep copy)...
+	NTV2_ASSERT_STRUCT_VALID;
+	return mBuffer.Set (inBuffer.GetHostPointer(), inBuffer.GetByteCount());
+}
+
+ostream & NTV2Bitstream::Print (ostream & inOutStream) const
+{
+	NTV2_ASSERT_STRUCT_VALID;
+	inOutStream	<< mHeader << mBuffer << " flags=" << xHEX0N(mFlags,8) << " " << mTrailer;
+	return inOutStream;
+}
 
 
 NTV2GetRegisters::NTV2GetRegisters (const NTV2RegNumSet & inRegisterNumbers)
@@ -2607,36 +2637,61 @@ bool NTV2RegInfo::operator < (const NTV2RegInfo & inRHS) const
 
 ostream & NTV2RegInfo::Print (ostream & oss, const bool inAsCode) const
 {
-	const string regName (::NTV2RegisterNumberToString(NTV2RegisterNumber(registerNumber)));
 	if (inAsCode)
-	{
-		const bool badName (regName.find(' ') != string::npos);
-		oss << "theDevice.WriteRegister (";
-		if (badName)
-			oss << DEC(registerNumber);
-		else
-			oss << regName;
-		oss << ", " << xHEX0N(registerValue,8);
-		if (registerMask != 0xFFFFFFFF)
-			oss << ", " << xHEX0N(registerMask,8);
-		if (registerShift)
-			oss << ", " << DEC(registerShift);
-		oss << ");  // ";
-		if (badName)
-			oss << regName;
-		else
-			oss << "Reg " << DEC(registerNumber);
-	}
+		return PrintCode(oss);
+	const string regName (::NTV2RegisterNumberToString(NTV2RegisterNumber(registerNumber)));
+	oss << "[" << regName << "|" << DEC(registerNumber) << ": val=" << xHEX0N(registerValue,8);
+	if (registerMask != 0xFFFFFFFF)
+		oss << " msk=" << xHEX0N(registerMask,8);
+	if (registerShift)
+		oss << " shf=" << DEC(registerShift);
+	return oss << "]";
+}
+
+ostream & NTV2RegInfo::PrintCode (ostream & oss, const int inRadix) const
+{
+	const string regName (::NTV2RegisterNumberToString(NTV2RegisterNumber(registerNumber)));
+	const bool badName (regName.find(' ') != string::npos);
+	oss << "theDevice.WriteRegister (";
+	if (badName)
+		oss << DEC(registerNumber);
 	else
+		oss << regName;
+	switch (inRadix)
 	{
-		oss << "[" << regName << "|" << DEC(registerNumber) << ": val=" << xHEX0N(registerValue,8);
-		if (registerMask != 0xFFFFFFFF)
-			oss << " msk=" << xHEX0N(registerMask,8);
-		if (registerShift)
-			oss << " shf=" << DEC(registerShift);
-		oss << "]";
+		case 2:		oss << ", " << BIN032(registerValue);	break;
+		case 8:		oss << ", " << OCT(registerValue);		break;
+		case 10:	oss << ", " << DEC(registerValue);		break;
+		default:	oss << ", " << xHEX0N(registerValue,8);	break;
 	}
+	if (registerMask != 0xFFFFFFFF)
+		switch (inRadix)
+		{
+			case 2:		oss << ", " << BIN032(registerMask);	break;
+			case 8:		oss << ", " << OCT(registerMask);		break;
+			case 10:	oss << ", " << DEC(registerMask);		break;
+			default:	oss << ", " << xHEX0N(registerMask,8);	break;
+		}
+	if (registerShift)
+		oss << ", " << DEC(registerShift);
+	oss << ");  // ";
+	if (badName)
+		oss << regName;
+	else
+		oss << "Reg " << DEC(registerNumber);
+	//	Decode the reg value...
+	string info(CNTV2RegisterExpert::GetDisplayValue(registerNumber, registerValue));
+	if (!info.empty())	//	and add to end of comment
+		oss << "  // " << aja::replace(info, "\n", ", ");
 	return oss;
+}
+
+
+ostream & NTV2PrintULWordVector (const NTV2ULWordVector & inObj, ostream & inOutStream)
+{
+	for (NTV2ULWordVector::const_iterator it(inObj.begin());  it != inObj.end();  ++it)
+		inOutStream << " " << HEX0N(*it,8);
+	return inOutStream;
 }
 
 
@@ -2705,6 +2760,82 @@ ostream & NTV2PrintRasterLineOffsets(const NTV2RasterLineOffsets & inObj, ostrea
 }
 
 
+ostream & NTV2PrintChannelList (const NTV2ChannelList & inObj, const bool inCompact, ostream & inOutStream)
+{
+	inOutStream << (inCompact ? "Ch[" : "[");
+	for (NTV2ChannelListConstIter it(inObj.begin());  it != inObj.end();  )
+	{
+		if (inCompact)
+			inOutStream << DEC(*it+1);
+		else
+			inOutStream << ::NTV2ChannelToString(*it);
+		if (++it != inObj.end())
+			inOutStream << (inCompact ? "|" : ",");
+	}
+	return inOutStream << "]";
+}
+
+string NTV2ChannelListToStr (const NTV2ChannelList & inObj, const bool inCompact)
+{	ostringstream oss;
+	::NTV2PrintChannelList (inObj, inCompact, oss);
+	return oss.str();
+}
+
+ostream & NTV2PrintChannelSet (const NTV2ChannelSet & inObj, const bool inCompact, ostream & inOutStream)
+{
+	inOutStream << (inCompact ? "Ch{" : "{");
+	for (NTV2ChannelSetConstIter it(inObj.begin());  it != inObj.end();  )
+	{
+		if (inCompact)
+			inOutStream << DEC(*it+1);
+		else
+			inOutStream << ::NTV2ChannelToString(*it);
+		if (++it != inObj.end())
+			inOutStream << (inCompact ? "|" : ",");
+	}
+	return inOutStream << "}";
+}
+
+string NTV2ChannelSetToStr (const NTV2ChannelSet & inObj, const bool inCompact)
+{	ostringstream oss;
+	::NTV2PrintChannelSet (inObj, inCompact, oss);
+	return oss.str();
+}
+
+NTV2ChannelSet NTV2MakeChannelSet (const NTV2Channel inFirstChannel, const UWord inNumChannels)
+{
+	NTV2ChannelSet result;
+	for (NTV2Channel ch(inFirstChannel);  ch < NTV2Channel(inFirstChannel+inNumChannels);  ch = NTV2Channel(ch+1))
+		if (NTV2_IS_VALID_CHANNEL(ch))
+			result.insert(ch);
+	return result;
+}
+
+NTV2ChannelSet NTV2MakeChannelSet (const NTV2ChannelList inChannels)
+{
+	NTV2ChannelSet result;
+	for (NTV2ChannelListConstIter it(inChannels.begin());  it != inChannels.end();  ++it)
+		result.insert(*it);
+	return result;
+}
+
+NTV2ChannelList NTV2MakeChannelList (const NTV2Channel inFirstChannel, const UWord inNumChannels)
+{
+	NTV2ChannelList result;
+	for (NTV2Channel ch(inFirstChannel);  ch < NTV2Channel(inFirstChannel+inNumChannels);  ch = NTV2Channel(ch+1))
+		if (NTV2_IS_VALID_CHANNEL(ch))
+			result.push_back(ch);
+	return result;
+}
+
+NTV2ChannelList NTV2MakeChannelList (const NTV2ChannelSet inChannels)
+{
+	NTV2ChannelList result;
+	for (NTV2ChannelSetConstIter it(inChannels.begin());  it != inChannels.end();  ++it)
+		result.push_back(*it);
+	return result;
+}
+
 NTV2RegisterReadsConstIter FindFirstMatchingRegisterNumber (const uint32_t inRegNum, const NTV2RegisterReads & inRegInfos)
 {
 	for (NTV2RegisterReadsConstIter	iter(inRegInfos.begin());  iter != inRegInfos.end();  ++iter)	//	Ugh -- linear search
@@ -2749,13 +2880,13 @@ NTV2RegInfo NTV2BankSelGetSetRegs::GetRegInfo (const UWord inIndex0) const
 {
 	NTV2_ASSERT_STRUCT_VALID;
 	NTV2RegInfo	result;
-	if (!mInRegInfos.IsNULL ())
+	if (!mInRegInfos.IsNULL())
 	{
-        const UWord	maxNum	(mInRegInfos.GetByteCount () / (UWord)sizeof (NTV2RegInfo));
-		if (inIndex0 < maxNum)
+        const ULWord	maxNum	(mInRegInfos.GetByteCount() / ULWord(sizeof(NTV2RegInfo)));
+		if (ULWord(inIndex0) < maxNum)
 		{
-			const NTV2RegInfo *	pRegInfo	(reinterpret_cast <const NTV2RegInfo *> (mInRegInfos.GetHostPointer ()));
-			result = pRegInfo [inIndex0];
+			const NTV2RegInfo *	pRegInfo (reinterpret_cast<const NTV2RegInfo*>(mInRegInfos.GetHostPointer()));
+			result = pRegInfo[inIndex0];
 		}
 	}
 	return result;

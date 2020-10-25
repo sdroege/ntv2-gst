@@ -102,8 +102,8 @@ typedef enum
 	kRegRP188InOut2Bits0_31,		// 65
 	kRegRP188InOut2Bits32_63,		// 66
 	kRegCanDoStatus,				// 67	SDK 15.6 and later
-	kRegCh1ColorCorrectioncontrol,	// 68
-	kRegCh2ColorCorrectioncontrol,	// 69
+	kRegCh1ColorCorrectionControl,	// 68	CamelCase fix in SDK 16.0
+	kRegCh2ColorCorrectionControl,	// 69	CamelCase fix SDK 16.0
 	kRegRS422Transmit,				// 70
 	kRegRS422Receive,				// 71
 	kRegRS422Control,				// 72
@@ -160,7 +160,7 @@ typedef enum
 	kRegLTCInBits32_63	= kRegLTCAnalogBits32_63,	// 113
 
 	kRegReserved114,				// 114
-	kRegReserved115,				// 115
+	kRegAudioControl2,				// 115
 	kRegSysmonControl,				// 116
 	kRegSysmonConfig1_0,			// 117
 	kRegSysmonConfig2,				// 118
@@ -224,14 +224,14 @@ typedef enum
 	kRegSDIOut4Control,				// 170
 	kRegAFDVANCInserterSDI1,		// 171
 	kRegAFDVANCInserterSDI2,		// 172
-    kRegAudioChannelMappingCh1,     // 173
-    kRegAudioChannelMappingCh2,     // 174
-    kRegAudioChannelMappingCh3,     // 175
-    kRegAudioChannelMappingCh4,     // 176
-    kRegAudioChannelMappingCh5,     // 177
-    kRegAudioChannelMappingCh6,     // 178
-    kRegAudioChannelMappingCh7,     // 179
-    kRegAudioChannelMappingCh8,     // 180
+    kRegAudioChannelMappingCh1,     // 173		//	OBSOLETE
+    kRegXptSelectGroup36,		    // 174
+    kRegXptSelectGroup37,		    // 175
+    kRegAudioChannelMappingCh4,     // 176		//	OBSOLETE
+    kRegAudioChannelMappingCh5,     // 177		//	OBSOLETE
+    kRegAudioChannelMappingCh6,     // 178		//	OBSOLETE
+    kRegAudioChannelMappingCh7,     // 179		//	OBSOLETE
+    kRegAudioChannelMappingCh8,     // 180		//	OBSOLETE
 	
 	kRegReserved181,				// 181
 	kRegReserved182,				// 182
@@ -412,7 +412,7 @@ typedef enum
 	kRegRP188InOut5Bits32_63,		// 341
 	kRegRP188InOut5DBB,				// 342
 
-	kRegReserved343,				// 343
+	kReg3DLUTLoadControl,			// 343
 
 	kRegLTC5EmbeddedBits0_31,       // 344
 	kRegLTC5EmbeddedBits32_63,      // 345
@@ -627,6 +627,9 @@ typedef enum
 
 typedef NTV2RegisterNumber	RegisterNum;
 
+#define kRegCh1ColorCorrectioncontrol	kRegCh1ColorCorrectionControl	//	CamelCase fixed in SDK 16.0
+#define	kRegCh2ColorCorrectioncontrol	kRegCh2ColorCorrectionControl	//	CamelCase fixed in SDK 16.0
+
 
 //	Discontinuous block of registers used for monitoring the incoming SDI signals
 typedef enum NTV2RXSDIStatusRegister
@@ -711,26 +714,35 @@ typedef enum NTV2RXSDIStatusRegister
 
 typedef enum
 {
-	kRegAudioMixerInputSelects = 2304,		//	2304
-	kRegAudioMixerMainGain,					//	2305
-	kRegAudioMixerAux1GainCh1,				//	2306
-	kRegAudioMixerAux2GainCh1,				//	2307
-	kRegAudioMixerChannelSelect,			//	2308
-	kRegAudioMixerMutes,					//	2309
-	kRegAudioMixerAux1GainCh2,				//	2310
-	kRegAudioMixerAux2GainCh2,				//	2311
-	kRegAudioMixerAux1InputLevels = 2318,	//	2318
-	kRegAudioMixerAux2InputLevels,			//	2319
-	kRegAudioMixerMainInputLevelsPair0,		//	2320
-	kRegAudioMixerMainInputLevelsPair1,		//	2321
-	kRegAudioMixerMainInputLevelsPair2,		//	2322
-	kRegAudioMixerMainInputLevelsPair3,		//	2323
-	kRegAudioMixerMainInputLevelsPair4,		//	2324
-	kRegAudioMixerMainInputLevelsPair5,		//	2325
-	kRegAudioMixerMainInputLevelsPair6,		//	2326
-	kRegAudioMixerMainInputLevelsPair7,		//	2327
-	kRegAudioMixerMixedChannelOutputLevels	//	2328
-}NTV2AudioMixerRegisters;
+	kRegAudioMixerInputSelects = 2304		//	2304
+	,kRegAudioMixerMainGain					//	2305
+	,kRegAudioMixerAux1GainCh1				//	2306
+	,kRegAudioMixerAux2GainCh1				//	2307
+	,kRegAudioMixerChannelSelect			//	2308
+	,kRegAudioMixerMutes					//	2309
+	,kRegAudioMixerAux1GainCh2				//	2310
+	,kRegAudioMixerAux2GainCh2				//	2311
+	,kRegAudioMixerOutGain					//  2312
+	,kRegAudioMixerAux1InputLevels = 2318	//	2318
+	,kRegAudioMixerAux2InputLevels			//	2319
+	,kRegAudioMixerMainInputLevelsPair0		//	2320
+	,kRegAudioMixerMainInputLevelsPair1		//	2321
+	,kRegAudioMixerMainInputLevelsPair2		//	2322
+	,kRegAudioMixerMainInputLevelsPair3		//	2323
+	,kRegAudioMixerMainInputLevelsPair4		//	2324
+	,kRegAudioMixerMainInputLevelsPair5		//	2325
+	,kRegAudioMixerMainInputLevelsPair6		//	2326
+	,kRegAudioMixerMainInputLevelsPair7		//	2327
+	,kRegAudioMixerMixedChannelOutputLevels	//	2328
+	,kRegAudioMixerMainOutputLevelsPair0 = kRegAudioMixerMixedChannelOutputLevels	//	2328
+	,kRegAudioMixerMainOutputLevelsPair1	//	2329
+	,kRegAudioMixerMainOutputLevelsPair2	//	2330
+	,kRegAudioMixerMainOutputLevelsPair3	//	2331
+	,kRegAudioMixerMainOutputLevelsPair4	//	2332
+	,kRegAudioMixerMainOutputLevelsPair5	//	2333
+	,kRegAudioMixerMainOutputLevelsPair6	//	2334
+	,kRegAudioMixerMainOutputLevelsPair7	//	2335	
+} NTV2AudioMixerRegisters;
 
 //	Discontinuous block of registers used for detecting non-PCM embedded audio.
 typedef enum _NTV2NonPCMAudioDetectRegisters
@@ -929,6 +941,11 @@ typedef enum _NTV2HDMIRegisters
 	kRegHDMIInputStatus4        = 0x3013,
 	kRegHDMIControl4            = 0x3014
 } NTV2HDMIRegisters;
+
+typedef enum
+{
+    kRegRotaryEncoder = 0x940
+} NTV2RotaryEncoderRegister;
 
 #define NTV2_HDMIAuxMaxFrames	8
 #define NTV2_HDMIAuxDataSize	32
@@ -1335,7 +1352,19 @@ typedef enum
 	kRegMaskQuadQuadMode		= BIT(2),
 	kRegMaskQuadQuadMode2		= BIT(3),
 	kRegMaskQuadQuadSquaresMode	= BIT(4),
+	kRegMaskVUMeterSelect		= BIT(5),
+	kRegMaskFramePulseEnable	= BIT(6),
+	kRegMaskFramePulseRefSelect	= BIT(8) + BIT(9) + BIT(10) + BIT(11),
 
+	// Audio Control 2
+	kRegMaskAud1RateHigh		= BIT(0),
+	kRegMaskAud2RateHigh		= BIT(1),
+	kRegMaskAud3RateHigh		= BIT(2),
+	kRegMaskAud4RateHigh		= BIT(3),
+	kRegMaskAud5RateHigh		= BIT(4),
+	kRegMaskAud6RateHigh		= BIT(5),
+	kRegMaskAud7RateHigh		= BIT(6),
+	kRegMaskAud8RateHigh		= BIT(7),
 
 	// Channel Control - kRegCh1Control, kRegCh2Control, kRegCh3Control, kRegCh4Control
 	kRegMaskMode				= BIT(0),
@@ -1405,12 +1434,14 @@ typedef enum
 	kRegMaskAudioTone				= BIT(7),
 	kRegMaskResetAudioInput			= BIT(8),
 	kRegMaskResetAudioOutput		= BIT(9),
+	kRegMaskInputStartAtVBI			= BIT(10),	// New in 15.6
 	kRegMaskPauseAudio				= BIT(11),
-    kRegMaskEmbeddedOutputMuteCh1   = BIT(12), // added for FS1
-    kRegMaskEmbeddedOutputSupressCh1 = BIT(13), // added for FS1 but available on other boards
+	kRegMaskEmbeddedOutputMuteCh1   = BIT(12), // added for FS1
+	kRegMaskEmbeddedOutputSupressCh1 = BIT(13), // added for FS1 but available on other boards
+	kRegMaskOutputStartAtVBI		= BIT(14),	// New in 15.6
 	kRegMaskEmbeddedOutputSupressCh2 = BIT(15), // added for FS1 but available on other boards
 	kRegMaskNumChannels				= BIT(16),
-    kRegMaskEmbeddedOutputMuteCh2   = BIT(17), // added for FS1
+	kRegMaskEmbeddedOutputMuteCh2   = BIT(17), // added for FS1
 	kRegMaskAudioRate				= BIT(18),
 	kRegMaskEncodedAudioMode		= BIT(19), // addded for FS1 but available on other boards
 	kRegMaskAudio16Channel			= BIT(20),
@@ -1470,7 +1501,7 @@ typedef enum
 	kRegMaskFirmWareRev		= BIT(8)+BIT(9)+BIT(10)+BIT(11)+BIT(12)+BIT(13)+BIT(14)+BIT(15),
 	kRegMaskDMAPauseDisable = BIT(16),
 
-	// Color Correction Control
+	// Color Correction Control - kRegCh1ColorCorrectionControl (68), kRegCh2ColorCorrectionControl (69)
 	kRegMaskSaturationValue			= BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7)+BIT(8)+BIT(9),
 	kRegMaskCCOutputBankSelect		= BIT(16),
 	kRegMaskCCMode					= BIT(17)+BIT(18),
@@ -1483,6 +1514,7 @@ typedef enum
 
 	//	kRegCanDoStatus
 	kRegMaskCanDoValidXptROM			= BIT(0),
+	kRegMaskCanDoAudioWaitForVBI		= BIT(1),
 
 	//	kRegLUTV2Control
 	kRegMaskLUT1Enable					= BIT(0),
@@ -1509,6 +1541,8 @@ typedef enum
 	kRegMaskLUT6OutputBankSelect		= BIT(21),
 	kRegMaskLUT7OutputBankSelect		= BIT(22),
 	kRegMaskLUT8OutputBankSelect		= BIT(23),
+	kRegMask12BitLUTPlaneSelect			= BIT(24)+BIT(25),
+	kRegMask12BitLUTSupport				= BIT(28),
 
 	
 	// RS422 Control 
@@ -1643,8 +1677,10 @@ typedef enum
 	kLHIRegMaskHDMIOutBitDepth	= BIT(14),
 	kRegMaskHDMIV2YCColor		= BIT(15),
 	kRegMaskHDMISampling		= BIT(19)+BIT(18),
+	kRegMaskHDMIAudioRate		= BIT(21)+BIT(20),
 	kRegMaskSourceIsRGB			= BIT(23),
 	kRegMaskHDMIOutPowerDown	= BIT(25),
+    kRegMaskHDMIAudioFormat		= BIT(27)+BIT(26),
 	kRegMaskHDMIOutRange		= BIT(28),
 	kRegMaskHDMIOutAudioCh		= BIT(29),
 	kLHIRegMaskHDMIOutDVI		= BIT(30),
@@ -1661,6 +1697,8 @@ typedef enum
 	kRegMaskHDMIOutForceConfig	= BIT(1),
 	kRegMaskHDMIAudioPairSelect = BIT(2)+BIT(3),
 	kRegMaskHDMISampleRateConverterEnable = BIT(4),
+	kRegMaskHDMISwapInputAudCh34	= BIT(5),
+	kRegMaskHDMISwapOutputAudCh34	= BIT(6),
 	kRegMaskHDMIOutPrefer420	= BIT(7),
 	kRegMaskHDMIOut12Bit		= BIT(26),
 	kRegMaskHDMIInputRange		= BIT(28),
@@ -1789,6 +1827,7 @@ typedef enum
 	kK2RegMaskXptLUT3InputSelect = BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7),
 	kK2RegMaskXptLUT4InputSelect = BIT(8)+BIT(9)+BIT(10)+BIT(11)+BIT(12)+BIT(13)+BIT(14)+BIT(15),
 	kK2RegMaskXptLUT5InputSelect = BIT(16)+BIT(17)+BIT(18)+BIT(19)+BIT(20)+BIT(21)+BIT(22)+BIT(23),
+	kK2RegMaskXpt3DLUT1InputSelect = BIT(24)+BIT(25)+BIT(26)+BIT(27)+BIT(28)+BIT(29)+BIT(30)+BIT(31),
 
 	//kK2RegXptSelectGroup13
 	kK2RegMaskFrameBuffer3InputSelect = BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7),
@@ -1913,6 +1952,10 @@ typedef enum
 	kK2RegMaskFrameBuffer6BInputSelect	= BIT(8)+BIT(9)+BIT(10)+BIT(11)+BIT(12)+BIT(13)+BIT(14)+BIT(15),
 	kK2RegMaskFrameBuffer7BInputSelect	= BIT(16)+BIT(17)+BIT(18)+BIT(19)+BIT(20)+BIT(21)+BIT(22)+BIT(23),
 	kK2RegMaskFrameBuffer8BInputSelect	= BIT(24)+BIT(25)+BIT(26)+BIT(27)+BIT(28)+BIT(29)+BIT(30)+BIT(31),
+
+	//kRegXptSelectGroup36
+	kK2RegMaskMultiLinkOutInputSelect	= BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7),
+	kK2RegMaskMultiLinkOutDS2InputSelect	= BIT(0)+BIT(1)+BIT(2)+BIT(3)+BIT(4)+BIT(5)+BIT(6)+BIT(7),
 
 	//kK2RegCSCoefficients1_2
 	//kK2RegCSC2oefficients1_2,
@@ -2123,6 +2166,7 @@ typedef enum
 	kRegMaskRasterLevelB	= BIT(4),
 	kRegMaskRasterDecimate	= BIT(8),
 
+	//	kRegRXSDI1Status, kRegRXSDI2Status, etc
 	kRegMaskSDIInUnlockCount	= BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
 	kRegMaskSDIInLocked			= BIT(16),
 	kRegMaskSDIInVpidValidA		= BIT(20),
@@ -2283,11 +2327,15 @@ typedef enum
 	kRegMaskHDMIOutAudio8Of16SelectMode = BIT(5),
 	kRegMaskHDMIOutAudio2ChannelSelect = BIT(29) + BIT(30),
 	kRegMaskHDMIOutUserOveride = BIT(1),
-	kRegMaskHDMIOutCropMode = BIT(24)
+	kRegMaskHDMIOutCropMode = BIT(24),
+    
+    kRegMaskRotaryEncoderValue = BIT(7)+BIT(6)+BIT(5)+BIT(4)+BIT(3)+BIT(2)+BIT(1)+BIT(0),
+    kRegMaskRotaryEncoderGain = BIT(13)+BIT(12)+BIT(11)+BIT(10)+BIT(9)+BIT(8)
 
 #if !defined (NTV2_DEPRECATE)
+	,
 	// kRegSDIInput3GStatus
-	,kLHIRegMaskSDIIn3GbpsMode = BIT(0),
+	kLHIRegMaskSDIIn3GbpsMode = BIT(0),
 	kLHIRegMaskSDIIn3GbpsSMPTELevelBMode = BIT(1),
 	kLHIRegMaskSDIInVPIDLinkAValid = BIT(4),
 	kLHIRegMaskSDIInVPIDLinkBValid = BIT(5),
@@ -2498,6 +2546,19 @@ typedef enum
 	kRegShiftQuadQuadMode = 2,
 	kRegShiftQuadQuadMode2 = 3,
 	kRegShiftQuadQuadSquaresMode = 4,
+	kRegShiftVUMeterSelect = 5,
+	kRegShiftFramePulseEnable = 6,
+	kRegShiftFramePulseRefSelect = 8,
+
+	// Audio Control 2
+	kRegShiftAud1RateHigh		= 0,
+	kRegShiftAud2RateHigh		= 1,
+	kRegShiftAud3RateHigh		= 2,
+	kRegShiftAud4RateHigh		= 3,
+	kRegShiftAud5RateHigh		= 4,
+	kRegShiftAud6RateHigh		= 5,
+	kRegShiftAud7RateHigh		= 6,
+	kRegShiftAud8RateHigh		= 7,
 
 	// Channel Control - kRegCh1Control, kRegCh2Control, kRegCh3Control, kRegCh4Control
 	kRegShiftMode						= 0,
@@ -2548,7 +2609,7 @@ typedef enum
 	kRegShiftVidProcMode				= 24,
 	kRegShiftVidProcSyncFail			= 26,
 	kRegShiftVidProcSplitStd			= 28,
-	kRegShiftVidProcSubtitleEnable	= BIT(31),
+	kRegShiftVidProcSubtitleEnable	= 31,
 
 
 	// Note:  See more bitfields for this register below, in the 'Xena2K and Konax Video Processing.' section
@@ -2570,12 +2631,14 @@ typedef enum
 	kRegShiftAudioTone					= 7,
 	kRegShiftResetAudioInput			= 8,
 	kRegShiftResetAudioOutput			= 9,
+	kRegShiftInputStartAtVBI			= 10,	//	New in 15.6
 	kRegShiftPauseAudio					= 11,
-    kRegShiftEmbeddedOutputMuteCh1      = 12, // added for FS1
-    kRegShiftEmbeddedOutputSupressCh1   = 13, // added for FS1 but available on other boards
+	kRegShiftEmbeddedOutputMuteCh1      = 12, // added for FS1
+	kRegShiftEmbeddedOutputSupressCh1   = 13, // added for FS1 but available on other boards
+	kRegShiftOutputStartAtVBI			= 14,	//	New in 15.6
 	kRegShiftEmbeddedOutputSupressCh2	= 15, // added for FS1 but available on other boards
 	kRegShiftNumChannels				= 16,
-    kRegShiftEmbeddedOutputMuteCh2      = 17, // added for FS1
+	kRegShiftEmbeddedOutputMuteCh2      = 17, // added for FS1
 	kRegShiftAudioRate					= 18,
 	kRegShiftEncodedAudioMode			= 19,
 	kRegShiftAudio16Channel				= 20,
@@ -2645,6 +2708,7 @@ typedef enum
 
 	//	kRegCanDoStatus
 	kRegShiftCanDoValidXptROM			= 0,
+	kRegShiftCanDoAudioWaitForVBI		= 1,
 
 	//	kRegLUTV2Control
 	kRegShiftLUT1Enable					= 0,
@@ -2671,6 +2735,8 @@ typedef enum
 	kRegShiftLUT6OutputBankSelect		= 21,
 	kRegShiftLUT7OutputBankSelect		= 22,
 	kRegShiftLUT8OutputBankSelect		= 23,
+	kRegShift12BitLUTPlaneSelect		= 24,
+	kRegShift12BitLUTSupport			= 28,
 
 	// RS422 Control 
 	kRegShiftRS422TXEnable				= 0,
@@ -2801,8 +2867,10 @@ typedef enum
 	kRegShiftHDMIOutProgressive			= 13,
 	kLHIRegShiftHDMIOutBitDepth			= 14,
 	kRegShiftHDMISampling				= 18,
+	kRegShiftHDMIAudioRate				= 20,
 	kRegShiftSourceIsRGB				= 23,
 	kRegShiftHDMIOutPowerDown			= 25,
+	kRegShiftHDMIAudioFormat			= 26,
 	kRegShiftHDMIOutRange				= 28,
 	kRegShiftHDMIOutAudioCh				= 29,
 	kLHIRegShiftHDMIOutDVI 				= 30,
@@ -2940,6 +3008,7 @@ typedef enum
 	kK2RegShiftXptLUT3InputSelect		= 0,
 	kK2RegShiftXptLUT4InputSelect		= 8,
 	kK2RegShiftXptLUT5InputSelect		= 16,
+	kK2RegShiftXpt3DLUT1InputSelect		= 24,
 
 	//kK2RegXptSelectGroup13
 	kK2RegShiftFrameBuffer3InputSelect	= 0,
@@ -3058,6 +3127,10 @@ typedef enum
 	kK2RegShiftFrameBuffer2BInputSelect = 8,
 	kK2RegShiftFrameBuffer3BInputSelect = 16,
 	kK2RegShiftFrameBuffer4BInputSelect = 24,
+
+	//kRegXptSelectGroup36
+	kK2RegShiftMultiLinkOutInputSelect = 0,
+	kK2RegShiftMultiLinkOutDS2InputSelect = 8,
 
 	//kRegXptSelectGroup34
 	kK2RegShiftFrameBuffer5BInputSelect = 0,
@@ -3257,6 +3330,7 @@ typedef enum
 	kRegShiftRasterLevelB	= 4,
 	kRegShiftRasterDecimate	= 8,
 
+	//	kRegRXSDI1Status, kRegRXSDI2Status, etc
 	kRegShiftSDIInUnlockCount		= 0,
 	kRegShiftSDIInLocked			= 16,
 	kRegShiftSDIInVpidValidA		= 20,
@@ -3417,7 +3491,12 @@ typedef enum
 	kRegShiftHDMIOutAudio8Of16SelectMode = 5,
 	kRegShiftHDMIOutAudio2ChannelSelect = 29,
 	kRegShiftHDMIOutUserOveride = 1,
-	kRegShiftHDMIOutCropMode = 24
+	kRegShiftHDMISwapInputAudCh34	= 5,
+	kRegShiftHDMISwapOutputAudCh34	= 6,
+	kRegShiftHDMIOutCropMode = 24,
+    
+    kRegShiftRotaryEncoderValue = 0,
+    kRegShiftRotaryEncoderGain = 8
 
 
 #if !defined (NTV2_DEPRECATE)
@@ -4206,6 +4285,16 @@ typedef enum
 
 
 #if !defined (NTV2_BUILDING_DRIVER)
+	typedef std::vector <ULWord>					NTV2ULWordVector;					///< @brief	An ordered sequence of ULWords.
+
+	/**
+		@brief		Streams a human-readable dump of the given NTV2ULWordVector into the specified output stream.
+		@param[in]	inObj			Specifies the NTV2ULWordVector to be printed on the output stream.
+		@param		inOutStream		Specifies the output stream to receive the dump. Defaults to std::cout.
+		@return		A non-constant reference to the given output stream.
+	**/
+	AJAExport std::ostream & NTV2PrintULWordVector (const NTV2ULWordVector & inObj, std::ostream & inOutStream = std::cout);
+
 	typedef std::vector <ULWord>					NTV2RasterLineOffsets;				///< @brief	An ordered sequence of zero-based line offsets into a frame buffer.
 	typedef NTV2RasterLineOffsets::const_iterator	NTV2RasterLineOffsetsConstIter;		///< @brief	A handy const iterator into an NTV2RasterLineOffsets.
 	typedef NTV2RasterLineOffsets::iterator			NTV2RasterLineOffsetsIter;			///< @brief	A handy non-const iterator into an NTV2RasterLineOffsets.
@@ -4217,6 +4306,70 @@ typedef enum
 		@return		A non-constant reference to the given output stream.
 	**/
 	AJAExport std::ostream & NTV2PrintRasterLineOffsets (const NTV2RasterLineOffsets & inObj, std::ostream & inOutStream = std::cout);
+
+	typedef std::vector <NTV2Channel>				NTV2ChannelList;			///< @brief	An ordered sequence of NTV2Channel values.
+	typedef NTV2ChannelList::const_iterator			NTV2ChannelListConstIter;	///< @brief	A handy const iterator into an NTV2ChannelList.
+
+	/**
+		@brief		Streams a human-readable dump of the given NTV2ChannelList into the specified output stream.
+		@param[in]	inObj			Specifies the NTV2ChannelList to be streamed to the output stream.
+		@param		inCompact		Use 'true' for a compact display (the default);  otherwise use 'false' for a long-format.
+		@param		inOutStream		Specifies the output stream to receive the dump. Defaults to std::cout.
+		@return		A non-constant reference to the given output stream.
+	**/
+	AJAExport std::ostream & NTV2PrintChannelList (const NTV2ChannelList & inObj, const bool inCompact = true, std::ostream & inOutStream = std::cout);
+
+	/**
+		@return		A human-readable string containing a dump of the channel list.
+		@param[in]	inObj			Specifies the NTV2ChannelList to be converted.
+		@param		inCompact		Use 'true' for a compact display (the default);  otherwise use 'false' for a long-format.
+	**/
+	AJAExport std::string NTV2ChannelListToStr (const NTV2ChannelList & inObj, const bool inCompact = true);
+
+	typedef std::set <NTV2Channel>					NTV2ChannelSet;				///< @brief	A set of distinct NTV2Channel values.
+	typedef NTV2ChannelSet::const_iterator			NTV2ChannelSetConstIter;	///< @brief	A handy const iterator into an NTV2ChannelSet.
+
+	/**
+		@brief		Streams a human-readable dump of the given NTV2ChannelSet into the specified output stream.
+		@param[in]	inObj			Specifies the NTV2ChannelSet to be streamed to the output stream.
+		@param		inCompact		Use 'true' for a compact display (the default);  otherwise use 'false' for a long-format.
+		@param		inOutStream		Specifies the output stream to receive the dump. Defaults to std::cout.
+		@return		A non-constant reference to the given output stream.
+	**/
+	AJAExport std::ostream & NTV2PrintChannelSet (const NTV2ChannelSet & inObj, const bool inCompact = true, std::ostream & inOutStream = std::cout);
+
+	/**
+		@return		A human-readable string containing a dump of the channel set.
+		@param[in]	inObj			Specifies the NTV2ChannelSet to be converted.
+		@param		inCompact		Use 'true' for a compact display (the default);  otherwise use 'false' for a long-format.
+	**/
+	AJAExport std::string NTV2ChannelSetToStr (const NTV2ChannelSet & inObj, const bool inCompact = true);
+
+	/**
+		@param[in]	inFirstChannel	Specifies the first NTV2Channel.
+		@param		inNumChannels	Specifies the number of channels.
+		@return		An NTV2ChannelSet having the specified contiguous range of channels.
+	**/
+	AJAExport NTV2ChannelSet NTV2MakeChannelSet (const NTV2Channel inFirstChannel, const UWord inNumChannels = 1);
+
+	/**
+		@param[in]	inChannels		Specifies the NTV2Channels that should go into the NTV2ChannelSet.
+		@return		An NTV2ChannelSet having the same channels as contained in the specified list.
+	**/
+	AJAExport NTV2ChannelSet NTV2MakeChannelSet (const NTV2ChannelList inChannels);
+
+	/**
+		@param[in]	inFirstChannel	Specifies the first NTV2Channel.
+		@param		inNumChannels	Specifies the number of channels.
+		@return		An NTV2ChannelList having the specified contiguous range of channels.
+	**/
+	AJAExport NTV2ChannelList NTV2MakeChannelList (const NTV2Channel inFirstChannel, const UWord inNumChannels = 1);
+
+	/**
+		@param[in]	inChannels		Specifies the NTV2Channels that should go into the NTV2ChannelList.
+		@return		An NTV2ChannelList having the same channels as contained in the specified set.
+	**/
+	AJAExport NTV2ChannelList NTV2MakeChannelList (const NTV2ChannelSet inChannels);
 #endif	//	!defined (NTV2_BUILDING_DRIVER)
 
 
@@ -4274,11 +4427,27 @@ typedef struct NTV2RegInfo
 																			&& registerMask == inRHS.registerMask && registerShift == inRHS.registerShift;}
 		/**
 			@return		True if I'm less than the right-hand-side NTV2RegInfo.
-			@param[in]	inRHS	Specifies the right-hand-side NTV2RegInfo that will be compared to me.
+			@param[in]	inRHS		Specifies the right-hand-side NTV2RegInfo that will be compared to me.
 			@note		To synthesize the other comparison operators (!=, <=, >, >=), in client code, add "#include <utility>", and "using namespace std::rel_ops;".
 		**/
 		AJAExport bool			operator < (const NTV2RegInfo & inRHS) const;
+
+		/**
+			@brief		Renders me to the given output stream in a human-readable format.
+			@param		outputStream	Specifies the output stream in which to Print my contents.
+			@param		inAsCode		Deprecated as of SDK 16.0 -- use PrintCode instead. Defaults to false.
+										If true, renders me as source code.
+			@return		The output stream.
+		**/
 		AJAExport std::ostream & Print (std::ostream & outputStream, const bool inAsCode = false) const;
+
+		/**
+			@brief		Renders me to the given output stream as source code using a "WriteRegister" function call.
+			@param		outputStream	Specifies the output stream to write into.
+			@param[in]	inRadix			Specifies the radix to use for the my register value. Defaults to hexadecimal (base 16).
+			@return		The output stream.
+		**/
+		AJAExport std::ostream & PrintCode (std::ostream & outputStream, const int inRadix = 16) const;
 	#endif	//	not NTV2_BUILDING_DRIVER
 } NTV2RegInfo;
 
@@ -4286,12 +4455,12 @@ typedef struct NTV2RegInfo
 typedef NTV2RegInfo	NTV2ReadWriteRegisterSingle;	///< @brief	This is an alias for NTV2RegInfo -- everything needed to make a future ReadRegister or WriteRegister call.
 
 #if !defined (NTV2_BUILDING_DRIVER)
-	typedef std::vector <NTV2RegInfo>			NTV2RegisterWrites;				///< @brief	An ordered sequence of zero or more NTV2RegInfo structs intended for WriteRegister.
-	typedef NTV2RegisterWrites::const_iterator	NTV2RegisterWritesConstIter;	///< @brief	A handy const (read-only) iterator for iterating over the contents of an NTV2RegisterWrites instance.
-	typedef NTV2RegisterWrites::iterator		NTV2RegisterWritesIter;			///< @brief	A handy non-const iterator for iterating over the contents of an NTV2RegisterWrites instance.
-	typedef NTV2RegisterWrites					NTV2RegisterReads;				///< @brief	An ordered sequence of zero or more NTV2RegInfo structs intended for ReadRegister.
-	typedef NTV2RegisterWritesConstIter			NTV2RegisterReadsConstIter;		///< @brief	A handy const (read-only) iterator for iterating over the contents of an NTV2RegisterReads instance.
-	typedef NTV2RegisterWritesIter				NTV2RegisterReadsIter;			///< @brief	A handy non-const iterator for iterating over the contents of an NTV2RegisterReads instance.
+	typedef std::vector <NTV2RegInfo>		NTV2RegisterWrites, NTV2RegWrites;						///< @brief	An ordered sequence of zero or more NTV2RegInfo structs intended for WriteRegister.
+	typedef NTV2RegWrites::const_iterator	NTV2RegisterWritesConstIter, NTV2RegWritesConstIter;	///< @brief	A handy const (read-only) iterator for iterating over the contents of an NTV2RegisterWrites instance.
+	typedef NTV2RegWrites::iterator			NTV2RegisterWritesIter, NTV2RegWritesIter;				///< @brief	A handy non-const iterator for iterating over the contents of an NTV2RegisterWrites instance.
+	typedef NTV2RegWrites					NTV2RegisterReads, NTV2RegReads;						///< @brief	An ordered sequence of zero or more NTV2RegInfo structs intended for ReadRegister.
+	typedef NTV2RegWritesConstIter			NTV2RegisterReadsConstIter, NTV2RegReadsConstIter;		///< @brief	A handy const (read-only) iterator for iterating over the contents of an NTV2RegisterReads instance.
+	typedef NTV2RegWritesIter				NTV2RegisterReadsIter, NTV2RegReadsIter;				///< @brief	A handy non-const iterator for iterating over the contents of an NTV2RegisterReads instance.
 
 	/**
 		@brief		Returns a const iterator to the first entry in the NTV2RegInfo collection with a matching register number.
@@ -4299,7 +4468,7 @@ typedef NTV2RegInfo	NTV2ReadWriteRegisterSingle;	///< @brief	This is an alias fo
 		@param[in]	inRegInfos	Specifies the NTV2RegInfo collection to search.
 		@return		A const_iterator that references the entry in the NTV2RegInfo collection, or "end()" if not found.
 	**/
-	AJAExport NTV2RegisterReadsConstIter	FindFirstMatchingRegisterNumber (const uint32_t inRegNum, const NTV2RegisterReads & inRegInfos);
+	AJAExport NTV2RegReadsConstIter	FindFirstMatchingRegisterNumber (const uint32_t inRegNum, const NTV2RegReads & inRegInfos);
 
 	/**
 		@brief		Writes the given NTV2RegInfo to the specified output stream.
@@ -4412,6 +4581,13 @@ typedef struct RP188_STRUCT {
 #define NTV2_COLORCORRECTOR_WORDSPERTABLE	(512)										// number of ULONG words in EACH color table
 #define NTV2_COLORCORRECTOR_TOTALWORDS		(NTV2_COLORCORRECTOR_WORDSPERTABLE * 3)		// total number of ULONG words in all 3 tables
 #define NTV2_COLORCORRECTOR_TABLESIZE		(NTV2_COLORCORRECTOR_TOTALWORDS * 4)		// total length in bytes of all 3 tables: numWords * numColors * bytes/word
+	
+// 12 bit Color Corrector has 3 tables(usually R, G and B). Each table has 4096 entries
+// with 2 entries per 32 bit word....therefore 2048 32 bit words per table.
+#define NTV2_12BIT_COLORCORRECTOR_WORDSPERTABLE	(2048)											// number of ULONG words in EACH color table
+#define NTV2_12BIT_COLORCORRECTOR_TOTALWORDS	(NTV2_12BIT_COLORCORRECTOR_WORDSPERTABLE * 3)	// total number of ULONG words in all 3 tables
+#define NTV2_12BIT_COLORCORRECTOR_TABLESIZE		(NTV2_12BIT_COLORCORRECTOR_TOTALWORDS * 4)		// total length in bytes of all 3 tables: numWords * numColors * bytes/word
+
 
 typedef struct NTV2ColorCorrectionInfo_64 {
    NTV2ColorCorrectionMode	mode;
@@ -4444,10 +4620,18 @@ typedef struct {
 #define kColorCorrectionLUTOffset_Red	(0x0800)
 #define kColorCorrectionLUTOffset_Green	(0x1000)
 #define kColorCorrectionLUTOffset_Blue	(0x1800)
+	
+// within each 32-bit LUT word, bits <31:22> = LUT[2i+1], bits <15:6> = LUT[2i] 
+#define kRegColorCorrection12BitLUTOddShift		16
+#define kRegColorCorrection12BitLUTEvenShift	 0
+
+#define kRegColorCorrection10To12BitLUTOddShift		18
+#define kRegColorCorrection10To12BitLUTEvenShift	 2
 
 // Note: there is code that assumes that the three LUTs are contiguous. So if this relationship
 //       changes (i.e. there are "gaps" between tables) then code will need to change!
 #define kColorCorrectionLUTOffset_Base	(0x0800)	// BYTE offset
+#define kColorCorrection12BitLUTOffset_Base	(0xe000)	// BYTE offset
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -5396,15 +5580,21 @@ typedef enum
 	shiftField1CutoffLine = 0,
 	maskField2CutoffLine = BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23) + BIT(24) + BIT(25) + BIT(26),
 	shiftField2CutoffLine = 16,
-	maskTotalBytesIn = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	maskTotalBytesIn = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) +
+							BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15) +
+							BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23),
 	shiftTotalBytesIn = 0,
 	maskTotalOverrun = BIT(28),
 	shiftTotalOverrun = 28,
-	maskField1BytesIn = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	maskField1BytesIn = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) +
+							BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15) +
+							BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23),
 	shiftField1BytesIn = 0,
 	maskField1Overrun = BIT(28),
 	shiftField1Overrun = 28,
-	maskField2BytesIn = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15),
+	maskField2BytesIn = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) +
+							BIT(8) + BIT(9) + BIT(10) + BIT(11) + BIT(12) + BIT(13) + BIT(14) + BIT(15) +
+							BIT(16) + BIT(17) + BIT(18) + BIT(19) + BIT(20) + BIT(21) + BIT(22) + BIT(23),
 	shiftField2BytesIn = 0,
 	maskField2Overrun = BIT(28),
 	shiftField2Overrun = 28,
@@ -5485,7 +5675,7 @@ typedef enum
 	regAncInsBlankCStartLine,
 	regAncInsBlankField1CLines,
 	regAncInsBlankField2CLines,
-	regAncInsReserved14,
+	regAncInsFieldBytesHigh,
 	regAncInsReserved15,
 	regAncInsRtpPayloadID,
 	regAncInsRtpSSRC,
@@ -5511,6 +5701,8 @@ typedef enum
 	shiftInsSetProgressive = 24,
 	maskInsDisableInserter = BIT(28),
 	shiftInsDisableInserter = 28,
+	maskInsExtendedMode = BIT(29),
+	shiftInsExtendedMode = 29,
 	maskInsEnablePktSplitSD = BIT(31),
 	shiftInsEnablePktSplitSD = 31,
 	maskInsHancDelay = BIT(0) + BIT(1) + BIT(2) + BIT(3) + BIT(4) + BIT(5) + BIT(6) + BIT(7) + BIT(8) + BIT(9),
@@ -5612,16 +5804,16 @@ typedef enum
 															(uint32_t((UByte*(_str_))[2]) <<  8)  |	\
 															(uint32_t((UByte*(_str_))[1]) << 16)  |	\
 															(uint32_t((UByte*(_str_))[0]) << 24))
-	
+
 				#define	NTV2_FOURCC(_a_,_b_,_c_,_d_)	(	((uint32_t(_a_)) << 24)	|		\
 															((uint32_t(_b_)) << 16)	|		\
 															((uint32_t(_c_)) <<  8)	|		\
 															((uint32_t(_d_)) <<  0) )
 				#if !defined (NTV2_BUILDING_DRIVER)
-					#define	NTV2_4CC_AS_STRING(_x_)			std::string (1, ((_x_) & 0xFF000000) >> 24) +	\
-															std::string (1, ((_x_) & 0x00FF0000) >> 16) +	\
-															std::string (1, ((_x_) & 0x0000FF00) >>  8) +	\
-															std::string (1, ((_x_) & 0x000000FF) >>  0)
+					#define	NTV2_4CC_AS_STRING(_x_)			std::string (1, (char((_x_) & 0xFF000000) >> 24)) +	\
+															std::string (1, (char((_x_) & 0x00FF0000) >> 16)) +	\
+															std::string (1, (char((_x_) & 0x0000FF00) >>  8)) +	\
+															std::string (1, (char((_x_) & 0x000000FF) >>  0))
 				#endif	//	!defined (NTV2_BUILDING_DRIVER)
 			#else
 				#define	NTV2_4CC(_str_)					(	((uint32_t)(((UByte *)(_str_))[3]) <<  0)  |	\
@@ -5666,6 +5858,7 @@ typedef enum
 		#define	AUTOCIRCULATE_TYPE_SDISTATS		NTV2_FOURCC ('s', 'd', 'i', 'S')	///< @brief	Identifies NTV2SDIStatus struct
         #define	NTV2_TYPE_AJADEBUGLOGGING		NTV2_FOURCC ('d', 'b', 'l', 'g')	///< @brief	Identifies NTV2DebugLogging struct
 		#define	NTV2_TYPE_AJABUFFERLOCK			NTV2_FOURCC ('b', 'f', 'l', 'k')	///< @brief	Identifies NTV2BufferLock struct
+		#define	NTV2_TYPE_AJABITSTREAM			NTV2_FOURCC ('b', 't', 's', 't')	///< @brief	Identifies NTV2Bitstream struct
 
 		#define	NTV2_IS_VALID_STRUCT_TYPE(_x_)	(	(_x_) == AUTOCIRCULATE_TYPE_STATUS		||	\
 													(_x_) == AUTOCIRCULATE_TYPE_XFER		||	\
@@ -5678,7 +5871,8 @@ typedef enum
                                                     (_x_) == NTV2_TYPE_BANKGETSET			||	\
                                                     (_x_) == NTV2_TYPE_VIRTUAL_DATA_RW		||	\
 													(_x_) == NTV2_TYPE_AJADEBUGLOGGING		||	\
-													(_x_) == NTV2_TYPE_AJABUFFERLOCK	)
+													(_x_) == NTV2_TYPE_AJABUFFERLOCK		||	\
+													(_x_) == NTV2_TYPE_AJABITSTREAM	)
 
 
 		//	NTV2_POINTER FLAGS
@@ -5715,6 +5909,24 @@ typedef enum
 		#define DMABUFFERLOCK_MANUAL				BIT(5)		///< @brief Used in ::NTV2BufferLock to manual page lock buffers.
 		#define DMABUFFERLOCK_MAX_SIZE				BIT(6)		///< @brief Used in ::NTV2BufferLock to set max locked size.
 
+		// Bitstream flags
+		#define BITSTREAM_WRITE						BIT(0)		///< @brief Used in ::NTV2Bitstream to write a bitstream
+		#define BITSTREAM_FRAGMENT					BIT(1)		///< @brief Used in ::NTV2Bitstream to indicate bitstream is a fragment
+		#define BITSTREAM_SWAP						BIT(2)		///< @brief Used in ::NTV2Bitstream to byte swap bitstream data
+		#define BITSTREAM_RESET_CONFIG				BIT(3)		///< @brief Used in ::NTV2Bitstream to reset config
+		#define BITSTREAM_RESET_MODULE				BIT(4)		///< @brief Used in ::NTV2Bitstream to reset module
+		#define BITSTREAM_READ_REGISTERS			BIT(5)		///< @brief Used in ::NTV2Bitstream to get status registers
+
+		// Bitstream registers
+		#define BITSTREAM_EXT_CAP					0			///< @brief Extended capability register
+		#define BITSTREAM_VENDOR_HEADER				1			///< @brief Vender specific register
+		#define BITSTREAM_JTAG_ID					2			///< @brief JTAG ID register
+		#define BITSTREAM_VERSION					3			///< @brief Bitstream version register
+		#define BITSTREAM_MCAP_STATUS				4			///< @brief MCAP status register
+		#define BITSTREAM_MCAP_CONTROL				5			///< @brief MCAP control register
+		#define BITSTREAM_MCAP_DATA					6			///< @brief MCAP data register
+		#define BITSTREAM_NUM_REGISTERS				7			///< @brief Number of MCAP registes
+	
 		#if !defined (NTV2_BUILDING_DRIVER)
 			/**
 				Convenience macros that delimit the new structs.
@@ -5762,18 +5974,22 @@ typedef enum
 												<< std::bitset<8>((uint64_t(__x__)&0x0000000000FF0000)>>16) << "."		\
 												<< std::bitset<8>((uint64_t(__x__)&0x000000000000FF00)>>8) << "."		\
 												<< std::bitset<8>( uint64_t(__x__)&0x00000000000000FF)
-			#define	BIN032(__x__)			std::bitset<8>((uint32_t(__x__)&0xFF000000)>>24) << "."				\
+			#define	BIN032(__x__)			std::bitset<8>((uint32_t(__x__)&0xFF000000)>>24) << "."						\
 												<< std::bitset<8>((uint32_t(__x__)&0x00FF0000)>>16) << "."				\
 												<< std::bitset<8>((uint32_t(__x__)&0x0000FF00)>>8) << "."				\
 												<< std::bitset<8>( uint32_t(__x__)&0x000000FF)
-			#define	BIN016(__x__)			std::bitset<8>((uint16_t(__x__)&0xFF00)>>8) << "."					\
+			#define	BIN016(__x__)			std::bitset<8>((uint16_t(__x__)&0xFF00)>>8) << "."							\
 												<< std::bitset<8>( uint16_t(__x__)&0x00FF)
+			#define	BIN012(__x__)			std::bitset<12>((uint16_t(__x__)&0x0FFF))
+			#define	BIN010(__x__)			std::bitset<10>((uint16_t(__x__)&0x03FF))
 			#define	BIN08(__x__)			std::bitset<8>(uint8_t(__x__))
 			#define	BIN04(__x__)			std::bitset<4>(uint8_t(__x__))
 			#define	BIN0N(__x__,__n__)		std::bitset<__n__>(uint8_t(__x__))
 			#define	bBIN064(__x__)			"b"	<< BIN064(__x__)
 			#define	bBIN032(__x__)			"b"	<< BIN032(__x__)
 			#define	bBIN016(__x__)			"b"	<< BIN016(__x__)
+			#define	bBIN012(__x__)			"b"	<< BIN012(__x__)
+			#define	bBIN010(__x__)			"b"	<< BIN010(__x__)
 			#define	bBIN08(__x__)			"b"	<< BIN08(__x__)
 			#define	bBIN04(__x__)			"b"	<< BIN04(__x__)
 			#define	bBIN0N(__x__,__n__)		"b"	<< BIN0N(__x__,__n__)
@@ -5786,6 +6002,24 @@ typedef enum
 			#define	NTV2_IS_STRUCT_VALID_IMPL(__hr__,__tr__)
 			#define	NTV2_ASSERT_STRUCT_VALID
 		#endif
+
+		#if !defined (NTV2_BUILDING_DRIVER)
+			typedef	std::vector<uint8_t>				UByteSequence;				///< @brief	An ordered sequence of UByte (uint8_t) values.
+			typedef	UByteSequence::const_iterator		UByteSequenceConstIter;		///< @brief	A handy const iterator for iterating over a UByteSequence.
+			typedef	UByteSequence::iterator				UByteSequenceIter;			///< @brief	A handy non-const iterator for iterating over a UByteSequence.
+
+			typedef	std::vector<uint16_t>				UWordSequence;				///< @brief	An ordered sequence of UWord (uint16_t) values.
+			typedef	UWordSequence::const_iterator		UWordSequenceConstIter;		///< @brief	A handy const iterator for iterating over a UWordSequence.
+			typedef	UWordSequence::iterator				UWordSequenceIter;			///< @brief	A handy non-const iterator for iterating over a UWordSequence.
+
+			typedef	std::vector<uint32_t>				ULWordSequence;				///< @brief	An ordered sequence of ULWord (uint32_t) values.
+			typedef	ULWordSequence::const_iterator		ULWordSequenceConstIter;	///< @brief	A handy const iterator for iterating over a ULWordSequence.
+			typedef	ULWordSequence::iterator			ULWordSequenceIter;			///< @brief	A handy non-const iterator for iterating over a ULWordSequence.
+
+			typedef	std::vector<uint64_t>				ULWord64Sequence;			///< @brief	An ordered sequence of ULWord64 (uint64_t) values.
+			typedef	ULWord64Sequence::const_iterator	ULWord64SequenceConstIter;	///< @brief	A handy const iterator for iterating over a ULWord64Sequence.
+			typedef	ULWord64Sequence::iterator			ULWord64SequenceIter;		///< @brief	A handy non-const iterator for iterating over a ULWord64Sequence.
+		#endif	//	NTV2_BUILDING_DRIVER
 
 
 		#if defined (AJAMac)
@@ -5813,6 +6047,9 @@ typedef enum
 		class AJAExport NTV2SegmentedXferInfo
 		{
 			public:
+				/**
+					@brief	Constructs me as empty/invalid.
+				**/
 								NTV2SegmentedXferInfo()
 									:	mFlags				(0),
 										mNumSegments		(0),
@@ -5822,37 +6059,218 @@ typedef enum
 										mSrcElementsPerRow	(0),
 										mDstElementsPerRow	(0)		{setElementLength(1);}
 
-				// Inquiry -- Essentials
-				inline bool		isValid (void) const				{return getSegmentCount() && getSegmentLength() ? true : false;}
+				/**
+					@name	Inquiry -- Essentials
+				**/
+				///@{
+				/**
+					@return	True if valid (i.e. a non-zero segment count and segment length);  otherwise false.
+				**/
+				inline bool		isValid (void) const	{return getSegmentCount() && getSegmentLength() ? true : false;}
+
+				/**
+					@return	The number of segments.
+				**/
 				inline ULWord	getSegmentCount (void) const		{return mNumSegments;}
+
+				/**
+					@return	The segment length, in elements.
+				**/
 				inline ULWord	getSegmentLength (void) const		{return mElementsPerSegment;}
+
+				/**
+					@return	The offset, in elements, to the start of the first source segment.
+				**/
 				inline ULWord	getSourceOffset (void) const		{return mInitialSrcOffset;}
+
+				/**
+					@return	The offset, in elements, to the start of the first destination segment.
+				**/
 				inline ULWord	getDestOffset (void) const			{return mInitialDstOffset;}
+
+				/**
+					@return	The number of elements between each source row.
+				**/
 				inline ULWord	getSourcePitch (void) const			{return mSrcElementsPerRow;}
+
+				/**
+					@return	The number of elements between each destination row.
+				**/
 				inline ULWord	getDestPitch (void) const			{return mDstElementsPerRow;}
-				// Inquiry -- Non-Essentials
+				///@}
+
+				/**
+					@name	Inquiry
+				**/
+				///@{
+				/**
+					@return	The size of each element, in bytes.
+				**/
 				inline ULWord	getElementLength (void) const		{return ULWord(1 << (mFlags & 3));}
+
+				/**
+					@return	True if source rows should be traversed bottom-to-top;  otherwise false.
+				**/
 				inline bool		isSourceBottomUp (void) const		{return mFlags & BIT(8) ? true : false;}
+
+				/**
+					@return	True if source rows should be traversed top-to-bottom;  otherwise false.
+				**/
 				inline bool		isSourceTopDown (void) const		{return mFlags & BIT(8) ? false : true;}
+
+				/**
+					@return	True if destination rows should be traversed bottom-to-top;  otherwise false.
+				**/
 				inline bool		isDestBottomUp (void) const			{return mFlags & BIT(9) ? true : false;}
+
+				/**
+					@return	True if destination rows should be traversed top-to-bottom;  otherwise false.
+				**/
 				inline bool		isDestTopDown (void) const			{return mFlags & BIT(9) ? false : true;}
-				std::ostream &	Print (std::ostream & inStrm, const bool inDumpSegments = false) const;
+
+				/**
+					@return	The total number of elements (i.e. the product of the segment count and length).
+				**/
 				ULWord			getTotalElements (void) const		{return getSegmentCount() * getSegmentLength();}
+
+				/**
+					@return	The total number of bytes.
+				**/
 				ULWord			getTotalBytes (void) const			{return getTotalElements() * getElementLength();}
 
-				// Changing
-				inline NTV2SegmentedXferInfo &	setSegmentCount (const ULWord inNumSegments)	{mNumSegments = inNumSegments;  return *this;}
-				inline NTV2SegmentedXferInfo &	setSegmentLength (const ULWord inNumElements)	{mElementsPerSegment = inNumElements;  return *this;}
+				/**
+					@return	The offset to the first element immediately past the last source segment.
+				**/
+				inline ULWord	getSourceEndOffset (void) const
+								{return getSourceOffset()  +  getSourcePitch() * getSegmentCount()  +  getSegmentLength();}
+
+				/**
+					@return	The offset to the first element immediately past the last destination segment.
+				**/
+				inline ULWord	getDestEndOffset (void) const
+								{return getDestOffset()  +  getDestPitch() * getSegmentCount()  +  getSegmentLength();}
+
+				/**
+					@brief		Writes a human-readable description of me into a given output stream.
+					@param		inStrm			A non-constant reference to the output stream that will receive the description.
+					@param[in]	inDumpSegments	If true, also dumps a description of each segment. Defaults to false.
+					@return		A reference to the output stream.
+				**/
+				std::ostream &	Print (std::ostream & inStrm, const bool inDumpSegments = false) const;
+
+				/**
+					@param[in]	inInclDecl	If true, the default, include a declaration statement in the source code.
+					@return		A string containing C++ source code that, when compiled, will result in a NTV2SegmentedXferInfo
+								instance that will perfectly match me.
+				**/
+				std::string		getSourceCode (const bool inInclDecl = true) const;
+				///@}
+
+				/**
+					@name	Changing
+				**/
+				///@{
+
+				NTV2SegmentedXferInfo &	reset (void);	///< @brief	Resets me to an invalid (all zero) state.
+
+				/**
+					@brief		Sets both my segment count and length.
+					@param[in]	inNumSegs	My new segment count.
+					@param[in]	inSegLength	My new segment length, in elements.
+					@return		A reference to me.
+				**/
+				inline NTV2SegmentedXferInfo &	setSegmentInfo (const ULWord inNumSegs, const ULWord inSegLength)
+												{return setSegmentCount(inNumSegs).setSegmentLength(inSegLength);}
+
+				/**
+					@brief		Sets my segment count.
+					@param[in]	inNumSegments	My new segment count.
+					@return		A reference to me.
+				**/
+				inline NTV2SegmentedXferInfo &	setSegmentCount (const ULWord inNumSegments)
+												{mNumSegments = inNumSegments;  return *this;}
+
+				/**
+					@brief		Sets my segment length.
+					@param[in]	inNumElements	My new segment length, in elements.
+					@return		A reference to me.
+				**/
+				inline NTV2SegmentedXferInfo &	setSegmentLength (const ULWord inNumElements)
+												{mElementsPerSegment = inNumElements;  return *this;}
+
+				/**
+					@brief		A convenience function that sets both my source offset and pitch.
+					@param[in]	inOffset	The new offset, in elements, to the start of the first source segment.
+					@param[in]	inPitch		The new number of elements between each source row.
+					@return		A reference to me.
+				**/
 				inline NTV2SegmentedXferInfo &	setSourceInfo (const ULWord inOffset, const ULWord inPitch)
 												{return setSourceOffset(inOffset).setSourcePitch(inPitch);}
-				inline NTV2SegmentedXferInfo &	setSourceOffset (const ULWord inOffset)			{mInitialSrcOffset = inOffset;  return *this;}
-				inline NTV2SegmentedXferInfo &	setSourcePitch (const ULWord inPitch)			{mSrcElementsPerRow = inPitch;  return *this;}
-				inline NTV2SegmentedXferInfo &	setSourceDirection (const bool inTopDown)		{mFlags = (0xFFFFFFFF - BIT(8)); if (!inTopDown) mFlags |= BIT(8);  return *this;}
+
+				/**
+					@brief		Sets my source offset.
+					@param[in]	inOffset	The new offset, in elements, to the start of the first source segment.
+					@return		A reference to me.
+				**/
+				inline NTV2SegmentedXferInfo &	setSourceOffset (const ULWord inOffset)
+												{mInitialSrcOffset = inOffset;  return *this;}
+
+				/**
+					@brief		Sets my source pitch.
+					@param[in]	inPitch		The new number of elements between each source row.
+					@return		A reference to me.
+				**/
+				inline NTV2SegmentedXferInfo &	setSourcePitch (const ULWord inPitch)
+												{mSrcElementsPerRow = inPitch;  return *this;}
+
+				/**
+					@brief		Sets my source direction.
+					@param[in]	inTopDown	Specify true to traverse the source segments top-to-bottom;  otherwise specify false for bottom-to-top.
+					@return		A reference to me.
+				**/
+				inline NTV2SegmentedXferInfo &	setSourceDirection (const bool inTopDown)
+												{	mFlags &= (0xFFFFFFFF - BIT(8));
+													if (!inTopDown)
+														mFlags |= BIT(8);
+													return *this;
+												}
+
+				/**
+					@brief		A convenience function that sets both my destination offset and pitch.
+					@param[in]	inOffset	The new offset, in elements, to the start of the first destination segment.
+					@param[in]	inPitch		The new number of elements between each destination row.
+					@return		A reference to me.
+				**/
 				inline NTV2SegmentedXferInfo &	setDestInfo (const ULWord inOffset, const ULWord inPitch)
 												{return setDestOffset(inOffset).setDestPitch(inPitch);}
+
+				/**
+					@brief		Sets my destination offset.
+					@param[in]	inOffset	The new offset, in elements, to the start of the first destination segment.
+					@return		A reference to me.
+				**/
 				inline NTV2SegmentedXferInfo &	setDestOffset (const ULWord inOffset)			{mInitialDstOffset = inOffset;  return *this;}
+
+				/**
+					@brief		Sets my destination pitch.
+					@param[in]	inPitch		The new number of elements between each destination row.
+					@return		A reference to me.
+				**/
 				inline NTV2SegmentedXferInfo &	setDestPitch (const ULWord inPitch)				{mDstElementsPerRow = inPitch;  return *this;}
+
+				/**
+					@brief		Sets my destination scan direction.
+					@param[in]	inTopDown	Specify true to traverse the destination segments top-to-bottom;  otherwise specify false for bottom-to-top.
+					@return		A reference to me.
+				**/
 				inline NTV2SegmentedXferInfo &	setDestDirection (const bool inTopDown)			{mFlags = (0xFFFFFFFF - BIT(9)); if (!inTopDown) mFlags |= BIT(9);  return *this;}
+
+				/**
+					@brief		Sets my element length.
+					@param[in]	inBytesPerElement	The new element size, in bytes. Must be a power of two (1, 2, 4, or 8).
+					@note		This function does not transform any of my offsets, pitches or lengths.
+					@return		A reference to me.
+				**/
 				inline NTV2SegmentedXferInfo &	setElementLength (const ULWord inBytesPerElement)	
 												{
 													if (inBytesPerElement  &&  inBytesPerElement < 9)
@@ -5865,7 +6283,13 @@ typedef enum
 														}
 													return *this;
 												}
+				/**
+					@brief		Swaps my source and destination offsets and pitches.
+					@return		A reference to me.
+				**/
 				NTV2SegmentedXferInfo &			swapSourceAndDestination (void);
+				///@}
+
 			private:
 				ULWord	mFlags;					///< @brief	Lowest 2 bits determines element size, kRegMaskFrameOrientation is bit 10
 				ULWord	mNumSegments;			///< @brief	Number of segments to transfer (i.e. row count).
@@ -5938,28 +6362,25 @@ typedef enum
 				/**
 					@brief		Constructs me from a client-supplied address and size.
 					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
-					@param[in]	inByteCount		Specifies the byte count.
+												Ignored if inByteCount is zero.
+					@param[in]	inByteCount		Specifies the byte count. Ignored if pInUserPointer is NULL.
 				**/
 				explicit		NTV2_POINTER (const void * pInUserPointer, const size_t inByteCount);
 
 				/**
-					@brief		Constructs me from a client-specified byte count. In this case, I assume full responsibility for the memory I allocate.
-					@param[in]	inByteCount		Specifies the size of the allocated buffer, in bytes. If non-zero, causes Allocate to be called, and
-												if successful, zeroes the buffer. If zero, I don't allocate anything, and my host pointer will be NULL.
+					@brief		Constructs me from a client-specified byte count.
+								In this case, I assume full responsibility for automatically freeing the memory I allocate.
+					@param[in]	inByteCount		Optionally specifies the size of the allocated buffer, in bytes. Defaults to zero.
+												If non-zero, causes Allocate to be called, and if successful, automatically zeroes the buffer.
+												If zero (the default), I don't allocate anything, and my host pointer will be NULL.
 				**/
 								NTV2_POINTER (const size_t inByteCount = 0);
 
 				/**
 					@brief		Constructs me from another NTV2_POINTER instance.
-					@param[in]	inObj		NTV2_POINTER instance to copy.
+					@param[in]	inObj		NTV2_POINTER instance to "deep" copy into me.
 				**/
 				explicit		NTV2_POINTER (const NTV2_POINTER & inObj);
-
-				/**
-					@brief		Assigns me from another NTV2_POINTER instance.
-					@param[in]	inRHS		Specifies the NTV2_POINTER instance to assign (copy) to me.
-				**/
-				NTV2_POINTER &	operator = (const NTV2_POINTER & inRHS);
 
 				/**
 					@brief		My destructor. If I'm responsible for the memory, I free it here.
@@ -5976,10 +6397,10 @@ typedef enum
 				**/
 				inline void *	GetHostPointer (void) const
 				{
-					if (sizeof (int *) == 4)
-						return reinterpret_cast <void *> ((fUserSpacePtr & 0xFFFFFFFF00000000) >> 32);
+					if (sizeof(int*) == 4)
+						return reinterpret_cast <void*>((fUserSpacePtr & 0xFFFFFFFF00000000) >> 32);
 					else
-						return reinterpret_cast <void *> (fUserSpacePtr);
+						return reinterpret_cast <void*>(fUserSpacePtr);
 				}
 
 				/**
@@ -6013,7 +6434,12 @@ typedef enum
 				/**
 					@return		True if my host pointer is non-NULL and my byte count is non-zero;  otherwise false.
 				**/
-				inline operator bool() const	{return !IsNULL();}
+				inline			operator bool() const					{return !IsNULL();}
+
+				/**
+					@return		My size, in bytes, as a size_t.
+				**/
+				inline			operator size_t() const					{return size_t(GetByteCount());}
 
 				/**
 					@param[in]	inByteOffset	Specifies the offset from the start (or end) of my memory buffer.
@@ -6023,6 +6449,41 @@ typedef enum
 					@return		The host address of the given byte. Returns NULL upon failure.
 				**/
 				void *			GetHostAddress (const ULWord inByteOffset, const bool inFromEnd = false) const;
+
+				/**
+					@brief		Searches me for the given scalar value of type T starting at a given index position.
+					@param[in]	inValue			Specifies the scalar value to be searched for.
+					@param		inOutIndex		On entry, specifies where searching begins.
+												On exit, receives the index of the matching value.
+												Negative indexes search backward from the end of the buffer, where -1
+												is the last T in the buffer (with the highest physical memory address).
+					@return		True if successfully found; otherwise false.
+				**/
+				template<typename T> bool	Find (const T & inValue, int & inOutIndex)
+				{
+					const bool isAscending(inOutIndex >= 0);
+					if (isAscending  &&  inOutIndex >= int(GetByteCount()))
+						return false;	//	Past end
+					if (!isAscending  &&  (1 - inOutIndex) >= int(GetByteCount()))
+						return false;	//	Before start
+					const T * pValues(*this);
+					const int maxNdx(int(GetByteCount()) / sizeof(T));
+					if (isAscending)
+					{
+						for (int ndx(inOutIndex);  ndx < maxNdx;  ndx++)
+							if (pValues[ndx] == inValue)
+								{inOutIndex = ndx;  return true;}
+					}
+					else
+					{
+						const int minNdx(0 - maxNdx);
+						for (int ndx(inOutIndex);  ndx >= minNdx;  ndx++)
+							if (pValues[maxNdx + ndx] == inValue)
+								{inOutIndex = ndx;  return true;}
+					}
+					inOutIndex = 0;
+					return false;	//	Not found
+				}
 
 				/**
 					@return		True if the given memory buffer's contents are identical to my own.
@@ -6128,10 +6589,19 @@ typedef enum
 				}
 
 				/**
+					@brief		Assigns me from another NTV2_POINTER instance.
+					@param[in]	inRHS		Specifies the NTV2_POINTER instance to assign ("deep" copy) to me.
+				**/
+				NTV2_POINTER &	operator = (const NTV2_POINTER & inRHS);
+
+				/**
 					@brief		Sets (or resets) me from a client-supplied address and size.
 					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
-					@param[in]	inByteCount		Specifies the byte count.
-					@return		True if successful;  otherwise false.
+												Ignored if inByteCount is zero.
+					@param[in]	inByteCount		Specifies the byte count. Ignored if pInUserPointer is NULL.
+					@return		True if both pInUserPointer and inByteCount agree (i.e. if pInUserPointer
+								and inByteCount are both zero, or if they're both non-zero);  otherwise false
+								if they don't agree (i.e. one is non-zero and the other is zero, or vice-versa).
 					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
 				**/
 				bool			Set (const void * pInUserPointer, const size_t inByteCount);
@@ -6139,16 +6609,21 @@ typedef enum
 				/**
 					@brief		Sets (or resets) me from a client-supplied address and size.
 					@param[in]	pInUserPointer	Specifies the user-space virtual memory address. The client is entirely responsible for it.
-					@param[in]	inByteCount		Specifies the byte count.
+												Ignored if inByteCount is zero.
+					@param[in]	inByteCount		Specifies the byte count. Ignored if pInUserPointer is NULL.
 					@param[in]	inValue			Specifies the value to fill the buffer with.
-					@return		True if successful;  otherwise false.
+					@return		True if both pInUserPointer and inByteCount agree (i.e. if pInUserPointer and inByteCount
+								are both zero, or if they're both non-zero);  otherwise false if they don't agree (i.e. one
+								is non-zero and the other is zero, or vice-versa).
 					@note		Any memory that I was referencing prior to this call that I was responsible for will automatically be freed.
 				**/
 				bool			SetAndFill (const void * pInUserPointer, const size_t inByteCount, const UByte inValue);
 
 				/**
-					@brief		Replaces my contents from the given memory buffer.
+					@brief		Replaces my contents from the given memory buffer without resizing me.
 					@param[in]	inBuffer	Specifies the memory buffer whose contents are to be copied into my own.
+											If this buffer is larger than I am, I am not resized; instead, only
+											those bytes that fit in me will be copied.
 					@return		True if successful; otherwise false.
 				**/
 				bool			SetFrom (const NTV2_POINTER & inBuffer);
@@ -6295,7 +6770,57 @@ typedef enum
 				///@}
 
 				/**
-					@name	Conversion To/From Vectors
+					@name	Data Access
+				**/
+				///@{
+				/**
+					@return		My host address casted to a const T pointer.
+				**/
+				template<typename T>	operator const T*() const		{return reinterpret_cast<const T*>(GetHostPointer());}
+
+				/**
+					@return		My host address casted to a non-const T pointer.
+				**/
+				template<typename T>	operator T*() const				{return reinterpret_cast<T*>(GetHostPointer());}
+
+				/**
+					@return		A copy of the value at the given zero-based index position.
+					@param[in]	inIndex		Specifies the zero-based index position (e.g. 0 is first value at start of my memory).
+											If negative, indexes from the end of my memory (e.g. -1 is last value).
+					@warning	Bad index values will result in access violation exceptions.
+				**/
+				inline	uint8_t			U8 (const int inIndex) const	{const uint8_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()) + inIndex : inIndex];}
+
+				/**
+					@return		A writeable (non-const) reference to the value at the given zero-based index position.
+					@param[in]	inIndex		Specifies the zero-based index position (e.g. 0 is first value at start of my memory).
+											If negative, indexes from the end of my memory (e.g. -1 is last value).
+					@warning	Bad index values will result in access violation exceptions.
+				**/
+				inline	uint8_t &		U8 (const int inIndex)			{uint8_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()) + inIndex : inIndex];}
+
+				inline	int8_t			I8 (const int inIndex) const	{const int8_t* pVal(*this);		return pVal[inIndex < 0 ? int(GetByteCount()) + inIndex : inIndex];}
+				inline	int8_t &		I8 (const int inIndex)			{int8_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()) + inIndex : inIndex];}
+				inline	uint16_t		U16 (const int inIndex) const	{const uint16_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()/2) + inIndex : inIndex];}
+				inline	uint16_t &		U16 (const int inIndex)			{uint16_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/2) + inIndex : inIndex];}
+				inline	int16_t			I16 (const int inIndex) const	{const int16_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()/2) + inIndex : inIndex];}
+				inline	int16_t &		I16 (const int inIndex)			{int16_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/2) + inIndex : inIndex];}
+				inline	uint32_t		U32 (const int inIndex) const	{const uint32_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()/4) + inIndex : inIndex];}
+				inline	uint32_t &		U32 (const int inIndex)			{uint32_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/4) + inIndex : inIndex];}
+				inline	int32_t			I32 (const int inIndex) const	{const int32_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()/4) + inIndex : inIndex];}
+				inline	int32_t &		I32 (const int inIndex)			{int32_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/4) + inIndex : inIndex];}
+				inline	uint64_t		U64 (const int inIndex) const	{const uint64_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()/8) + inIndex : inIndex];}
+				inline	uint64_t &		U64 (const int inIndex)			{uint64_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/8) + inIndex : inIndex];}
+				inline	int64_t			I64 (const int inIndex) const	{const int64_t* pVal(*this);	return pVal[inIndex < 0 ? int(GetByteCount()/8) + inIndex : inIndex];}
+				inline	int64_t &		I64 (const int inIndex)			{int64_t* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/8) + inIndex : inIndex];}
+				inline	float			FL (const int inIndex) const	{const float* pVal(*this);		return pVal[inIndex < 0 ? int(GetByteCount()/sizeof(float)) + inIndex : inIndex];}
+				inline	float &			FL (const int inIndex)			{float* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/sizeof(float)) + inIndex : inIndex];}
+				inline	double			DBL (const int inIndex) const	{const double* pVal(*this);		return pVal[inIndex < 0 ? int(GetByteCount()/sizeof(double)) + inIndex : inIndex];}
+				inline	double &		DBL (const int inIndex)			{double* pVal(*this);			return pVal[inIndex < 0 ? int(GetByteCount()/sizeof(double)) + inIndex : inIndex];}
+				///@}
+
+				/**
+					@name	Vector Conversion
 				**/
 				///@{
 				/**
@@ -6312,7 +6837,7 @@ typedef enum
 					@return						True if successful;  otherwise false.
 					@note		If my length is not evenly divisible by 8, my last bytes won't appear in the resulting vector. 
 				**/
-				bool							GetU64s (std::vector<uint64_t> & outU64s, const size_t inU64Offset = 0, const size_t inMaxSize = 16, const bool inByteSwap = false) const;
+				bool							GetU64s (ULWord64Sequence & outU64s, const size_t inU64Offset = 0, const size_t inMaxSize = 16, const bool inByteSwap = false) const;
 
 				/**
 					@return		My contents as a vector of unsigned 64-bit values.
@@ -6326,7 +6851,7 @@ typedef enum
 												Defaults to 'false'.
 					@note		If my length is not evenly divisible by 8, my last bytes won't appear in the resulting vector. 
 				**/
-				inline std::vector<uint64_t>	GetU64s (const size_t inU64Offset = 0, const size_t inMaxSize = 16, const bool inByteSwap = false) const	{std::vector<uint64_t> result; GetU64s(result, inU64Offset, inMaxSize, inByteSwap); return result;}
+				inline ULWord64Sequence			GetU64s (const size_t inU64Offset = 0, const size_t inMaxSize = 16, const bool inByteSwap = false) const	{ULWord64Sequence result; GetU64s(result, inU64Offset, inMaxSize, inByteSwap); return result;}
 
 				/**
 					@brief		Answers with my contents as a vector of unsigned 32-bit values.
@@ -6342,7 +6867,7 @@ typedef enum
 					@return						True if successful;  otherwise false.
 					@note		If my length is not evenly divisible by 4, my last bytes won't appear in the resulting vector. 
 				**/
-				bool							GetU32s (std::vector<uint32_t> & outU32s, const size_t inU32Offset = 0, const size_t inMaxSize = 32, const bool inByteSwap = false) const;
+				bool							GetU32s (ULWordSequence & outU32s, const size_t inU32Offset = 0, const size_t inMaxSize = 32, const bool inByteSwap = false) const;
 
 				/**
 					@return		My contents as a vector of unsigned 32-bit values.
@@ -6356,7 +6881,7 @@ typedef enum
 												Defaults to 'false'.
 					@note		If my length is not evenly divisible by 4, my last bytes won't appear in the resulting vector. 
 				**/
-				inline std::vector<uint32_t>	GetU32s (const size_t inU32Offset = 0, const size_t inMaxSize = 32, const bool inByteSwap = false) const	{std::vector<uint32_t> result; GetU32s(result, inU32Offset, inMaxSize, inByteSwap); return result;}
+				inline ULWordSequence			GetU32s (const size_t inU32Offset = 0, const size_t inMaxSize = 32, const bool inByteSwap = false) const	{ULWordSequence result; GetU32s(result, inU32Offset, inMaxSize, inByteSwap); return result;}
 
 				/**
 					@brief		Answers with my contents as a vector of unsigned 16-bit values.
@@ -6372,7 +6897,7 @@ typedef enum
 					@return						True if successful;  otherwise false.
 					@note		If my length is not evenly divisible by 2, my last byte won't appear in the resulting vector. 
 				**/
-				bool							GetU16s (std::vector<uint16_t> & outU16s, const size_t inU16Offset = 0, const size_t inMaxSize = 64, const bool inByteSwap = false) const;
+				bool							GetU16s (UWordSequence & outU16s, const size_t inU16Offset = 0, const size_t inMaxSize = 64, const bool inByteSwap = false) const;
 
 				/**
 					@return		My contents as a vector of unsigned 16-bit values.
@@ -6386,7 +6911,7 @@ typedef enum
 												Defaults to 'false'.
 					@note		If my length is not evenly divisible by 2, my last byte won't appear in the resulting vector. 
 				**/
-				inline std::vector<uint16_t>	GetU16s (const size_t inU16Offset = 0, const size_t inMaxSize = 64, const bool inByteSwap = false) const	{std::vector<uint16_t> result; GetU16s(result, inU16Offset, inMaxSize, inByteSwap); return result;}
+				inline UWordSequence			GetU16s (const size_t inU16Offset = 0, const size_t inMaxSize = 64, const bool inByteSwap = false) const	{UWordSequence result; GetU16s(result, inU16Offset, inMaxSize, inByteSwap); return result;}
 
 				/**
 					@brief		Answers with my contents as a vector of unsigned 8-bit values.
@@ -6398,7 +6923,7 @@ typedef enum
 												Defaults to 128.
 					@return						True if successful;  otherwise false.
 				**/
-				bool							GetU8s (std::vector<uint8_t> & outU8s, const size_t inU8Offset = 0, const size_t inMaxSize = 128) const;
+				bool							GetU8s (UByteSequence & outU8s, const size_t inU8Offset = 0, const size_t inMaxSize = 128) const;
 
 				/**
 					@return		My contents as a vector of unsigned 8-bit values.
@@ -6408,7 +6933,7 @@ typedef enum
 												The actual number of returned 8-bit values may be less than this, depending on my size.
 												Defaults to 128.
 				**/
-				inline std::vector<uint8_t>		GetU8s (const size_t inU8Offset = 0, const size_t inMaxSize = 128) const	{std::vector<uint8_t> result; GetU8s(result, inU8Offset, inMaxSize); return result;}
+				inline UByteSequence			GetU8s (const size_t inU8Offset = 0, const size_t inMaxSize = 128) const	{UByteSequence result; GetU8s(result, inU8Offset, inMaxSize); return result;}
 
 				/**
 					@brief		Answers with my contents as a character string.
@@ -6443,7 +6968,7 @@ typedef enum
 												Specify 'true' to byte-swap;  otherwise specify 'false'. Defaults to 'false'.
 					@return						True if successful;  otherwise false.
 				**/
-				bool							PutU64s (const std::vector<uint64_t> & inU64s, const size_t inU64Offset = 0, const bool inByteSwap = false);
+				bool							PutU64s (const ULWord64Sequence & inU64s, const size_t inU64Offset = 0, const bool inByteSwap = false);
 
 				/**
 					@brief		Copies a vector of unsigned 32-bit values into me.
@@ -6454,7 +6979,7 @@ typedef enum
 												Specify 'true' to byte-swap;  otherwise specify 'false'. Defaults to 'false'.
 					@return						True if successful;  otherwise false.
 				**/
-				bool							PutU32s (const std::vector<uint32_t> & inU32s, const size_t inU32Offset = 0, const bool inByteSwap = false);
+				bool							PutU32s (const ULWordSequence & inU32s, const size_t inU32Offset = 0, const bool inByteSwap = false);
 
 				/**
 					@brief		Copies a vector of unsigned 16-bit values into me.
@@ -6465,7 +6990,7 @@ typedef enum
 												Specify 'true' to byte-swap;  otherwise specify 'false'. Defaults to 'false'.
 					@return						True if successful;  otherwise false.
 				**/
-				bool							PutU16s (const std::vector<uint16_t> & inU16s, const size_t inU16Offset = 0, const bool inByteSwap = false);
+				bool							PutU16s (const UWordSequence & inU16s, const size_t inU16Offset = 0, const bool inByteSwap = false);
 
 				/**
 					@brief		Copies a vector of unsigned 8-bit values into me.
@@ -6474,7 +6999,7 @@ typedef enum
 												Defaults to zero.
 					@return						True if successful;  otherwise false.
 				**/
-				bool							PutU8s (const std::vector<uint8_t> & inU8s, const size_t inU8Offset = 0);
+				bool							PutU8s (const UByteSequence & inU8s, const size_t inU8Offset = 0);
 				///@}
 
 				/**
@@ -6601,8 +7126,7 @@ typedef enum
 
 
 		/**
-			@brief	For devices that support it (see the ::NTV2DeviceCanDoSDIErrorChecks function in "ntv2devicefeatures.h"),
-					this struct reports SDI input error status information.
+			@brief	For devices that support it (see ::NTV2DeviceCanDoSDIErrorChecks ), this struct reports SDI input error status information.
 			@note	This struct uses a constructor to properly initialize itself. Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
 		**/
 		NTV2_STRUCT_BEGIN (NTV2SDIInputStatus)
@@ -7123,8 +7647,8 @@ typedef enum
 		**/
 		NTV2_STRUCT_BEGIN (NTV2SetRegisters)		//	AUTOCIRCULATE_TYPE_SETREGS
 			NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
-				ULWord			mInNumRegisters;	///< @brief	The number of NTV2ReadWriteRegisterSingle's to be set.
-				NTV2_POINTER	mInRegInfos;		///< @brief	Read-only array of NTV2ReadWriteRegisterSingle structs to be set. The SDK owns this memory.
+				ULWord			mInNumRegisters;	///< @brief	The number of NTV2RegInfo's to be set.
+				NTV2_POINTER	mInRegInfos;		///< @brief	Read-only array of NTV2RegInfo structs to be set. The SDK owns this memory.
 				ULWord			mOutNumFailures;	///< @brief	The number of registers unsuccessfully written.
 				NTV2_POINTER	mOutBadRegIndexes;	///< @brief	Array of UWords containing index numbers of the register writes that failed. The SDK owns this memory.
 			NTV2_TRAILER	mTrailer;			///< @brief	The common structure trailer -- ALWAYS LAST!
@@ -7278,6 +7802,12 @@ typedef enum
 					@return		True if successful;  otherwise false.
 				**/
 				bool			GetSDIInputStatus (NTV2SDIInputStatus & outStatus, const UWord inSDIInputIndex0 = 0);
+
+				/**
+					@return		A non-const reference to the NTV2SDIInputStatus record for the given SDI input.
+					@param[in]	inSDIInputIndex0	Specifies the zero-based index of the SDI input of interest.
+				**/
+				NTV2SDIInputStatus &	operator [] (const size_t inSDIInputIndex0);
 
 				/**
 					@brief	Prints a human-readable representation of me to the given output stream.
@@ -7673,9 +8203,8 @@ typedef enum
 												If zero, no video will be transferred.
 					@param	pInAudioBuffer		Specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd to this buffer.
 												On playout, audio data will be read from this buffer. If NULL, no audio will be transferred.
-					@param	inAudioByteCount	On capture, specifies the maximum capacity of the host audio buffer, in bytes. After the transfer,
-												it will contain the actual number of bytes transferred.
-												On playout, specifies the number of audio bytes to transfer from the host buffer.
+					@param	inAudioByteCount	On capture, specifies the maximum capacity of the host audio buffer, in bytes.
+												On playout, specifies the number of audio bytes (and therefore audio samples) to transfer from the host buffer.
 												If zero, no audio will be transferred.
 					@param	pInANCBuffer		Specifies a pointer to the host ancillary data buffer. On capture, ancillary data will be DMA'd into this buffer.
 												On playout, ancillary data will be read from this buffer. If NULL, no ancillary data will be transferred.
@@ -7712,12 +8241,11 @@ typedef enum
 					@brief	Sets my audio buffer for use in a subsequent call to CNTV2Card::AutoCirculateTransfer.
 					@param	pInAudioBuffer		Specifies a pointer to the host audio buffer. On capture, audio data will be DMA'd into this buffer.
 												On playout, audio data will be DMA'd from this buffer. If NULL, no audio data will be transferred.
-					@param	inAudioByteCount	Specifies the maximum capacity of the host audio buffer, in bytes, or the maximum number of audio bytes to transfer.
-												If zero, no audio data will be transferred.
+					@param	inAudioByteCount	On capture, specifies the maximum capacity of the host audio buffer, in bytes;  on playout, specifies
+												the number of audio bytes (and therefore audio samples) to transfer. If zero, no audio data will be transferred.
 					@return	True if successful;  otherwise false.
-					@note	Having the \c pInAudioBuffer address start on at least an 8-byte boundary or even better, on a page boundary,
-							and the \c inAudioByteCount be a multiple of 8-bytes (or optimally a multiple of a page) increases PCIe DMA
-							efficiency on most modern operating systems.
+					@note	Having the \c pInAudioBuffer address start on at least an 8-byte boundary or even better, on a page boundary, increases PCIe
+							DMA efficiency on most modern operating systems.
 				**/
 				bool									SetAudioBuffer (ULWord * pInAudioBuffer, const ULWord inAudioByteCount);
 
@@ -8059,9 +8587,9 @@ typedef enum
 
 				/**
 					@brief	Sets the maximum lock size for use in a subsequent call to CNTV2Card::DMABufferLock.
-					@param	inFlags			Specifies maximum lock size in bytes
+					@param	inNumBytes		Specifies maximum lock size, in bytes.
 				**/
-				inline void	SetMaxLockSize (const ULWord64 inSize)		{NTV2_ASSERT_STRUCT_VALID;  mMaxLockSize = inSize;}
+				inline void	SetMaxLockSize (const ULWord64 inNumBytes)		{NTV2_ASSERT_STRUCT_VALID;  mMaxLockSize = inNumBytes;}
 
 				/**
 					@brief	Resets the struct to its initialized state.
@@ -8088,6 +8616,88 @@ typedef enum
 		NTV2_STRUCT_END (NTV2BufferLock)
 
 
+		/**
+			@brief	This is used for bitstream maintainance.
+			@note	This struct uses a constructor to properly initialize itself.
+					Do not use <b>memset</b> or <b>bzero</b> to initialize or "clear" it.
+		**/
+		NTV2_STRUCT_BEGIN (NTV2Bitstream)
+			NTV2_HEADER		mHeader;			///< @brief	The common structure header -- ALWAYS FIRST!
+				NTV2_POINTER	mBuffer;			///< @brief	Virtual address of a bitstream buffer and its length.
+				ULWord			mFlags;				///< @brief Action flags (lock, unlock, etc)
+				ULWord			mStatus;			///< @brief Action status
+				ULWord			mRegisters[16];		///< @brief Resister data
+				ULWord			mReserved[32];		///< @brief	Reserved for future expansion.
+			NTV2_TRAILER	mTrailer;			///< @brief	The common structure trailer -- ALWAYS LAST!
+
+			#if !defined (NTV2_BUILDING_DRIVER)
+				/**
+					@name	Construction & Destruction
+				**/
+				///@{
+				explicit	NTV2Bitstream ();		///< @brief	Constructs a default NTV2Bitstream struct.
+				inline		~NTV2Bitstream ()	{}	///< @brief	My default destructor, which frees all allocatable fields that I own.
+
+				/**
+					@brief	Constructs an NTV2Bitstream object to use in a CNTV2Card::LoadBitstream call.
+					@param	inBuffer		Specifies the memory containing the bitstream to load.
+					@param	inFlags			Specifies action flags (fragment swap, etc.).
+				**/
+				explicit	NTV2Bitstream (const NTV2_POINTER & inBuffer, const ULWord inFlags);
+
+				/**
+					@brief	Constructs an NTV2Bitstream object to use in a CNTV2Card::LoadBitstream call.
+					@param	pInBuffer		Specifies a pointer to the host buffer containing the bitstream to load.
+					@param	inByteCount		Specifies a the length of the bitstream in bytes.
+					@param	inFlags			Specifies action flags (fragment, swap, etc)
+				**/
+				explicit	NTV2Bitstream (const ULWord * pInBuffer, const ULWord inByteCount, const ULWord inFlags);
+				///@}
+
+				/**
+					@name	Changing
+				**/
+				///@{
+				/**
+					@brief	Sets the buffer to lock for use in a subsequent call to CNTV2Card::LoadBitstream.
+					@param	inBuffer		Specifies the memory containing the bitstream to load.
+					@return	True if successful;  otherwise false.
+				**/
+				bool		SetBuffer (const NTV2_POINTER & inBuffer);
+
+				/**
+					@brief	Sets the buffer to lock for use in a subsequent call to CNTV2Card::LoadBitstream.
+					@param	pInBuffer			Specifies a pointer to the host buffer contiaining the bitstread to load.
+					@param	inByteCount			Specifies a the length of the buffer to load in bytes.
+					@return	True if successful;  otherwise false.
+				**/
+				inline bool	SetBuffer (const ULWord * pInBuffer, const ULWord inByteCount)	{return SetBuffer(NTV2_POINTER(pInBuffer, inByteCount));}
+
+				/**
+					@brief	Sets the action flags for use in a subsequent call to CNTV2Card::LoadBitstream.
+					@param	inFlags			Specifies action flags (fragment, swap, etc)
+				**/
+				inline void	SetFlags (const ULWord inFlags)		{NTV2_ASSERT_STRUCT_VALID;  mFlags = inFlags;}
+
+				/**
+					@brief	Resets the struct to its initialized state.
+				**/
+				inline void	Clear (void)		{SetBuffer(NTV2_POINTER());}
+				///@}
+
+				/**
+					@brief	Prints a human-readable representation of me to the given output stream.
+					@param	inOutStream		Specifies the output stream to use.
+					@return	A reference to the output stream.
+				**/
+				std::ostream &	Print (std::ostream & inOutStream) const;
+
+				NTV2_IS_STRUCT_VALID_IMPL(mHeader, mTrailer)
+
+			#endif	//	!defined (NTV2_BUILDING_DRIVER)
+		NTV2_STRUCT_END (NTV2Bitstream)
+
+
 		#if !defined (NTV2_BUILDING_DRIVER)
 			typedef std::set <NTV2VideoFormat>					NTV2VideoFormatSet;					///< @brief	A set of distinct NTV2VideoFormat values.
 			typedef NTV2VideoFormatSet::const_iterator			NTV2VideoFormatSetConstIter;		///< @brief	A handy const iterator for iterating over an NTV2VideoFormatSet.
@@ -8104,21 +8714,8 @@ typedef enum
 			typedef std::set <NTV2InputSource>					NTV2InputSourceSet;					///< @brief	A set of distinct NTV2InputSource values.
 			typedef NTV2InputSourceSet::const_iterator			NTV2InputSourceSetConstIter;		///< @brief	A handy const iterator for iterating over an NTV2InputSourceSet.
 
-			typedef	std::vector <uint8_t>						UByteSequence;						///< @brief	An ordered sequence of UByte (uint8_t) values.
-			typedef	UByteSequence::const_iterator				UByteSequenceConstIter;				///< @brief	A handy const iterator for iterating over a UByteSequence.
-			typedef	UByteSequence::iterator						UByteSequenceIter;					///< @brief	A handy non-const iterator for iterating over a UByteSequence.
-
-			typedef	std::vector <uint16_t>						UWordSequence;						///< @brief	An ordered sequence of UWord (uint16_t) values.
-			typedef	UWordSequence::const_iterator				UWordSequenceConstIter;				///< @brief	A handy const iterator for iterating over a UWordSequence.
-			typedef	UWordSequence::iterator						UWordSequenceIter;					///< @brief	A handy non-const iterator for iterating over a UWordSequence.
-
-			typedef	std::vector <uint32_t>						ULWordSequence;						///< @brief	An ordered sequence of ULWord (uint32_t) values.
-			typedef	ULWordSequence::const_iterator				ULWordSequenceConstIter;			///< @brief	A handy const iterator for iterating over a ULWordSequence.
-			typedef	ULWordSequence::iterator					ULWordSequenceIter;					///< @brief	A handy non-const iterator for iterating over a ULWordSequence.
-
-			typedef	std::vector <uint64_t>						ULWord64Sequence;					///< @brief	An ordered sequence of ULWord64 (uint64_t) values.
-			typedef	ULWord64Sequence::const_iterator			ULWord64SequenceConstIter;			///< @brief	A handy const iterator for iterating over a ULWord64Sequence.
-			typedef	ULWord64Sequence::iterator					ULWord64SequenceIter;				///< @brief	A handy non-const iterator for iterating over a ULWord64Sequence.
+			typedef std::set <NTV2OutputDestination>			NTV2OutputDestinations;				///< @brief	A set of distinct NTV2OutputDestination values.
+			typedef NTV2OutputDestinations::const_iterator		NTV2OutputDestinationsConstIter;	///< @brief	A handy const iterator for iterating over an NTV2OutputDestinations.
 
 			/**
 				@brief		Prints the given ::UWordSequence contents into the given output stream.
@@ -8218,9 +8815,9 @@ typedef enum
 			AJAExport NTV2StandardSet & operator += (NTV2StandardSet & inOutSet, const NTV2StandardSet inSet);
 
 			/**
-				@brief		Returns a set of distinct ::NTV2Geometry values supported on the given device.
+				@brief		Returns a set of distinct ::NTV2FrameGeometry values supported on the given device.
 				@param[in]	inDeviceID		Specifies the ::NTV2DeviceID of the device of interest.
-				@param[out]	outGeometries	Receives the set of distinct ::NTV2Geometry values supported by the device.
+				@param[out]	outGeometries	Receives the set of distinct ::NTV2FrameGeometry values supported by the device.
 				@return		True if successful;  otherwise false.
 				@todo		Needs to be moved to a C++ compatible "device features" module.
 			**/
@@ -8257,6 +8854,22 @@ typedef enum
 				@return		A reference to the modified set.
 			**/
 			AJAExport NTV2InputSourceSet & operator += (NTV2InputSourceSet & inOutSet, const NTV2InputSourceSet & inSet);
+
+			/**
+				@brief		Prints the given ::NTV2OutputDestinations' contents into the given output stream.
+				@param		inOStream	The stream into which the human-readable list will be written.
+				@param[in]	inSet		Specifies the set to be streamed.
+				@return		The "inOStream" that was specified.
+			**/
+			AJAExport std::ostream & operator << (std::ostream & inOStream, const NTV2OutputDestinations & inSet);
+
+			/**
+				@brief		Appends the given ::NTV2OutputDestinations' contents into the given set.
+				@param		inOutSet	The set to which the other set will be appended.
+				@param[in]	inSet		Specifies the set whose contents will be appended.
+				@return		A reference to the modified set.
+			**/
+			AJAExport NTV2OutputDestinations & operator += (NTV2OutputDestinations & inOutSet, const NTV2OutputDestinations & inSet);
 
 
 			/**

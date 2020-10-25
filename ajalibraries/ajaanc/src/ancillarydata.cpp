@@ -552,7 +552,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const uint8_t *					pInData,
 	// When we have extracted the useful data from the packet, we return the packet size, in bytes, so the
 	// caller can find the start of the next packet (if any).
 
-	if (pInData == NULL)
+	if (pInData == AJA_NULL)
 	{
 		outPacketByteCount = 0;
 		LOGMYERROR("AJA_STATUS_NULL: NULL pointer");
@@ -1024,7 +1024,7 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const ULWordSequence & inU32s,
 				}
 				u32 = ENDIAN_32NtoH(inU32s.at(inOutU32Ndx));
 				RCV2110DDBG("u32=" << xHEX0N(u32,8) << " inU32s[" << DEC(inOutU32Ndx) << " of " << DEC(numU32s) << "], u16=" << xHEX0N(u16,3)
-										<< " from " << DEC(loopNdx) << "(" << xHEX0N(inU32s.at(inOutU32Ndx-1),8) << " & " << xHEX0N(mask,8) << ") << " << DEC(shift));
+							<< " from " << DEC(loopNdx) << "(" << xHEX0N(inU32s.at(inOutU32Ndx-1),8) << " & " << xHEX0N(mask,8) << ") << " << DEC(shift));
 				if (shift)
 					continue;	//	go around
 			}
@@ -1054,9 +1054,28 @@ AJAStatus AJAAncillaryData::InitWithReceivedData (const ULWordSequence & inU32s,
 				break;
 	} while (inOutU32Ndx < numU32s);
 
-	RCV2110DBG("Consumed " << DEC(inOutU32Ndx - startU32Ndx + 1) << " ULWord(s), unpacked " << u16s);
+	if (u16s.size() < 4)
+	{	ostringstream oss;
+		if (u16s.size() < 1) oss << " NoDID";
+		else oss << " DID=" << xHEX0N(UWord(GetDID()),2);
+		if (u16s.size() < 2) oss << " NoSID";
+		else oss << " SID=" << xHEX0N(UWord(GetSID()),2);
+		if (u16s.size() < 3) oss << " NoDC";
+		else oss << " DC=" << DEC(dataCount);
+		RCV2110ERR("Incomplete/bad packet:" << oss.str() << " NoCS" << " -- only unpacked " << u16s);
+		return AJA_STATUS_FAIL;
+	}
+	RCV2110DBG("Consumed " << DEC(inOutU32Ndx - startU32Ndx + 1) << " ULWord(s), " << (gotChecksum?"":"NoCS, ") << "DC=" << DEC(dataCount) << ", unpacked " << u16s);
 	if (inOutU32Ndx < numU32s)
 		inOutU32Ndx++;	//	Bump to next Anc packet, if any
+
+	//	Did we get the whole packet?
+	if (dataCount > (u16s.size()-3))		//	DC > (u16s.size minus DID, SID, DC)?
+	{	//	Uh-oh:  too few u16s -- someone's pulling our leg
+		RCV2110ERR("Incomplete/bad packet: " << DEC(u16s.size()) << " U16s, but missing " << DEC(dataCount - (u16s.size()-3))
+					<< " byte(s), expected DC=" << DEC(dataCount) << " -- DID=" << xHEX0N(UWord(GetDID()),2) << " SID=" << xHEX0N(UWord(GetSID()),2));
+		return AJA_STATUS_FAIL;
+	}
 
 	//	Copy in the Anc packet data, while stripping off parity...
 	for (size_t ndx(0);  ndx < dataCount;  ndx++)
@@ -1992,8 +2011,9 @@ bool AJARTPAncPayloadHeader::IsNULL(void) const
 
 bool AJARTPAncPayloadHeader::IsValid(void) const
 {	//	Simple validation -- Check that...
-	return	mVBits == 0x02				//	Version == 2
-		&&	GetFieldSignal() != 0x01;	//	Field signal is 0x00, 0x10, or 0x11, but never 0x01
+	return	mVBits == 0x02			//	Version == 2
+		&&	!IsNULL()				//	Not NULL
+		&&  IsValidFieldSignal();	//	Valid field bits
 }
 
 

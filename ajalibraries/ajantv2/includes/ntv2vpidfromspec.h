@@ -15,6 +15,9 @@
 	@brief	Contains all the information needed to generate a valid VPID
 **/
 
+////VPID Stuff
+///////////////////////////////////////////////////////////////
+
 typedef struct
 {
 	NTV2VideoFormat			videoFormat;			///< @brief	Specifies the format of the video stream.
@@ -34,8 +37,38 @@ typedef struct
 	bool					enableBT2020;			///< @brief	If true, the VPID will insert BT.2020 data.
 	NTV2VPIDTransferCharacteristics	transferCharacteristics;	///< @brief Describes the transfer characteristics
 	NTV2VPIDColorimetry		colorimetry;			///< @brief Describes the Colorimetry
-	NTV2VPIDLuminance		luminance;				///< @bried Describes the luminance and color difference
+	NTV2VPIDLuminance		luminance;				///< @brief Describes the luminance and color difference
+	NTV2VPIDRGBRange		rgbRange;				///< @brief Describes the RGB range as full or SMPTE
+	bool					isMultiLink;			///< @brief If true, the video stream is 12G -> 3G multi-link
 } VPIDSpec;
+
+typedef enum
+{
+	dualStreamFlag = 1,
+	output3GFlag = 2,
+	output3GbFlag = 4,
+	SMPTE425Flag = 8,
+	DC4KInPath = 16,
+	CSCInPath = 32
+} VPIDFlags;
+
+typedef struct
+{
+	VPIDSpec		vpidSpec;
+	ULWord			deviceNumber;
+	NTV2Channel		videoChannel;
+	ULWord			frameStoreIndex;
+	VPIDFlags		flags;
+	bool			is3G;
+	bool			isDS2;
+	bool			isComplete;
+	ULWord			value;
+	bool			isDS1;
+	bool			isML1;
+	bool			isML2;
+	bool			isML3;
+	bool			isML4;
+} VPIDControl;
 
 /**
 	@brief		Generates a VPID based on the supplied specification.
@@ -43,9 +76,16 @@ typedef struct
 	@param[in]	pInVPIDSpec	Specifies the location of the settings describing the VPID to be generated.
 	@return		True if generation was successful, otherwise false.
 **/
-
+#if defined(__cplusplus) && defined(NTV2_BUILDING_DRIVER)
+extern "C"
+{
+#endif
 AJAExport	bool	SetVPIDFromSpec (ULWord * const			pOutVPID,
 									 const VPIDSpec * const	pInVPIDSpec);
+
+#if defined(__cplusplus) && defined(NTV2_BUILDING_DRIVER)
+}
+#endif
 
 #endif	// NTV2VPIDFROMSPEC_H
 

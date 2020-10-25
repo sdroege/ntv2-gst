@@ -79,6 +79,7 @@ public:
 	 *	@param[out]	frameDuration	Time units per frame (units/frame)
 	 */
 	void GetFrameRate(int64_t& frameTimeScale, int64_t& frameDuration) const;
+	void GetFrameRate(uint32_t& frameTimeScale, uint32_t& frameDuration) const;
 
 	/**
 	 *	Get the video frame time scale used in conversions.
@@ -162,6 +163,14 @@ public:
 	 *	@return				Time in seconds.
 	 */
 	double FramesToSeconds(int64_t frames) const;
+
+	/**
+	 *	Convert time scale units to time in seconds.
+	 *
+	 *	@param[in]	num		Time scale units to convert.
+	 *	@return				Time in seconds.
+	 */
+	double ScaleUnitsToSeconds(int64_t num) const;
 
 	/**
 	 *	Convert video frames to time in microseconds.

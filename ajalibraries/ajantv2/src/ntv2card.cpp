@@ -9,6 +9,7 @@
 #include "ntv2debug.h"
 #include "ntv2utils.h"
 #include <sstream>
+#include "ajabase/common/common.h"
 
 using namespace std;
 
@@ -20,14 +21,16 @@ CNTV2Card::CNTV2Card ()
 
     #if defined (NTV2_DEPRECATE)
         //InitNTV2ColorCorrection ();
-		InitNTV2TestPattern ();
 	#endif	//	defined (NTV2_DEPRECATE)
 }
 
 CNTV2Card::CNTV2Card (const UWord inDeviceIndex, const string &	inHostName)
 {
+	string hostName(inHostName);
+	aja::strip(hostName);
 	_boardOpened = false;
-	if (Open(inDeviceIndex, inHostName))
+	bool openOK = hostName.empty()  ?  CNTV2DriverInterface::Open(inDeviceIndex) :  CNTV2DriverInterface::Open(hostName);
+	if (openOK)
 	{
 		if (IsBufferSizeSetBySW())
 		{
@@ -47,10 +50,6 @@ CNTV2Card::CNTV2Card (const UWord inDeviceIndex, const string &	inHostName)
 			_ulNumFrameBuffers = ::NTV2DeviceGetNumberFrameBuffers (GetDeviceID (), fg, format);
 		}
 	}
-
-    #if defined(NTV2_DEPRECATE)
-		InitNTV2TestPattern();
-	#endif	//	defined(NTV2_DEPRECATE)
 }
 
 #if !defined(NTV2_DEPRECATE_14_3)
@@ -58,8 +57,11 @@ CNTV2Card::CNTV2Card (const UWord boardNumber, const bool displayErrorMessage, c
 {
 	(void) displayErrorMessage;
 	(void) ulBoardType;
+	string hostName(hostname ? hostname : "");
+	aja::strip(hostName);
 	_boardOpened = false;
-	if (Open(boardNumber, string(hostname ? hostname : "")))
+	bool openOK = hostName.empty()  ?  CNTV2DriverInterface::Open(boardNumber) :  CNTV2DriverInterface::Open(hostName);
+	if (openOK)
 	{
 		if (IsBufferSizeSetBySW())
 		{
@@ -79,9 +81,6 @@ CNTV2Card::CNTV2Card (const UWord boardNumber, const bool displayErrorMessage, c
 			_ulNumFrameBuffers = ::NTV2DeviceGetNumberFrameBuffers (GetDeviceID (), fg, format);
 		}
 	}
-    #if defined(NTV2_DEPRECATE)
-		InitNTV2TestPattern();
-	#endif	//	defined(NTV2_DEPRECATE)
 }	//	constructor
 #endif	//	!defined(NTV2_DEPRECATE_14_3)
 
@@ -109,11 +108,17 @@ string CNTV2Card::GetDeviceVersionString (void)
 }
 
 
+string CNTV2Card::GetModelName (void)
+{
+	ostringstream	oss;
+	oss << ::NTV2DeviceIDToString(GetDeviceID(), GetDeviceID() == DEVICE_ID_IO4KPLUS ? DeviceHasMicInput() : false);
+	return oss.str();
+}
+
 string CNTV2Card::GetDisplayName (void)
 {
 	ostringstream	oss;
-	oss << ::NTV2DeviceIDToString(GetDeviceID(), GetDeviceID() == DEVICE_ID_IO4KPLUS ? DeviceHasMicInput() : false)
-		<< " - " << GetIndexNumber();
+	oss << GetModelName() << " - " << GetIndexNumber();
 	return oss.str();
 }
 
@@ -176,51 +181,14 @@ bool CNTV2Card::GetDriverVersionComponents (UWord & outMajor, UWord & outMinor, 
 	ULWord	driverVersionULWord	(0);
 	if (!ReadRegister (kVRegDriverVersion, driverVersionULWord))
 		return false;
-
-	#if defined(MSWindows)
-		if (!driverVersionULWord)	//	If zero --- pre-15.0 Win driver?
-			if (ReadRegister(10002, driverVersionULWord))	//	Try reg 10002
-				if (driverVersionULWord)					//	Valid?
-				{	//	Decode pre-15.0 Win driver version info...
-					outMajor = (driverVersionULWord >>  4) & 0x000F;
-					outMinor = (driverVersionULWord      ) & 0x000F;
-					outPoint = (driverVersionULWord >>  8) & 0x000F;
-					outBuild = (driverVersionULWord >> 16) & 0xFFFF;
-					return true;
-				}
-	#elif defined(AJAMac)
-		if (!driverVersionULWord)	//	Zero? Pre-15.0 Mac driver?
-		{	//	The Mac DeviceMap keeps the driver's version
-			driverVersionULWord = GetMacRawDriverVersion();	//	Get DeviceMap's driver version
-			outMajor = UWord(driverVersionULWord >> 24) & 0x00FF;	//	major
-			outMinor = UWord(driverVersionULWord >> 16) & 0x00FF;	//	minor
-			outPoint = UWord(driverVersionULWord >>  8) & 0x00FF;	//	point
-			outBuild = UWord(driverVersionULWord      ) & 0x00FF;	//	build
-			return true;
-		}
-	#else
-	#endif
+	if (!driverVersionULWord)	//	If zero --- pre-15.0 driver?
+		return false;
 
 	//	The normal 15.0+ way of decoding the 32-bit driver version value:
 	outMajor = UWord(NTV2DriverVersionDecode_Major(driverVersionULWord));
 	outMinor = UWord(NTV2DriverVersionDecode_Minor(driverVersionULWord));
 	outPoint = UWord(NTV2DriverVersionDecode_Point(driverVersionULWord));
 	outBuild = UWord(NTV2DriverVersionDecode_Build(driverVersionULWord));
-
-	#if defined(AJALinux)
-		const UWord	oldMajor	((driverVersionULWord >>  4) & 0x0000000F);
-		const UWord	oldMinor	((driverVersionULWord      ) & 0x0000000F);
-		const UWord	oldPoint	((driverVersionULWord >>  8) & 0x0000003F);
-		const UWord	oldBuild	((driverVersionULWord >> 16) & 0x0000FFFF);
-		if (!outMajor  &&  !outMinor  &&  outBuild)		//	Pre-15.0 Lin driver?
-		{	//	Decode pre-15.0 Linux driver version:
-			outMajor = oldMajor;
-			outMinor = oldMinor;
-			outPoint = oldPoint;
-			outBuild = oldBuild;
-		}
-	#endif
-
 	return true;
 }
 
@@ -249,7 +217,7 @@ bool CNTV2Card::IS_CHANNEL_INVALID (const NTV2Channel inChannel) const
 
 bool CNTV2Card::IS_OUTPUT_SPIGOT_INVALID (const UWord inOutputSpigot) const
 {
-	if (inOutputSpigot >= ::NTV2DeviceGetNumVideoOutputs (_boardID))
+	if (inOutputSpigot >= ::NTV2DeviceGetNumVideoOutputs(_boardID))
 	{
 		if (NTV2DeviceCanDoWidget(_boardID, NTV2_WgtSDIMonOut1) && inOutputSpigot == 4)
 			return false;	//	Io4K Monitor Output exception
@@ -291,9 +259,9 @@ string CNTV2Card::SerialNum64ToString (const uint64_t inSerialNumber)	//	Class m
 	serialNum[7] = char((serialNumHigh & 0xFF000000) >> 24);
 	serialNum[8] = '\0';
 
-	for (unsigned ndx (0);  ndx < 8;  ndx++)
+	for (unsigned ndx(0);  ndx < 8;  ndx++)
 	{
-		if (serialNum [ndx] == 0)
+		if (serialNum[ndx] == 0)
 		{
 			if (ndx == 0)
 				return "";		//	No characters: no serial number
@@ -307,7 +275,6 @@ string CNTV2Card::SerialNum64ToString (const uint64_t inSerialNumber)	//	Class m
 				   (serialNum[ndx] == ' ') || (serialNum[ndx] == '-') ) )
 			return "";		//	Invalid character -- assume no Serial Number programmed...
 	}
-
 	return serialNum;
 
 }	//	SerialNum64ToString
@@ -439,55 +406,6 @@ bool CNTV2Card::CanWarmBootFPGA (bool & outCanWarmBoot)
 }
 
 
-bool CNTV2Card::GetInput1Autotimed (void)
-{
-	ULWord	status	(0);
-	ReadRegister (kRegInputStatus, status);
-	return !(status & BIT_3);
-}
-
-
-bool CNTV2Card::GetInput2Autotimed (void)
-{
-	ULWord	status	(0);
-	ReadRegister (kRegInputStatus, status);
-	return !(status & BIT_11);
-}
-
-
-bool CNTV2Card::GetAnalogInputAutotimed (void)
-{
-	ULWord	value	(0);
-	ReadRegister (kRegAnalogInputStatus, value, kRegMaskInputStatusLock, kRegShiftInputStatusLock);
-	return value == 1;
-}
-
-
-bool CNTV2Card::GetHDMIInputAutotimed (void)
-{
-	ULWord	value	(0);
-	ReadRegister (kRegHDMIInputStatus, value, kRegMaskInputStatusLock, kRegShiftInputStatusLock);
-	return value == 1;
-}
-
-
-bool CNTV2Card::GetInputAutotimed (int inInputNum)
-{
-	bool bResult = false;
-
-	ULWord status;
-	ReadInputStatusRegister(&status);
-
-	switch (inInputNum)
-	{
-		case 0:	bResult = !(status & BIT_3);	break;
-		case 1: bResult = !(status & BIT_11);	break;
-	}
-	
-	return bResult;
-}
-
-
 NTV2BreakoutType CNTV2Card::GetBreakoutHardware (void)
 {
 	NTV2BreakoutType	result		(NTV2_BreakoutNone);
@@ -507,7 +425,8 @@ NTV2BreakoutType CNTV2Card::GetBreakoutHardware (void)
 			case DEVICE_ID_KONA5:
             case DEVICE_ID_KONA5_8KMK:
 			case DEVICE_ID_KONA5_8K:
-			case DEVICE_ID_KONA5_2:
+			case DEVICE_ID_KONA5_2X4K:
+			case DEVICE_ID_KONA5_3DLUT:
 				//	Do we have a K3G-Box?
 				if ((audioCtlReg & kK2RegMaskKBoxDetect) || bPhonyKBox)
 					result = NTV2_K3GBox;
@@ -920,18 +839,14 @@ ostream &	operator << (ostream & inOutStr, const NTV2DIDSet & inDIDs)
 
 	UWord CNTV2Card::GetNumNTV2Boards()
 	{
-		ULWord numBoards = 0;
+		ULWord numBoards(0);
 		CNTV2Card ntv2Card;
-
-		for (ULWord boardCount = 0;  boardCount < NTV2_MAXBOARDS;  boardCount++)
+		for (ULWord boardCount(0);  boardCount < NTV2_MAXBOARDS;  boardCount++)
 		{
-			if (ntv2Card.Open (boardCount))
-			{
-				numBoards++;
-				ntv2Card.Close ();
-			}
+			if (AsNTV2DriverInterfaceRef(ntv2Card).Open(boardCount))
+				numBoards++;	//	Opened, keep going
 			else
-				break;
+				break;	//	Failed to open, we're done
 		}
 		return numBoards;
 	}
@@ -948,7 +863,7 @@ ostream &	operator << (ostream & inOutStr, const NTV2DIDSet & inDIDs)
 
 	bool CNTV2Card::SetBoard (UWord inDeviceIndexNumber)
 	{
-		return Open (inDeviceIndexNumber);
+		return CNTV2DriverInterface::Open(inDeviceIndexNumber);
 	}
 
 	string CNTV2Card::GetBoardIDString (void)
@@ -962,7 +877,7 @@ ostream &	operator << (ostream & inOutStr, const NTV2DIDSet & inDIDs)
 	void CNTV2Card::GetBoardIDString(std::string & outString)
 	{
 		outString = GetBoardIDString();
-	}	///< @deprecated	Obsolete. Convert the result of GetDeviceID() into a hexa string instead.
+	}
 
 #endif	//	!defined (NTV2_DEPRECATE)
 

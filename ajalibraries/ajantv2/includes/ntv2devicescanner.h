@@ -266,7 +266,8 @@ public:
 					-#	3-16 character hexadecimal integer, optionally preceded by '0x':  device having a matching 64-bit serial number;
 					-#	All other cases:  first device (lowest index number) whose name contains the argument string (compared case-insensitively).
 		@return		True if successful; otherwise false.
-		@param[in]	inArgument			The argument string.
+		@param[in]	inArgument			The argument string. If 'list' or '?', the std::cout stream is sent some
+										"help text" showing a list of all available devices.
 		@param[out]	outDevice			Receives the open, ready-to-use CNTV2Card instance.
 	**/
 	static bool									GetFirstDeviceFromArgument (const std::string & inArgument, CNTV2Card & outDevice);
@@ -283,6 +284,28 @@ public:
 														const NTV2DeviceInfoList & inNewList,
 														NTV2DeviceInfoList & outDevicesAdded,
 														NTV2DeviceInfoList & outDevicesRemoved);
+
+	/**
+		@return	True if the string contains a legal decimal number.
+		@param[in]	inStr	The string to be tested.
+	**/
+	static bool			IsLegalDecimalNumber (const std::string & inStr, const size_t inMaxLength = 2);
+	static uint64_t		IsLegalHexSerialNumber (const std::string & inStr);	//	0x3236333331375458
+	static bool			IsHexDigit (const char inChr);
+	static bool			IsDecimalDigit (const char inChr);
+	static bool			IsAlphaNumeric (const char inStr);
+
+	/**
+		@return	True if the string contains letters and/or decimal digits.
+		@param[in]	inStr	The string to be tested.
+	**/
+	static bool			IsAlphaNumeric (const std::string & inStr);
+
+	/**
+		@return	True if the string contains a legal serial number.
+		@param[in]	inStr	The string to be tested.
+	**/
+	static bool			IsLegalSerialNumber (const std::string & inStr);
 
 //	Instance Methods
 public:

@@ -187,6 +187,27 @@ bool CNTV2Card::GetHDMIInputAudioChannels (NTV2HDMIAudioChannels & outValue, con
 	return true;
 }
 
+static const ULWord	gKonaHDMICtrlRegs[] = {0x1d16, 0x2516, 0x2c14, 0x3014};	//	KonaHDMI only
+
+bool CNTV2Card::GetHDMIInAudioChannel34Swap (bool & outIsSwapped, const NTV2Channel inChannel)
+{
+	outIsSwapped = false;
+	if (inChannel >= ::NTV2DeviceGetNumHDMIVideoInputs(_boardID))
+		return false;	//	No such HDMI input
+	if (_boardID == DEVICE_ID_KONAHDMI)
+		return CNTV2DriverInterface::WriteRegister(gKonaHDMICtrlRegs[inChannel], outIsSwapped ? 1 : 0, kRegMaskHDMISwapInputAudCh34, kRegShiftHDMISwapInputAudCh34);	//	TBD
+	return CNTV2DriverInterface::ReadRegister(kRegHDMIInputControl, outIsSwapped, kRegMaskHDMISwapInputAudCh34, kRegShiftHDMISwapInputAudCh34);
+}
+
+bool CNTV2Card::SetHDMIInAudioChannel34Swap (const bool inIsSwapped, const NTV2Channel inChannel)
+{
+	if (inChannel >= ::NTV2DeviceGetNumHDMIVideoInputs(_boardID))
+		return false;	//	No such HDMI input
+	if (_boardID == DEVICE_ID_KONAHDMI)
+		return WriteRegister(gKonaHDMICtrlRegs[inChannel], inIsSwapped ? 1 : 0, kRegMaskHDMISwapInputAudCh34, kRegShiftHDMISwapInputAudCh34);	//	TBD
+	return WriteRegister(kRegHDMIInputControl, inIsSwapped ? 1 : 0, kRegMaskHDMISwapInputAudCh34, kRegShiftHDMISwapInputAudCh34);
+}
+
 // kRegHDMIOut3DControl
 bool CNTV2Card::SetHDMIOut3DPresent (const bool value)
 {
@@ -910,6 +931,21 @@ bool CNTV2Card::SetHDMIHDRDCIP3()
 	SetHDRData(registerValues);
 	EnableHDMIHDR(true);
 	return true;
+}
+
+bool CNTV2Card::GetHDMIOutAudioChannel34Swap (bool & outIsSwapped, const NTV2Channel inChannel)
+{	(void) inChannel;
+	outIsSwapped = false;
+	if (!::NTV2DeviceGetNumHDMIVideoOutputs(_boardID))
+		return false;
+	return CNTV2DriverInterface::ReadRegister(kRegHDMIInputControl, outIsSwapped, kRegMaskHDMISwapOutputAudCh34, kRegShiftHDMISwapOutputAudCh34);
+}
+
+bool CNTV2Card::SetHDMIOutAudioChannel34Swap (const bool inIsSwapped, const NTV2Channel inChannel)
+{	(void) inChannel;
+	if (!::NTV2DeviceGetNumHDMIVideoOutputs(_boardID))
+		return false;
+	return WriteRegister(kRegHDMIInputControl, inIsSwapped ? 1 : 0, kRegMaskHDMISwapOutputAudCh34, kRegShiftHDMISwapOutputAudCh34);
 }
 
 bool CNTV2Card::EnableHDMIOutUserOverride(bool enable)

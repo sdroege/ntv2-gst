@@ -26,8 +26,6 @@ static const ULWord	gChannelToSDIOutControlRegNum []	= {	kRegSDIOut1Control, kRe
 static const ULWord	gChannelToAudioControlRegNum []		= {	kRegAud1Control,		kRegAud2Control,		kRegAud3Control,		kRegAud4Control,
 															kRegAud5Control,		kRegAud6Control,		kRegAud7Control,		kRegAud8Control,		0};
 #endif	//	!defined (NTV2_DEPRECATE)
-static const ULWord	gChannelToAudioSrcSelectRegNum []	= {	kRegAud1SourceSelect,	kRegAud2SourceSelect,	kRegAud3SourceSelect,	kRegAud4SourceSelect,
-															kRegAud5SourceSelect,	kRegAud6SourceSelect,	kRegAud7SourceSelect,	kRegAud8SourceSelect,	0};
 
 static const ULWord gAudioSystemToSrcSelectRegNum []	= {	kRegAud1SourceSelect,	kRegAud2SourceSelect,	kRegAud3SourceSelect,	kRegAud4SourceSelect,
 															kRegAud5SourceSelect,	kRegAud6SourceSelect,	kRegAud7SourceSelect,	kRegAud8SourceSelect,	0};
@@ -51,6 +49,13 @@ static const ULWord	gAudioSystemToAudioControlRegNum []	= {	kRegAud1Control,		kR
 
 static const ULWord	gAudioSystemToAudioSrcSelectRegNum []= {kRegAud1SourceSelect,	kRegAud2SourceSelect,	kRegAud3SourceSelect,	kRegAud4SourceSelect,
 															kRegAud5SourceSelect,	kRegAud6SourceSelect,	kRegAud7SourceSelect,	kRegAud8SourceSelect,	0};
+
+static const ULWord gAudioRateHighMask [] = { kRegMaskAud1RateHigh, kRegMaskAud2RateHigh, kRegMaskAud3RateHigh, kRegMaskAud4RateHigh,
+											  kRegMaskAud5RateHigh, kRegMaskAud6RateHigh, kRegMaskAud7RateHigh, kRegMaskAud8RateHigh };
+
+static const ULWord gAudioRateHighShift [] = { kRegShiftAud1RateHigh, kRegShiftAud2RateHigh, kRegShiftAud3RateHigh, kRegShiftAud4RateHigh,
+											   kRegShiftAud5RateHigh, kRegShiftAud6RateHigh, kRegShiftAud7RateHigh, kRegShiftAud8RateHigh };
+
 struct PCM_CONTROL_INFO{
 	ULWord pcmControlReg;
 	ULWord pcmControlMask;
@@ -194,35 +199,71 @@ bool CNTV2Card::GetNumberAudioChannels (ULWord & outNumChannels, const NTV2Audio
 
 bool CNTV2Card::SetAudioRate (const NTV2AudioRate inRate, const NTV2AudioSystem inAudioSystem)
 {
-	return WriteRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], inRate, kRegMaskAudioRate, kRegShiftAudioRate);
+	ULWord		rateLow	(0);
+	ULWord		rateHigh (0);
+	bool		status;
+
+	if ((inRate == NTV2_AUDIO_192K) && (inAudioSystem == NTV2_AUDIOSYSTEM_1))
+		return false;
+
+	if (inRate == NTV2_AUDIO_96K)
+		rateLow = 1;
+	else if (inRate == NTV2_AUDIO_192K)
+		rateHigh = 1;
+
+	status = WriteRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], rateLow, kRegMaskAudioRate, kRegShiftAudioRate);
+	status &= WriteRegister (kRegAudioControl2, rateHigh, gAudioRateHighMask [inAudioSystem], gAudioRateHighShift [inAudioSystem]);
+
+	return status;
 }
 
 
 bool CNTV2Card::GetAudioRate (NTV2AudioRate & outRate, const NTV2AudioSystem inAudioSystem)
 {
-	ULWord		value	(0);
-	const bool	status	(ReadRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], value, kRegMaskAudioRate, kRegShiftAudioRate));
+	ULWord		rateLow	(0);
+	ULWord		rateHigh (0);
+	bool		status;
+
+	status = ReadRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], rateLow, kRegMaskAudioRate, kRegShiftAudioRate);
+	status &= ReadRegister (kRegAudioControl2, rateHigh, gAudioRateHighMask [inAudioSystem], gAudioRateHighShift [inAudioSystem]);
 	if (status)
-		outRate = static_cast <NTV2AudioRate> (value);
+	{
+		if ((rateLow == 0) && (rateHigh == 0))
+			outRate = NTV2_AUDIO_48K;
+		else if ((rateLow == 1) && (rateHigh == 0))
+			outRate = NTV2_AUDIO_96K;
+		else if ((rateLow == 0) && (rateHigh == 1))
+			outRate = NTV2_AUDIO_192K;
+		else
+			status = false;
+	}
 	return status;
 }
 
 
 bool CNTV2Card::SetAudioBufferSize (const NTV2AudioBufferSize inValue, const NTV2AudioSystem inAudioSystem)
 {
-	if (inValue != NTV2_AUDIO_BUFFER_BIG && ::NTV2DeviceCanDoStackedAudio (_boardID))
+	if (!NTV2_IS_VALID_AUDIO_SYSTEM(inAudioSystem))
+		return false;
+	if (inValue != NTV2_AUDIO_BUFFER_SIZE_4MB && ::NTV2DeviceCanDoStackedAudio(_boardID))
 		return false;	//	Stacked audio devices are fixed at 4MB
-	return WriteRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], inValue, kK2RegMaskAudioBufferSize, kK2RegShiftAudioBufferSize);
+	return WriteRegister (gAudioSystemToAudioControlRegNum[inAudioSystem], inValue, kK2RegMaskAudioBufferSize, kK2RegShiftAudioBufferSize);
 }
 
 
 bool CNTV2Card::GetAudioBufferSize (NTV2AudioBufferSize & outSize, const NTV2AudioSystem inAudioSystem)
 {
-	ULWord		value	(0);
-	const bool	status	(ReadRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], value, kK2RegMaskAudioBufferSize, kK2RegShiftAudioBufferSize));
-	if (status)
-		outSize = static_cast <NTV2AudioBufferSize> (value);
-	return status;
+	if (!NTV2_IS_VALID_AUDIO_SYSTEM(inAudioSystem))
+		return false;
+	outSize = NTV2_AUDIO_BUFFER_SIZE_4MB;	//	NTV2 has standardized on 4MB audio buffers
+	if (::NTV2DeviceCanDoStackedAudio(_boardID))
+		return true;	//	Done!
+
+	ULWord	value(0);
+	if (!ReadRegister (gAudioSystemToAudioControlRegNum[inAudioSystem], value, kK2RegMaskAudioBufferSize, kK2RegShiftAudioBufferSize))
+		return false;
+	outSize = NTV2AudioBufferSize(value);
+	return true;
 }
 
 
@@ -428,15 +469,10 @@ bool CNTV2Card::ReadAudioLastOut (ULWord & outValue, const NTV2Channel inChannel
 	return ReadRegister (gChannelToAudioOutLastAddrRegNum [inChannel], outValue);
 }
 
-bool CNTV2Card::ReadAudioSource (ULWord & outValue, const NTV2Channel inChannel)
-{
-	return ReadRegister(gChannelToAudioSrcSelectRegNum [inChannel], outValue);
-}
-
-bool CNTV2Card::WriteAudioSource (const ULWord inValue, const NTV2Channel inChannel)
-{
-	return WriteRegister (gChannelToAudioSrcSelectRegNum [inChannel], inValue);
-}
+#if !defined(NTV2_DEPRECATE_16_0)
+	bool CNTV2Card::ReadAudioSource (ULWord & outValue, const NTV2Channel inChannel)	{return ReadRegister(gAudioSystemToSrcSelectRegNum[inChannel], outValue);}
+	bool CNTV2Card::WriteAudioSource (const ULWord inValue, const NTV2Channel inChannel)	{return WriteRegister(gAudioSystemToSrcSelectRegNum[inChannel], inValue);}
+#endif	//	!defined(NTV2_DEPRECATE_16_0)
 
 
 bool CNTV2Card::SetAudioSystemInputSource (const NTV2AudioSystem inAudioSystem, const NTV2AudioSource inAudioSource, const NTV2EmbeddedAudioInput inEmbeddedSource)
@@ -674,6 +710,86 @@ bool CNTV2Card::SetAudioMixerInputGain (const NTV2AudioMixerInput inMixerInput, 
 	return WriteRegister(inChannel == NTV2_AudioMixerChannel1
 							? sAudioMixerInputGainCh1Regs[inMixerInput]
 							: sAudioMixerInputGainCh2Regs[inMixerInput], inGainValue);
+}
+
+bool CNTV2Card::GetAudioMixerOutputGain (ULWord & outGainValue)
+{
+	outGainValue = 0;
+	if (!DeviceCanDoAudioMixer())
+		return false;	//	No Audio Mixer -- shouldn't be calling this function
+	return ReadRegister (kRegAudioMixerOutGain, outGainValue);
+}
+
+bool CNTV2Card::SetAudioMixerOutputGain (const ULWord inGainValue)
+{
+	if (!DeviceCanDoAudioMixer())
+		return false;	//	No Audio Mixer -- shouldn't be calling this function
+	return WriteRegister(kRegAudioMixerOutGain, inGainValue);
+}
+
+bool CNTV2Card::GetAudioMixerOutputLevels (const NTV2AudioChannelPairs & inChannelPairs,
+											vector<uint32_t> & outLevels)
+{
+	static const ULWord	gAudMxrMainOutLvlRegs[] ={kRegAudioMixerMainOutputLevelsPair0, kRegAudioMixerMainOutputLevelsPair1,
+												 kRegAudioMixerMainOutputLevelsPair2, kRegAudioMixerMainOutputLevelsPair3,
+												 kRegAudioMixerMainOutputLevelsPair4, kRegAudioMixerMainOutputLevelsPair5,
+												 kRegAudioMixerMainOutputLevelsPair6, kRegAudioMixerMainOutputLevelsPair7, 0};
+	outLevels.clear();
+	if (!DeviceCanDoAudioMixer())
+		return false;
+
+	//	If caller specified empty channelPairs set, do "all" possible pairs...
+	NTV2AudioChannelPairs	chanPairs;
+	if (inChannelPairs.empty())
+	{
+		for (NTV2AudioChannelPair chPr(NTV2_AudioChannel1_2);  NTV2_IS_WITHIN_AUDIO_CHANNELS_1_TO_16(chPr);  chPr = NTV2AudioChannelPair(chPr+1))
+			chanPairs.insert(chPr);	//	Main supports Ch 1-16
+	}
+	else
+		chanPairs = inChannelPairs;	//	Non-empty set:  do what the caller requested
+
+	//	Build a bulk register read...
+	NTV2RegisterReads	regs;
+	std::set<ULWord>	regsToRead;
+	for (NTV2AudioChannelPairsConstIter it(chanPairs.begin());  it != chanPairs.end();  ++it)
+	{
+		const NTV2AudioChannelPair	chanPair(*it);
+		if (!NTV2_IS_WITHIN_AUDIO_CHANNELS_1_TO_16(chanPair))
+			return false;
+		uint32_t regNum(gAudMxrMainOutLvlRegs[chanPair]);
+		regsToRead.insert(regNum);
+	}	//	for each audio channel pair
+	for (std::set<ULWord>::const_iterator it(regsToRead.begin());  it != regsToRead.end();  ++it)
+		regs.push_back(NTV2RegInfo(*it));
+
+	//	Read the level registers...
+	const bool result(ReadRegisters(regs));
+	if (result)
+		for (NTV2RegisterReadsConstIter it(regs.begin());  it != regs.end();  ++it)
+		{
+			ULWord	rawLevels(it->IsValid() ? it->registerValue : 0);
+			outLevels.push_back(uint32_t((rawLevels & kRegMaskAudioMixerInputLeftLevel) >> kRegShiftAudioMixerInputLeftLevel));
+			outLevels.push_back(uint32_t((rawLevels & kRegMaskAudioMixerInputRightLevel) >> kRegShiftAudioMixerInputRightLevel));
+		}
+	else
+		while (outLevels.size() < chanPairs.size() * 2)
+			outLevels.push_back(0);
+	return result;
+}
+
+bool CNTV2Card::GetHeadphoneOutputGain (ULWord & outGainValue)
+{
+	outGainValue = 0;
+	if (!NTV2DeviceHasRotaryEncoder(GetDeviceID()))
+		return false;	//	No Audio Mixer -- shouldn't be calling this function
+	return ReadRegister (kRegRotaryEncoder, outGainValue, kRegMaskRotaryEncoderGain, kRegShiftRotaryEncoderGain);
+}
+
+bool CNTV2Card::SetHeadphoneOutputGain (const ULWord inGainValue)
+{
+	if (!NTV2DeviceHasRotaryEncoder(GetDeviceID()))
+		return false;	//	No Audio Mixer -- shouldn't be calling this function
+	return WriteRegister(kRegRotaryEncoder, inGainValue, kRegMaskRotaryEncoderGain, kRegShiftRotaryEncoderGain);
 }
 
 #if !defined(NTV2_DEPRECATE_15_5)
@@ -1020,6 +1136,31 @@ bool CNTV2Card::GetHDMIOutAudioSource8Channel (NTV2Audio8ChannelSelect & outValu
 	return result;
 }
 
+
+bool CNTV2Card::SetHDMIOutAudioRate (const NTV2AudioRate inNewValue)
+{
+	return WriteRegister (kRegHDMIOutControl, static_cast <ULWord> (inNewValue), kRegMaskHDMIAudioRate, kRegShiftHDMIAudioRate);
+}
+
+
+bool CNTV2Card::GetHDMIOutAudioRate (NTV2AudioRate & outValue)
+{
+	return CNTV2DriverInterface::ReadRegister (kRegHDMIOutControl, outValue, kRegMaskHDMIAudioRate, kRegShiftHDMIAudioRate);
+}
+
+
+bool CNTV2Card::SetHDMIOutAudioFormat (const NTV2AudioFormat inNewValue)
+{
+	return WriteRegister (kRegHDMIOutControl, static_cast <ULWord> (inNewValue), kRegMaskHDMIAudioFormat, kRegShiftHDMIAudioFormat);
+}
+
+
+bool CNTV2Card::GetHDMIOutAudioFormat (NTV2AudioFormat & outValue)
+{
+	return CNTV2DriverInterface::ReadRegister (kRegHDMIOutControl, outValue, kRegMaskHDMIAudioFormat, kRegShiftHDMIAudioFormat);
+}
+
+
 bool CNTV2Card::SetAudioOutputMonitorSource (const NTV2AudioMonitorSelect inValue, const NTV2Channel inChannel)
 {
 	const ULWord	encoding	((::GetIndexForNTV2Channel(inChannel) << 4) | inValue);
@@ -1059,10 +1200,27 @@ bool CNTV2Card::GetAudioOutputMonitorSource (NTV2AudioMonitorSelect * pOutValue,
 #endif	//	NTV2_DEPRECATE_14_3
 
 
-bool CNTV2Card::StartAudioOutput (const NTV2AudioSystem inAudioSystem)
+bool CNTV2Card::CanDoAudioWaitForVBI (void)
 {
-	return UWord(inAudioSystem) < ::NTV2DeviceGetNumAudioSystems(_boardID)
-			&&  WriteRegister (gAudioSystemToAudioControlRegNum[inAudioSystem], 0, kRegMaskResetAudioOutput, kRegShiftResetAudioOutput);
+	ULWord canDo(0);
+	return ReadRegister(kRegCanDoStatus, canDo, kRegMaskCanDoAudioWaitForVBI, kRegShiftCanDoAudioWaitForVBI)
+			&&  (canDo ? true : false);
+}
+
+bool CNTV2Card::StartAudioOutput (const NTV2AudioSystem inAudioSystem, const bool inWaitForVBI)
+{
+	if (UWord(inAudioSystem) >= ::NTV2DeviceGetNumAudioSystems(_boardID))
+		return false;	//	Bad AudioSystem
+	const ULWord audioCtrlRegNum(gAudioSystemToAudioControlRegNum[inAudioSystem]);
+	if (inWaitForVBI)
+	{
+		if (!CanDoAudioWaitForVBI())
+			return false;	//	Caller requested wait-til-VBI, but firmware doesn't support it
+		//	Set or clear the start-at-VBI bit...
+		if (!WriteRegister(audioCtrlRegNum, inWaitForVBI ? 1UL : 0UL,  kRegMaskOutputStartAtVBI, kRegShiftOutputStartAtVBI))
+			return false;
+	}
+	return WriteRegister (audioCtrlRegNum, 0, kRegMaskResetAudioOutput, kRegShiftResetAudioOutput);
 }
 
 bool CNTV2Card::StopAudioOutput (const NTV2AudioSystem inAudioSystem)
@@ -1113,10 +1271,20 @@ bool CNTV2Card::GetAudioOutputPause (const NTV2AudioSystem inAudioSystem, bool &
 }
 
 
-bool CNTV2Card::StartAudioInput (const NTV2AudioSystem inAudioSystem)
+bool CNTV2Card::StartAudioInput (const NTV2AudioSystem inAudioSystem, const bool inWaitForVBI)
 {
-	return UWord(inAudioSystem) < ::NTV2DeviceGetNumAudioSystems(_boardID)
-		&& WriteRegister (gAudioSystemToAudioControlRegNum [inAudioSystem], 0, kRegMaskResetAudioInput, kRegShiftResetAudioInput);
+	if (UWord(inAudioSystem) >= ::NTV2DeviceGetNumAudioSystems(_boardID))
+		return false;	//	Bad AudioSystem
+	const ULWord audioCtrlRegNum(gAudioSystemToAudioControlRegNum[inAudioSystem]);
+	if (inWaitForVBI)
+	{
+		if (!CanDoAudioWaitForVBI())
+			return false;	//	Caller requested wait-til-VBI, but firmware doesn't support it
+		//	Set or clear the start-at-VBI bit...
+		if (!WriteRegister(audioCtrlRegNum, inWaitForVBI ? 1UL : 0UL,  kRegMaskInputStartAtVBI, kRegShiftInputStartAtVBI))
+			return false;
+	}
+	return WriteRegister (audioCtrlRegNum, 0, kRegMaskResetAudioInput, kRegShiftResetAudioInput);
 }
 
 

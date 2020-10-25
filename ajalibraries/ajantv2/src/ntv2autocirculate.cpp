@@ -25,7 +25,7 @@ using namespace std;
 	#undef min
 #endif
 
-#if defined(_DEBUG)
+#if 0
 	//	Debug builds can clear Anc buffers during A/C capture
 	#define	AJA_NTV2_CLEAR_DEVICE_ANC_BUFFER_AFTER_CAPTURE_XFER		//	Requires non-zero kVRegZeroDeviceAncPostCapture
 	#define AJA_NTV2_CLEAR_HOST_ANC_BUFFER_TAIL_AFTER_CAPTURE_XFER	//	Requires non-zero kVRegZeroHostAncPostCapture
@@ -934,7 +934,7 @@ bool CNTV2Card::AutoCirculateGetStatus (const NTV2Channel inChannel, AUTOCIRCULA
 
 #if defined (NTV2_NUB_CLIENT_SUPPORT)
 	// Auto circulate status is not implemented in the NUB yet
-	if (_remoteHandle != INVALID_NUB_HANDLE)
+	if (IsRemote())
 		return false;
 #endif	//	defined (NTV2_NUB_CLIENT_SUPPORT)
 	const bool result(NTV2Message(reinterpret_cast<NTV2_HEADER *>(&outStatus)));
@@ -1009,10 +1009,11 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 	NTV2_POINTER	savedAncF1,  savedAncF2;
 	if (::NTV2DeviceCanDo2110(_boardID)  &&  NTV2_IS_OUTPUT_CROSSPOINT(crosspoint))
 	{
-		//	S2110 Playout:	So that most Retail & OEM playout apps "just work" with S2110 RTP Anc streams, our classic SDI
-		//					Anc data that device firmware normally embeds into SDI output as derived from registers -- e.g.
-		//					VPID, RP188, etc. -- the SDK here will automatically insert these packets into the outgoing RTP
-		//					streams, even if the client didn't provide Anc buffers or specify AUTOCIRCULATE_WITH_ANC.
+		//	S2110 Playout:	So that most Retail & OEM playout apps "just work" with S2110 RTP Anc streams,
+		//					our classic SDI Anc data that device firmware normally embeds into SDI output
+		//					as derived from registers -- VPID & RP188 -- the SDK here automatically inserts
+		//					these packets into the outgoing RTP streams, even if the client didn't provide
+		//					Anc buffers in the AUTOCIRCULATE_TRANSFER object, or specify AUTOCIRCULATE_WITH_ANC.
 		ULWord	F1OffsetFromBottom(0),  F2OffsetFromBottom(0);
 		size_t	F1SizeInBytes(0), F2SizeInBytes(0);
 		if (GetAncRegionOffsetFromBottom(F1OffsetFromBottom, NTV2_AncRgn_Field1)
@@ -1212,45 +1213,51 @@ bool CNTV2Card::AutoCirculateTransfer (const NTV2Channel inChannel, AUTOCIRCULAT
 }	//	AutoCirculateTransfer
 
 
-static const AJA_FrameRate	sNTV2Rate2AJARate[] = {	AJA_FrameRate_Unknown,	//	NTV2_FRAMERATE_UNKNOWN	= 0,
-													AJA_FrameRate_6000,		//	NTV2_FRAMERATE_6000		= 1,
-													AJA_FrameRate_5994,		//	NTV2_FRAMERATE_5994		= 2,
-													AJA_FrameRate_3000,		//	NTV2_FRAMERATE_3000		= 3,
-													AJA_FrameRate_2997,		//	NTV2_FRAMERATE_2997		= 4,
-													AJA_FrameRate_2500,		//	NTV2_FRAMERATE_2500		= 5,
-													AJA_FrameRate_2400,		//	NTV2_FRAMERATE_2400		= 6,
-													AJA_FrameRate_2398,		//	NTV2_FRAMERATE_2398		= 7,
-													AJA_FrameRate_5000,		//	NTV2_FRAMERATE_5000		= 8,
-													AJA_FrameRate_4800,		//	NTV2_FRAMERATE_4800		= 9,
-													AJA_FrameRate_4795,		//	NTV2_FRAMERATE_4795		= 10,
-													AJA_FrameRate_12000,	//	NTV2_FRAMERATE_12000	= 11,
-													AJA_FrameRate_11988,	//	NTV2_FRAMERATE_11988	= 12,
-													AJA_FrameRate_1500,		//	NTV2_FRAMERATE_1500		= 13,
-													AJA_FrameRate_1498,		//	NTV2_FRAMERATE_1498		= 14,
-													AJA_FrameRate_1900,		//	NTV2_FRAMERATE_1900		= 15,	// Formerly 09 in older SDKs
-													AJA_FrameRate_1898,		//	NTV2_FRAMERATE_1898		= 16, 	// Formerly 10 in older SDKs
-													AJA_FrameRate_1800,		//	NTV2_FRAMERATE_1800		= 17,	// Formerly 11 in older SDKs
-													AJA_FrameRate_1798};	//	NTV2_FRAMERATE_1798		= 18,	// Formerly 12 in older SDKs
+static const AJA_FrameRate	sNTV2Rate2AJARate[] = {	AJA_FrameRate_Unknown	//	NTV2_FRAMERATE_UNKNOWN	= 0,
+													,AJA_FrameRate_6000		//	NTV2_FRAMERATE_6000		= 1,
+													,AJA_FrameRate_5994		//	NTV2_FRAMERATE_5994		= 2,
+													,AJA_FrameRate_3000		//	NTV2_FRAMERATE_3000		= 3,
+													,AJA_FrameRate_2997		//	NTV2_FRAMERATE_2997		= 4,
+													,AJA_FrameRate_2500		//	NTV2_FRAMERATE_2500		= 5,
+													,AJA_FrameRate_2400		//	NTV2_FRAMERATE_2400		= 6,
+													,AJA_FrameRate_2398		//	NTV2_FRAMERATE_2398		= 7,
+													,AJA_FrameRate_5000		//	NTV2_FRAMERATE_5000		= 8,
+													,AJA_FrameRate_4800		//	NTV2_FRAMERATE_4800		= 9,
+													,AJA_FrameRate_4795		//	NTV2_FRAMERATE_4795		= 10,
+													,AJA_FrameRate_12000	//	NTV2_FRAMERATE_12000	= 11,
+													,AJA_FrameRate_11988	//	NTV2_FRAMERATE_11988	= 12,
+													,AJA_FrameRate_1500		//	NTV2_FRAMERATE_1500		= 13,
+													,AJA_FrameRate_1498		//	NTV2_FRAMERATE_1498		= 14,
+#if !defined(NTV2_DEPRECATE_16_0)
+													,AJA_FrameRate_1900		//	NTV2_FRAMERATE_1900		= 15,	// Formerly 09 in older SDKs
+													,AJA_FrameRate_1898		//	NTV2_FRAMERATE_1898		= 16, 	// Formerly 10 in older SDKs
+													,AJA_FrameRate_1800		//	NTV2_FRAMERATE_1800		= 17,	// Formerly 11 in older SDKs
+													,AJA_FrameRate_1798		//	NTV2_FRAMERATE_1798		= 18,	// Formerly 12 in older SDKs
+#endif	//	!defined(NTV2_DEPRECATE_16_0)
+													};
 
-static const TimecodeFormat	sNTV2Rate2TCFormat[] = {kTCFormatUnknown,	//	NTV2_FRAMERATE_UNKNOWN	= 0,
-													kTCFormat60fps,		//	NTV2_FRAMERATE_6000		= 1,
-													kTCFormat30fps,		//	NTV2_FRAMERATE_5994		= 2,
-													kTCFormat30fps,		//	NTV2_FRAMERATE_3000		= 3,
-													kTCFormat30fps,		//	NTV2_FRAMERATE_2997		= 4,
-													kTCFormat25fps,		//	NTV2_FRAMERATE_2500		= 5,
-													kTCFormat24fps,		//	NTV2_FRAMERATE_2400		= 6,
-													kTCFormat24fps,		//	NTV2_FRAMERATE_2398		= 7,
-													kTCFormat50fps,		//	NTV2_FRAMERATE_5000		= 8,
-													kTCFormat48fps,		//	NTV2_FRAMERATE_4800		= 9,
-													kTCFormat48fps,		//	NTV2_FRAMERATE_4795		= 10,
-													kTCFormat60fps,		//	NTV2_FRAMERATE_12000	= 11,
-													kTCFormat60fps,		//	NTV2_FRAMERATE_11988	= 12,
-													kTCFormat30fps,		//	NTV2_FRAMERATE_1500		= 13,
-													kTCFormat30fps,		//	NTV2_FRAMERATE_1498		= 14,
-													kTCFormatUnknown,	//	NTV2_FRAMERATE_1900		= 15,
-													kTCFormatUnknown,	//	NTV2_FRAMERATE_1898		= 16,
-													kTCFormatUnknown,	//	NTV2_FRAMERATE_1800		= 17,
-													kTCFormatUnknown};	//	NTV2_FRAMERATE_1798		= 18,
+static const TimecodeFormat	sNTV2Rate2TCFormat[] = {kTCFormatUnknown	//	NTV2_FRAMERATE_UNKNOWN	= 0,
+													,kTCFormat60fps		//	NTV2_FRAMERATE_6000		= 1,
+													,kTCFormat30fps		//	NTV2_FRAMERATE_5994		= 2,
+													,kTCFormat30fps		//	NTV2_FRAMERATE_3000		= 3,
+													,kTCFormat30fps		//	NTV2_FRAMERATE_2997		= 4,
+													,kTCFormat25fps		//	NTV2_FRAMERATE_2500		= 5,
+													,kTCFormat24fps		//	NTV2_FRAMERATE_2400		= 6,
+													,kTCFormat24fps		//	NTV2_FRAMERATE_2398		= 7,
+													,kTCFormat50fps		//	NTV2_FRAMERATE_5000		= 8,
+													,kTCFormat48fps		//	NTV2_FRAMERATE_4800		= 9,
+													,kTCFormat48fps		//	NTV2_FRAMERATE_4795		= 10,
+													,kTCFormat60fps		//	NTV2_FRAMERATE_12000	= 11,
+													,kTCFormat60fps		//	NTV2_FRAMERATE_11988	= 12,
+													,kTCFormat30fps		//	NTV2_FRAMERATE_1500		= 13,
+													,kTCFormat30fps		//	NTV2_FRAMERATE_1498		= 14,
+#if !defined(NTV2_DEPRECATE_16_0)
+													,kTCFormatUnknown	//	NTV2_FRAMERATE_1900		= 15,
+													,kTCFormatUnknown	//	NTV2_FRAMERATE_1898		= 16,
+													,kTCFormatUnknown	//	NTV2_FRAMERATE_1800		= 17,
+													,kTCFormatUnknown	//	NTV2_FRAMERATE_1798		= 18,
+#endif	//	!defined(NTV2_DEPRECATE_16_0)
+													};
 
 //	VPID Packet Insertion						1080	720		525		625		1080p	2K		2K1080p		2K1080i		UHD		4K		UHDHFR		4KHFR
 static const uint16_t	sVPIDLineNumsF1[] = {	10,		10,		13,		9,		10,		10,		10,			10,			10,		10,		10,			10	};
@@ -1459,8 +1466,8 @@ bool CNTV2Card::S2110DeviceAncToXferBuffers (const NTV2Channel inChannel, AUTOCI
 
 	if (ancF1 || ancF2)
 	{
-		//	Import anc packet list that AutoCirculateTransfer's caller put into Xfer
-		//	struct's Anc buffers ... because we're going to add VPID and A/C timecodes...
+		//	Import anc packet list that AutoCirculateTransfer's caller put into Xfer struct's Anc buffers (GUMP or RTP).
+		//	We're going to add VPID and timecode packets to the list.
 		if (AJA_FAILURE(AJAAncillaryList::SetFromDeviceAncBuffers(ancF1, ancF2, packetList)))
 			return false;	//	Packet import failed
 
@@ -1563,6 +1570,7 @@ bool CNTV2Card::S2110DeviceAncToXferBuffers (const NTV2Channel inChannel, AUTOCI
 		else if (isMonitoring)	{XMTWARN("GetSDIOutVPID failed for SDI spigot " << ::NTV2ChannelToString(SDISpigotChannel,true));}
 	}	//	if no VPID pkts in buffer
 	else if (isMonitoring)	{XMTDBG(DEC(packetList.CountAncillaryDataWithID(0x41,0x01)) << " VPID packet(s) already provided, won't insert any here");}
+	//	IoIP monitor GUMP VPID cannot be overridden -- SDI anc insert always inserts VPID via firmware
 
 	//	Callers can override our register-based RP188 values...
 	if (!packetList.CountAncillaryDataWithType(AJAAncillaryDataType_Timecode_ATC)		//	if no caller-specified ATC timecodes...
@@ -1615,6 +1623,7 @@ bool CNTV2Card::S2110DeviceAncToXferBuffers (const NTV2Channel inChannel, AUTOCI
 		else if (isMonitoring)	{XMTWARN("Cannot insert ATC/VITC -- Xfer struct has no acOutputTimeCodes array!");}
 	}	//	if no ATC/VITC packets in buffer
 	else if (isMonitoring)	{XMTDBG("ATC and/or VITC packet(s) already provided, won't insert any here");}
+	//	IoIP monitor GUMP VPID cannot be overridden -- SDI anc inserter inserts RP188 via firmware
 
 	if (generateRTP)	//	if anything added (or forced conversion from GUMP)
 	{	//	Re-encode packets into the XferStruct buffers as RTP...

@@ -151,7 +151,7 @@ static ULWord getMaxNumSamples(CNTV2Card& device, NTV2AudioSystem audioSystem)
     NTV2AudioBufferSize bufferSize;
     device.GetAudioBufferSize(bufferSize, audioSystem);
 
-    return maxSampleCountForNTV2AudioBufferSize (bufferSize, getNumAudioChannels(device, audioSystem));
+    return maxSampleCountForNTV2AudioBufferSize (bufferSize, uint16_t(getNumAudioChannels(device, audioSystem)));
 }
 
 static NTV2Channel findActiveACChannel(CNTV2Card& device, NTV2AudioSystem audioSystem, AUTOCIRCULATE_STATUS & outStatus)
@@ -213,13 +213,12 @@ static bool getBitfileDate(CNTV2Card& device, std::string &bitFileDateString, NT
     memset(&bitFileInfo, 0, sizeof(BITFILE_INFO_STRUCT));
     bitFileInfo.whichFPGA = whichFPGA;
     bool bBitFileInfoAvailable = false;     // BitFileInfo is implemented only on 5.2 and later drivers.
-    if ( true)	//	boardID != BOARD_ID_XENAX &&  boardID != BOARD_ID_XENAX2 )
+    if (true)	//	boardID != BOARD_ID_XENAX &&  boardID != BOARD_ID_XENAX2 )
         bBitFileInfoAvailable = device.DriverGetBitFileInformation(bitFileInfo);
     if( bBitFileInfoAvailable )
     {
         bitFileDateString = bitFileInfo.designNameStr;
-        int start = (int)bitFileDateString.find(".ncd");
-        if(start > 0)
+        if (bitFileDateString.find(".ncd") > 0)
         {
             bitFileDateString = bitFileDateString.substr(0, bitFileDateString.find(".ncd"));
             bitFileDateString += ".bit ";
@@ -266,13 +265,13 @@ AJAExport std::ostream & operator << (std::ostream & outStream, const CNTV2Suppo
 CNTV2SupportLogger::CNTV2SupportLogger(CNTV2Card& card, NTV2SupportLoggerSections sections)
     : mSections(sections)
 {
-    mDevice.Open(card.GetIndexNumber());
+    AsNTV2DriverInterfaceRef(mDevice).Open(card.GetIndexNumber());
 }
 
-CNTV2SupportLogger::CNTV2SupportLogger(int cardIndex, NTV2SupportLoggerSections sections)
+CNTV2SupportLogger::CNTV2SupportLogger(UWord cardIndex, NTV2SupportLoggerSections sections)
     : mSections(sections)
 {
-    mDevice.Open(cardIndex);
+    AsNTV2DriverInterfaceRef(mDevice).Open(cardIndex);
 }
 
 CNTV2SupportLogger::~CNTV2SupportLogger()
@@ -355,10 +354,9 @@ std::string CNTV2SupportLogger::ToString(void) const
     vector<char> dateBufferUTC(128, 0);
 
     // get the wall time and format it
-    time_t now = time(NULL);
-
+    time_t now = time(AJA_NULL);
     struct tm *localTimeinfo;
-    localTimeinfo = localtime((const time_t*)&now);
+    localTimeinfo = localtime(reinterpret_cast<const time_t*>(&now));
     strcpy(&dateBufferLocal[0], "");
     if (localTimeinfo)
     {
@@ -366,7 +364,7 @@ std::string CNTV2SupportLogger::ToString(void) const
     }
 
     struct tm *utcTimeinfo;
-    utcTimeinfo = gmtime((const time_t*)&now);
+    utcTimeinfo = gmtime(reinterpret_cast<const time_t*>(&now));
     strcpy(&dateBufferUTC[0], "");
     if (utcTimeinfo)
     {
@@ -394,7 +392,7 @@ std::string CNTV2SupportLogger::ToString(void) const
         LoggerSectionToFunctionMacro(NTV2_SupportLoggerSectionRegisters, "Regs", FetchRegisterLog);
     }
 
-    if (mFooterStr.empty() == false)
+    if (!mFooterStr.empty())
     {
         oss << mFooterStr;
     }
@@ -502,9 +500,14 @@ void CNTV2SupportLogger::FetchRegisterLog(std::ostringstream& oss) const
 {
     NTV2RegisterReads	regs;
     const NTV2DeviceID	deviceID	(mDevice.GetDeviceID());
-    const NTV2RegNumSet	deviceRegs	(CNTV2RegisterExpert::GetRegistersForDevice (deviceID));
+    NTV2RegNumSet		deviceRegs	(CNTV2RegisterExpert::GetRegistersForDevice (deviceID));
     const NTV2RegNumSet	virtualRegs	(CNTV2RegisterExpert::GetRegistersForClass (kRegClass_Virtual));
     static const string	sDashes		(96, '-');
+
+	//	Dang, GetRegistersForDevice doesn't/can't read kRegCanDoRegister, so add the CanConnectROM regs here...
+	if (mDevice.HasCanConnectROM())
+		for (ULWord regNum(kRegFirstValidXptROMRegister);  regNum < ULWord(kRegInvalidValidXptROMRegister);  regNum++)
+			deviceRegs.insert(regNum);
 
     oss	<< endl << deviceRegs.size() << " Device Registers " << sDashes << endl << endl;
     regs = ::FromRegNumSet (deviceRegs);
@@ -542,7 +545,7 @@ void CNTV2SupportLogger::FetchRegisterLog(std::ostringstream& oss) const
     }
 }
 
-void CNTV2SupportLogger::FetchAutoCirculateLog(std::ostringstream& oss) const
+void CNTV2SupportLogger::FetchAutoCirculateLog (std::ostringstream & oss) const
 {
     ULWord					appSignature	(0);
     int32_t					appPID			(0);
@@ -554,8 +557,8 @@ void CNTV2SupportLogger::FetchAutoCirculateLog(std::ostringstream& oss) const
     //	This code block takes a snapshot of the current AutoCirculate state of the device...
     {
         //QMutexLocker	tmpLock (&mutex);
-        mDevice.GetEveryFrameServices (taskMode);
-        mDevice.GetStreamingApplication (&appSignature, &appPID);
+        mDevice.GetEveryFrameServices(taskMode);
+        mDevice.GetStreamingApplication(&appSignature, &appPID);
 
         //	Grab A/C status for each channel...
         for (NTV2Channel chan (NTV2_CHANNEL1);  chan < NTV2_MAX_NUM_CHANNELS;  chan = NTV2Channel(chan+1))
@@ -581,7 +584,7 @@ void CNTV2SupportLogger::FetchAutoCirculateLog(std::ostringstream& oss) const
         }	//	for each channel
     }	//	lock scope
 
-    oss	<< "Task mode:  " << ::NTV2TaskModeToString (taskMode) << ", PID=" << pidToString (appPID) << ", signature=" << appSignatureToString (appSignature) << endl
+    oss	<< "Task mode:  " << ::NTV2TaskModeToString(taskMode) << ", PID=" << pidToString(uint32_t(appPID)) << ", signature=" << appSignatureToString(appSignature) << endl
         << endl
         << "AutoCirculate:    State  Start   End   Act FramesProc FramesDrop BufLvl                             A u t o C i r c u l a t e   O p t i o n s           VideoFormat" << endl
         << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;

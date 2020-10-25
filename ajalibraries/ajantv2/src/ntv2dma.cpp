@@ -33,7 +33,7 @@ bool CNTV2Card::DMARead (const ULWord inFrameNumber, ULWord * pFrameBuffer, cons
 
 bool CNTV2Card::DMAWrite (const ULWord inFrameNumber, const ULWord * pFrameBuffer, const ULWord inOffsetBytes, const ULWord inByteCount)
 {
-	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, false, inFrameNumber, const_cast <ULWord *> (pFrameBuffer), inOffsetBytes, inByteCount, true);
+	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, false, inFrameNumber, const_cast<ULWord*>(pFrameBuffer), inOffsetBytes, inByteCount, true);
 }
 
 
@@ -75,19 +75,20 @@ bool CNTV2Card::DMAWriteFrame (const ULWord inFrameNumber, const ULWord * pFrame
 		actualFrameSize *= 4;
 	if (quadQuadEnabled)
 		actualFrameSize *= 4;
-	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, false, 0, const_cast <ULWord *> (pFrameBuffer), inFrameNumber * actualFrameSize, inByteCount, true);
+	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, false, 0, const_cast<ULWord*>(pFrameBuffer),
+						inFrameNumber * actualFrameSize, inByteCount, true);
 }
 
 
 bool CNTV2Card::DMAReadSegments (	const ULWord		inFrameNumber,
 									ULWord *			pFrameBuffer,
 									const ULWord		inOffsetBytes,
-									const ULWord		inByteCount,
+									const ULWord		inTotalByteCount,
 									const ULWord		inNumSegments,
 									const ULWord		inSegmentHostPitch,
 									const ULWord		inSegmentCardPitch)
 {
-	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, true, inFrameNumber, pFrameBuffer, inOffsetBytes, inByteCount,
+	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, true, inFrameNumber, pFrameBuffer, inOffsetBytes, inTotalByteCount,
 						inNumSegments, inSegmentHostPitch, inSegmentCardPitch, true);
 }
 
@@ -95,32 +96,23 @@ bool CNTV2Card::DMAReadSegments (	const ULWord		inFrameNumber,
 bool CNTV2Card::DMAWriteSegments (	const ULWord		inFrameNumber,
 									const ULWord *		pFrameBuffer,
 									const ULWord		inOffsetBytes,
-									const ULWord		inByteCount,
+									const ULWord		inTotalByteCount,
 									const ULWord		inNumSegments,
 									const ULWord		inSegmentHostPitch,
 									const ULWord		inSegmentCardPitch)
 {
-	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, false, inFrameNumber, const_cast <ULWord *> (pFrameBuffer), inOffsetBytes, inByteCount,
-						inNumSegments, inSegmentHostPitch, inSegmentCardPitch, true);
+	return DmaTransfer (NTV2_DMA_FIRST_AVAILABLE, false, inFrameNumber, const_cast<ULWord*>(pFrameBuffer),
+						inOffsetBytes, inTotalByteCount, inNumSegments, inSegmentHostPitch, inSegmentCardPitch, true);
 }
 
 
-bool CNTV2Card::DmaP2PTargetFrame(NTV2Channel channel,
-								  ULWord frameNumber,
-								  ULWord frameOffset,
-								  PCHANNEL_P2P_STRUCT pP2PData)
+bool CNTV2Card::DmaP2PTargetFrame (NTV2Channel channel, ULWord frameNumber, ULWord frameOffset, PCHANNEL_P2P_STRUCT pP2PData)
 {
-	return DmaTransfer (NTV2_PIO,
-					   channel,
-					   true,
-					   frameNumber,
-					   frameOffset,
-					   0, 0, 0, 0,
-					   pP2PData);
+	return DmaTransfer (NTV2_PIO, channel, true, frameNumber, frameOffset,  0, 0, 0, 0,  pP2PData);
 }
 
 
-bool CNTV2Card::DmaP2PTransferFrame(NTV2DMAEngine DMAEngine,
+bool CNTV2Card::DmaP2PTransferFrame (NTV2DMAEngine DMAEngine,
 									ULWord frameNumber,
 									ULWord frameOffset,
 									ULWord transferSize,
@@ -129,23 +121,16 @@ bool CNTV2Card::DmaP2PTransferFrame(NTV2DMAEngine DMAEngine,
 									ULWord segmentCardPitch,
 									PCHANNEL_P2P_STRUCT pP2PData)
 {
-	return DmaTransfer(DMAEngine,
-					   NTV2_CHANNEL1,
-					   false,
-					   frameNumber,
-					   frameOffset,
-					   transferSize,
-					   numSegments,
-					   segmentTargetPitch,
-					   segmentCardPitch,
-					   pP2PData);
+	return DmaTransfer (DMAEngine, NTV2_CHANNEL1, false, frameNumber, frameOffset, transferSize, numSegments,
+					   segmentTargetPitch, segmentCardPitch, pP2PData);
 }
 
 
-bool CNTV2Card::GetAudioMemoryOffset (const ULWord inOffsetBytes,  ULWord & outAbsByteOffset,  const NTV2AudioSystem inAudioSystem)
+bool CNTV2Card::GetAudioMemoryOffset (const ULWord inOffsetBytes,  ULWord & outAbsByteOffset,
+										const NTV2AudioSystem inAudioSystem, const bool inCaptureBuffer)
 {
 	outAbsByteOffset = 0;
-	const NTV2DeviceID	deviceID	(GetDeviceID());
+	const NTV2DeviceID	deviceID(GetDeviceID());
 	if (UWord(inAudioSystem) >= (::NTV2DeviceGetNumAudioSystems(deviceID) + (DeviceCanDoAudioMixer() ? 1 : 0)))
 		return false;	//	Invalid audio system
 
@@ -166,6 +151,8 @@ bool CNTV2Card::GetAudioMemoryOffset (const ULWord inOffsetBytes,  ULWord & outA
 		const ULWord	audioFrameBuffer	(::NTV2DeviceGetNumberFrameBuffers(deviceID, fg, fbf) - 1);
 		outAbsByteOffset = inOffsetBytes  +  audioFrameBuffer * ::NTV2DeviceGetFrameBufferSize(deviceID, fg, fbf);
 	}
+	if (inCaptureBuffer)
+		outAbsByteOffset += 0x400000;	//	Add 4MB offset to point to capture buffer
 	return true;
 }
 
@@ -217,8 +204,8 @@ bool CNTV2Card::DMAWriteAudio (	const NTV2AudioSystem	inAudioSystem,
 		if (!NTV2_IS_VALID_FIELD(inFieldID))
 			return false;
 	
-		NTV2_POINTER	ancF1Buffer	(inFieldID ? NULL : pOutAncBuffer, inFieldID ? 0 : inByteCount);
-		NTV2_POINTER	ancF2Buffer	(inFieldID ? pOutAncBuffer : NULL, inFieldID ? inByteCount : 0);
+		NTV2_POINTER	ancF1Buffer	(inFieldID ? AJA_NULL : pOutAncBuffer, inFieldID ? 0 : inByteCount);
+		NTV2_POINTER	ancF2Buffer	(inFieldID ? pOutAncBuffer : AJA_NULL, inFieldID ? inByteCount : 0);
 		return DMAReadAnc (inFrameNumber, ancF1Buffer, ancF2Buffer);
 	}
 #endif	//	!defined(NTV2_DEPRECATE_15_2)
@@ -291,8 +278,8 @@ bool CNTV2Card::DMAReadAnc (const ULWord		inFrameNumber,
 		if (!NTV2_IS_VALID_FIELD(inFieldID))
 			return false;
 	
-		NTV2_POINTER	ancF1Buffer	(inFieldID ? NULL : pInAncBuffer, inFieldID ? 0 : inByteCount);
-		NTV2_POINTER	ancF2Buffer	(inFieldID ? pInAncBuffer : NULL, inFieldID ? inByteCount : 0);
+		NTV2_POINTER	ancF1Buffer	(inFieldID ? AJA_NULL : pInAncBuffer, inFieldID ? 0 : inByteCount);
+		NTV2_POINTER	ancF2Buffer	(inFieldID ? pInAncBuffer : AJA_NULL, inFieldID ? inByteCount : 0);
 		return DMAWriteAnc (inFrameNumber, ancF1Buffer, ancF2Buffer);
 	}
 #endif	//	!defined(NTV2_DEPRECATE_15_2)
@@ -455,10 +442,10 @@ bool CNTV2Card::DMABufferLock (const NTV2_POINTER & inBuffer, bool inMap)
 	if (!_boardOpened)
 		return false;		//	Device not open!
 
-    if ((inBuffer.GetHostPointer() == NULL) || inBuffer.GetByteCount() == 0)
-        return false;
+	if (!inBuffer)
+		return false;
 
-    NTV2BufferLock lockMsg (inBuffer, (DMABUFFERLOCK_LOCK | (inMap? DMABUFFERLOCK_MAP : 0)));
+	NTV2BufferLock lockMsg (inBuffer, (DMABUFFERLOCK_LOCK | (inMap? DMABUFFERLOCK_MAP : 0)));
 	return NTV2Message (reinterpret_cast<NTV2_HEADER*>(&lockMsg));
 }
 
@@ -468,10 +455,10 @@ bool CNTV2Card::DMABufferUnlock (const NTV2_POINTER & inBuffer)
 	if (!_boardOpened)
 		return false;		//	Device not open!
 
-    if ((inBuffer.GetHostPointer() == NULL) || inBuffer.GetByteCount() == 0)
-        return false;
+	if (!inBuffer)
+		return false;
 
-    NTV2BufferLock lockMsg (inBuffer, DMABUFFERLOCK_UNLOCK);
+	NTV2BufferLock lockMsg (inBuffer, DMABUFFERLOCK_UNLOCK);
 	return NTV2Message (reinterpret_cast<NTV2_HEADER*>(&lockMsg));
 }
 

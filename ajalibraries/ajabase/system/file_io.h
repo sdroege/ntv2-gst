@@ -14,6 +14,14 @@
 #include <vector>
 #include <string>
 
+#if defined(AJA_WINDOWS)
+	const char AJA_PATHSEP = '\\';
+	const wchar_t AJA_PATHSEP_WIDE = L'\\';
+#else
+	const char AJA_PATHSEP = '/';
+	const wchar_t AJA_PATHSEP_WIDE = L'/';
+#endif
+
 typedef enum
 {
 	eAJACreateAlways     = 1,
@@ -165,7 +173,6 @@ public:
 	 *	@param[out]	createTime			Time of file creation, measured in seconds since 1970
 	 *	@param[out]	modTime				Last time file was modified, measured in seconds since 1970
 	 *	@param[out]	size				Size of the file in bytes
-	 *  @param[out] filePath			Full path to the file specified in Open().
 	 *
 	 *	@return		AJA_STATUS_SUCCESS	Was able to get info from the file
 	 */
@@ -262,6 +269,39 @@ public:
 	static AJAStatus TempDirectory(std::string& directory);
 	static AJAStatus TempDirectory(std::wstring& directory);
 
+	/**
+	 * Retrieves the path to the current working directory
+	 * 
+	 * @param[out]	directory	Path of the current working directory
+	 * 
+	 * @return		AJA_STATUS_SUCCESS If and only if current working directory retrieved.
+	 */
+	static AJAStatus GetWorkingDirectory(std::string& directory);
+	static AJAStatus GetWorkingDirectory(std::wstring& directory);
+
+	/**
+	 * Retrieves the directory name from the specified path.
+	 *
+	 * @param[in] 	path	Path from which to extract the directory name
+	 * 
+	 * @param[out]  directory	Path of the directory extracted from specified path
+	 * 
+	 * @return		AJA_STATUS_SUCCESS If and only if the directory name is extracted
+	 */
+	static AJAStatus GetDirectoryName(const std::string& path, std::string& directory);
+	static AJAStatus GetDirectoryName(const std::wstring& path, std::wstring& directory);
+
+	/**
+	 * Retrieves the filename (with extension) from the specified path.
+	 *
+	 * @param[in] 	path	Path from which to extract the filename
+	 * 
+	 * @param[out]  filename	Filename extracted from specified path
+	 * 
+	 * @return		AJA_STATUS_SUCCESS If and only if the filename is extracted
+	 */
+	static AJAStatus GetFileName(const std::string& path, std::string& filename);
+	static AJAStatus GetFileName(const std::wstring& path, std::wstring& filename);
 
 #if defined(AJA_WINDOWS)
 	void     *GetHandle(void) {return mFileDescriptor;}

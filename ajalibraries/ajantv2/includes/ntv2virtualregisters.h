@@ -146,7 +146,7 @@ typedef enum
 	kVRegFrameBuffer2RGBRange				= VIRTUALREG_START+154,
 	kVRegFrameBuffer2Stereo3DMode			= VIRTUALREG_START+155,		// deprecated
 	kVRegAudioGainDisable					= VIRTUALREG_START+156,
-	kVRegDBLAudioEnable						= VIRTUALREG_START+157,		// deprecated
+	kVRegLTCOnRefInSelect					= VIRTUALREG_START+157,
 	kVRegActiveVideoOutFilter				= VIRTUALREG_START+158,		// deprecated
 	kVRegAudioInputMapSelect				= VIRTUALREG_START+159,
 
@@ -489,9 +489,12 @@ typedef enum
     kVRegServicesForceInit                  = VIRTUALREG_START+528,		// set true when power state changes
     kVRegServicesModeFinal               	= VIRTUALREG_START+529,
 	
-	kVRegNTV2VPIDTransferCharacteristics	= VIRTUALREG_START+530,
-	kVRegNTV2VPIDColorimetry				= VIRTUALREG_START+531,
-	kVRegNTV2VPIDLuminance					= VIRTUALREG_START+532,
+	kVRegNTV2VPIDTransferCharacteristics1	= VIRTUALREG_START+530,
+	kVRegNTV2VPIDColorimetry1				= VIRTUALREG_START+531,
+	kVRegNTV2VPIDLuminance1					= VIRTUALREG_START+532,
+	kVRegNTV2VPIDTransferCharacteristics	= kVRegNTV2VPIDTransferCharacteristics1,
+	kVRegNTV2VPIDColorimetry				= kVRegNTV2VPIDColorimetry1,
+	kVRegNTV2VPIDLuminance					= kVRegNTV2VPIDLuminance1,
 	
 	kVRegNTV2VPIDTransferCharacteristics2	= VIRTUALREG_START+533,
 	kVRegNTV2VPIDColorimetry2				= VIRTUALREG_START+534,
@@ -564,8 +567,25 @@ typedef enum
 	kVRegHdrInMaxCLLCh1						= VIRTUALREG_START+590,
 	kVRegHdrInMaxFALLCh1					= VIRTUALREG_START+591,
 	kVRegHDRInOverrideState					= VIRTUALREG_START+592,
+	
+	kVRegNTV2VPIDRGBRange1					= VIRTUALREG_START+593,
+	kVRegNTV2VPIDRGBRange2					= VIRTUALREG_START+594,
+	kVRegNTV2VPIDRGBRange3					= VIRTUALREG_START+595,
+	kVRegNTV2VPIDRGBRange4					= VIRTUALREG_START+596,
+	kVRegNTV2VPIDRGBRange5					= VIRTUALREG_START+597,
+	kVRegNTV2VPIDRGBRange6					= VIRTUALREG_START+598,
+	kVRegNTV2VPIDRGBRange7					= VIRTUALREG_START+599,
+	kVRegNTV2VPIDRGBRange8					= VIRTUALREG_START+600,
 
-	kVRegLastAJA							= VIRTUALREG_START+593,		///< @brief	The last AJA virtual register slot
+	kVRegRotaryGainOverrideEnable			= VIRTUALREG_START+601,
+	kVRegAudioMixerOutputGain				= VIRTUALREG_START+602,
+	kVRegAudioHeadphoneGain					= VIRTUALREG_START+603,
+	kVRegAudioMixerOutputEnable				= VIRTUALREG_START+604,
+	kVRegAudioHeadphoneEnable				= VIRTUALREG_START+605,
+	kVRegAudioEncoderOutputEnable			= VIRTUALREG_START+606,
+	kVRegAudioEncoderHeadphoneEnable		= VIRTUALREG_START+607,
+
+	kVRegLastAJA							= VIRTUALREG_START+608,		///< @brief	The last AJA virtual register slot
 	kVRegFirstOEM							= kVRegLastAJA + 1,			///< @brief	The first virtual register slot available for general use
 	kVRegLast								= VIRTUALREG_START + MAX_NUM_VIRTUAL_REGISTERS - 1	///< @brief	Last virtual register slot
 
@@ -684,7 +704,7 @@ typedef enum
 	#define	kRegFrameBuffer2RGBRange			kVRegFrameBuffer2RGBRange
 	#define	kRegFrameBuffer2Stereo3DMode		kVRegFrameBuffer2Stereo3DMode
 	#define	kRegAudioGainDisable				kVRegAudioGainDisable
-	#define	kDBLAudioEnable						kVRegDBLAudioEnable
+	#define	kDBLAudioEnable						kVRegLTCOnRefInSelect
 	#define	kActiveVideoOutFilter				kVRegActiveVideoOutFilter
 	#define	kRegAudioInputMapSelect				kVRegAudioInputMapSelect
 	#define	kAudioInputDelay					kVRegAudioInputDelay

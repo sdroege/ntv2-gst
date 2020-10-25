@@ -11,7 +11,22 @@
 	#define	NTV2_USE_STDINT
 #endif	//	if not MSWindows
 
-//	NOTE: Symbols/APIs within #ifdef blocks using these names aren't defined by default in this SDK:
+/**
+	SYMBOL & API DEPRECATION MACROS
+
+	These macros control which deprecated symbols and APIs are included or excluded from compilation.
+
+	-	To activate/include the symbols/APIs that were deprecated in a particular SDK, comment out
+		(undefine) the SDK's corresponding macro.
+
+	-	To deactivate/exclude the symbols/APIs that were deprecated in a particular SDK, leave the
+		SDK's corresponding macro defined.
+
+	WARNING:	Do not sparesely mix-and-match across SDK versions.
+				It's best to activate/include symbols/APIs contiguously from the latest SDK
+				(starting at the bottom), and continue activating/including to the SDK at which
+				symbols/APIs should start to be deactivated/excluded.
+**/
 #define NTV2_DEPRECATE			//	If defined, excludes all symbols/APIs first deprecated in SDK 12.4 or earlier
 #define NTV2_DEPRECATE_12_5		//	If defined, excludes all symbols/APIs first deprecated in SDK 12.5
 #define NTV2_DEPRECATE_12_6		//	If defined, excludes all symbols/APIs first deprecated in SDK 12.6
@@ -21,17 +36,20 @@
 #define NTV2_DEPRECATE_14_0		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.0
 #define NTV2_DEPRECATE_14_1		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.1 (never released)
 #define NTV2_DEPRECATE_14_2		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.2
-//#define NTV2_DEPRECATE_14_3		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.3
-//#define NTV2_DEPRECATE_15_0		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.0
+#define NTV2_DEPRECATE_14_3		//	If defined, excludes all symbols/APIs first deprecated in SDK 14.3
+#define NTV2_DEPRECATE_15_0		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.0
 //#define NTV2_DEPRECATE_15_1		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.1
 //#define NTV2_DEPRECATE_15_2		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.2
 //#define NTV2_DEPRECATE_15_3		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.3 (never released)
 //#define NTV2_DEPRECATE_15_5		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.5
-//#define NTV2_DEPRECATE_15_6		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.6
-
+//#define NTV2_DEPRECATE_15_6		//	If defined, excludes all symbols/APIs to be deprecated in SDK 15.6 (never released)
+//#define NTV2_DEPRECATE_16_0		//	If defined, excludes all symbols/APIs to be deprecated in SDK 16.0
 #define NTV2_NUB_CLIENT_SUPPORT		//	If defined, includes nub client support;  otherwise, excludes it
 #define	AJA_VIRTUAL		virtual		//	Force use of virtual functions in CNTV2Card, etc.
+#define	AJA_STATIC		static		//	Do not change this.
 #define NTV2_WRITEREG_PROFILING		//	If defined, enables register write profiling
+#define	NTV2_UNUSED(__p__)			(void)__p__
+#define NTV2_USE_CPLUSPLUS11		//	New in SDK 16.0. If defined (now default), 'ajalibraries/ajantv2' will use C++11 features (requires C++11 compiler)
 
 #if defined(__CPLUSPLUS__) || defined(__cplusplus)
 	#if defined(AJAMac)
@@ -172,6 +190,8 @@
 
 	#define AJATargetBigEndian  0
 	#define	AJAFUNC		__FUNCTION__
+	#define NTV2_CPP_MIN(__x__,__y__)		min((__x__),(__y__))
+	#define NTV2_CPP_MAX(__x__,__y__)		max((__x__),(__y__))
 
 									//////////////////////////////////////////////////////////////////
 #elif defined (AJAMac)				////////////////////////	MAC		//////////////////////////////
@@ -186,6 +206,8 @@
 
 	#define AJATargetBigEndian  0
 	#define	AJAFUNC		__func__
+	#define NTV2_CPP_MIN(__x__,__y__)		std::min((__x__),(__y__))
+	#define NTV2_CPP_MAX(__x__,__y__)		std::max((__x__),(__y__))
 
 	#define MAX_PATH 4096
 
@@ -217,8 +239,13 @@
 		#endif /* LINUX_VERSION_CODE */
 	#endif /* __KERNEL__ */
 
+	#if defined(NTV2_USE_CPLUSPLUS11)
+		#undef NTV2_USE_CPLUSPLUS11	//	Linux c++11-in-SDK TBD
+	#endif
+
     #if defined (MODULE)
         #define NTV2_BUILDING_DRIVER
+		#undef NTV2_USE_CPLUSPLUS11
     #endif
 
     #if !defined (NTV2_BUILDING_DRIVER)
@@ -236,7 +263,13 @@
         typedef uint32_t            DWORD; /* 32 bits on 32 or 64 bit CPUS */
 
         typedef int32_t				AJASocket;
+		#define NTV2_CPP_MIN(__x__,__y__)		std::min((__x__),(__y__))
+		#define NTV2_CPP_MAX(__x__,__y__)		std::max((__x__),(__y__))
     #else
+		#if defined (AJAVirtual)
+			#include <stdbool.h>
+        	#include <stdint.h>
+		#endif
         typedef long				HANDLE;
         // this is what is is in Windows:
         // typedef void *				HANDLE;
@@ -391,6 +424,9 @@
 	#endif
 	#if !defined(NTV2_DEPRECATE_15_6)
 		#define NTV2_DEPRECATE_15_6		//	(future ready)
+	#endif
+	#if !defined(NTV2_DEPRECATE_16_0)
+		#define NTV2_DEPRECATE_16_0		//	(future ready)
 	#endif
 #endif
 

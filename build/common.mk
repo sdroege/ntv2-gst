@@ -14,7 +14,7 @@ ifeq ($(AJA_USE_CCACHE),1)
 endif
 
 CPPFLAGS += -DAJALinux -DAJA_LINUX -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
-			-pedantic -Wall -Wno-long-long -Wwrite-strings -c -pipe -fPIC $(DBG)
+			-pedantic -Wall -Wno-long-long -Wwrite-strings -c -pipe -fPIC -std=c++11 $(DBG)
 
 LD = $(CXX)
 LDFLAGS = 
@@ -32,10 +32,12 @@ ifeq ($(AJA_DEBUG),1)
 else
 	LIB_AJANTV2_FILENAME = ajantv2
 endif
-
 LIB_AJANTV2 = $(A_UBER_LIB)/lib$(LIB_AJANTV2_FILENAME).a
+LIB_AJANTV2_SO = $(A_UBER_LIB)/lib$(LIB_AJANTV2_FILENAME).so
 
 ifdef AJA_LIB_PATH
+	BUILD_AND_LINK_AGAINST_AJALIBS = 0
+else ifdef AJA_LIB_PATH_SO
 	BUILD_AND_LINK_AGAINST_AJALIBS = 0
 else
 	BUILD_AND_LINK_AGAINST_AJALIBS = 1
@@ -91,7 +93,7 @@ endif
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
 all: $(LIB_AJANTV2) $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4) $(AJA_QT_APP)
 else
-all: $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4) $(AJA_QT_APP) $(AJA_LIB_PATH)
+all: $(AJA_APP) $(AJA_APP2) $(AJA_APP3) $(AJA_APP4) $(AJA_QT_APP) $(AJA_LIB_PATH) $(AJA_LIB_PATH_SO)
 endif
 
 -include $(patsubst %.cpp,%.d,$(SRCS))
@@ -118,21 +120,25 @@ $(LIB_AJANTV2): $(SDK_SRCS)
 		$(MAKE) -C $(A_LIB_NTV2_PATH)/build
 endif
 
-$(AJA_APP): $(OBJS) 
+$(AJA_APP): $(OBJS)
+	$(call mkdir_if_not_exists,$(A_UBER_BIN))
 	$(LD) $(LDFLAGS) $(LIBDIRS) $(OBJS) -o $(AJA_APP) $(LIBS)
 
 ifdef AJA_APP2
 $(AJA_APP2): $(OBJS2)
+	$(call mkdir_if_not_exists,$(A_UBER_BIN))
 	$(LD) $(LDFLAGS) $(LIBDIRS) $(OBJS2) -o $(AJA_APP2) $(LIBS)
 endif
 
 ifdef AJA_APP3
 $(AJA_APP3): $(OBJS3)
+	$(call mkdir_if_not_exists,$(A_UBER_BIN))
 	$(LD) $(LDFLAGS) $(LIBDIRS) $(OBJS3) -o $(AJA_APP3) $(LIBS)
 endif
 
 ifdef AJA_APP4
 $(AJA_APP4): $(OBJS4)
+	$(call mkdir_if_not_exists,$(A_UBER_BIN))
 	$(LD) $(LDFLAGS) $(LIBDIRS) $(OBJS4) -o $(AJA_APP4) $(LIBS)
 endif
 
@@ -140,7 +146,14 @@ ifdef AJA_LIB_PATH
 .PHONY : $(AJA_LIB_PATH)
 $(AJA_LIB_PATH): $(LIBOBJS)
 	$(call mkdir_if_not_exists,$(A_UBER_LIB))
-	$(A_LIBCMD) $@ $(LIBOBJS)
+	ar crs $@ $(LIBOBJS)
+endif
+
+ifdef AJA_LIB_PATH_SO
+.PHONY : $(AJA_LIB_PATH_SO)
+$(AJA_LIB_PATH_SO): $(LIBOBJS)
+	$(call mkdir_if_not_exists,$(A_UBER_LIB))
+	$(CXX) $(LDFLAGS) -shared -Wl,-soname,lib$(AJA_LIB).so -o $@ $(LIBOBJS) $(LIBS)
 endif
 
 ifdef AJA_QT_APP
@@ -170,7 +183,11 @@ endif
 ifdef AJA_LIB_PATH
 	$(call rm_if_file_exists,$(AJA_LIB_PATH))	
 endif
+ifdef AJA_LIB_PATH_SO
+	$(call rm_if_file_exists,$(AJA_LIB_PATH_SO))	
+endif
 ifeq ($(BUILD_AND_LINK_AGAINST_AJALIBS),1)
+	$(call rm_if_file_exists,$(LIB_AJANTV2_SO))	
 	$(call rm_if_file_exists,$(LIB_AJANTV2))	
 	$(call rm_if_dir_exists,"$(A_LIB_NTV2_PATH)/build/$(OBJDIR)")
 endif
