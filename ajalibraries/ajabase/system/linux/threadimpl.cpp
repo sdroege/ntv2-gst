@@ -413,7 +413,7 @@ AJAThreadImpl::SetPriority(AJAThreadPriority threadPriority)
 			break;
 		case AJA_ThreadPriority_High:
 			bRTPriority = false;			// use setpriority()
-			newPriority = -10;				// negative "nice" values have HIGHER priority
+			newPriority = -20;				// negative "nice" values have HIGHER priority
 			break;
 		case AJA_ThreadPriority_AboveNormal:
 			bRTPriority = false;			// use setpriority()
