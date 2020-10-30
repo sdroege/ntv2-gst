@@ -76,11 +76,16 @@ struct _GstAjaVideoSrc
     gint			last_cc_vbi_line;
     GstStructure               *network_config;
 
+    guint skipped_last;
+    guint64 skipped_overall;
+    GstClockTime skip_from_timestamp;
+    GstClockTime skip_to_timestamp;
+
+    // All only accessed from the capture thread
     GstAjaSignalState signal_state;
+    GstClockTime first_time;
     GstClockTime discont_time;
     guint64 discont_frame_number;
-
-    GstClockTime first_time;
     GstClockTime *times;
     GstClockTime *times_temp;
     guint window_size, window_fill;
@@ -95,11 +100,6 @@ struct _GstAjaVideoSrc
       GstClockTime num, den;
     } next_time_mapping;
     gboolean next_time_mapping_pending;
-
-    guint skipped_last;
-    guint64 skipped_overall;
-    GstClockTime skip_from_timestamp;
-    GstClockTime skip_to_timestamp;
 };
 
 struct _GstAjaVideoSrcClass

@@ -1000,7 +1000,6 @@ gst_aja_video_src_got_frame (GstAjaVideoSrc * src, AjaVideoBuff * videoBuff)
     videoBuff = NULL;
   }
 
-  g_mutex_lock (&src->lock);
   // Check if we switched from having no signal to having signal,
   // or the other way around
   if (!videoBuff) {
@@ -1020,7 +1019,6 @@ gst_aja_video_src_got_frame (GstAjaVideoSrc * src, AjaVideoBuff * videoBuff)
       }
     }
 
-    g_mutex_unlock (&src->lock);
     return;
   } else if (src->signal_state != SIGNAL_STATE_AVAILABLE || src->discont_time == GST_CLOCK_TIME_NONE) {
     GstAjaSignalState previous_signal_state = src->signal_state;
@@ -1056,7 +1054,6 @@ gst_aja_video_src_got_frame (GstAjaVideoSrc * src, AjaVideoBuff * videoBuff)
 
   if (src->skip_first_time > 0
       && stream_time - src->first_time < src->skip_first_time) {
-    g_mutex_unlock (&src->lock);
     GST_DEBUG_OBJECT (src,
         "Skipping frame as requested: %" GST_TIME_FORMAT " < %" GST_TIME_FORMAT,
         GST_TIME_ARGS (stream_time),
@@ -1078,6 +1075,7 @@ gst_aja_video_src_got_frame (GstAjaVideoSrc * src, AjaVideoBuff * videoBuff)
 
   //GST_ERROR_OBJECT (src, "Actual timestamp %" GST_TIME_FORMAT, GST_TIME_ARGS (capture_time));
 
+  g_mutex_lock (&src->lock);
   if (!src->flushing) {
     SignalChange signal_change = NO_CHANGE;
     guint skipped_frames = 0;
@@ -1142,10 +1140,11 @@ gst_aja_video_src_got_frame (GstAjaVideoSrc * src, AjaVideoBuff * videoBuff)
 
     gst_queue_array_push_tail_struct (src->current_frames, &f);
     g_cond_signal (&src->cond);
+    g_mutex_unlock (&src->lock);
   } else {
+    g_mutex_unlock (&src->lock);
     src->input->ntv2AVHevc->ReleaseVideoBuffer (videoBuff);
   }
-  g_mutex_unlock (&src->lock);
 }
 
 static void
