@@ -75,6 +75,7 @@ struct _GstAjaVideoSrc
     gboolean                    output_cc;
     gint			last_cc_vbi_line;
     GstStructure               *network_config;
+    guint                       capture_cpu_core;
 
     guint skipped_last;
     guint64 skipped_overall;

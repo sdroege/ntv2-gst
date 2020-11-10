@@ -151,7 +151,8 @@ class NTV2GstAV
                                 const bool                      inPassthrough   = false,
                                 // 0, 2022 or 2110
                                 const uint32_t                  inNetworkMode   = 0,
-                                const GstStructure             *inNetworkConfig = NULL);
+                                const GstStructure             *inNetworkConfig = NULL,
+                                const uint32_t                  inCaptureCPUCore = -1);
 
         virtual AJAStatus InitAudio (const NTV2AudioSource inAudioSource, uint32_t *numAudioChannels);
 
@@ -287,6 +288,7 @@ class NTV2GstAV
         bool                        mMultiStream;            /// Demonstrates how to configure the board for multi-stream
         NTV2TCIndex                 mTimecodeMode;        /// Add timecode burn
 	bool                        mCaptureTall;	    /// Capture Tall Video
+        uint32_t                    mCaptureCPUCore;
         NTV2InputSource             mVideoSource;
         bool                        mPassthrough;
         NTV2AudioSystem             mAudioSystem;            ///    The audio system I'm using
