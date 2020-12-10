@@ -13,10 +13,23 @@
 #include "ntv2publicinterface.h"
 #include <string>
 #include <iostream>
+#include <vector>
 #if defined (AJALinux)
 	#include <stdint.h>
 #endif
 
+
+typedef std::vector <ULWord>					NTV2RasterLineOffsets;				///< @brief	An ordered sequence of zero-based line offsets into a frame buffer.
+typedef NTV2RasterLineOffsets::const_iterator	NTV2RasterLineOffsetsConstIter;		///< @brief	A handy const iterator into an NTV2RasterLineOffsets.
+typedef NTV2RasterLineOffsets::iterator			NTV2RasterLineOffsetsIter;			///< @brief	A handy non-const iterator into an NTV2RasterLineOffsets.
+
+/**
+	@brief		Streams a human-readable dump of the given NTV2RasterLineOffsets sequence into the specified output stream.
+	@param[in]	inObj			Specifies the NTV2RasterLineOffsets to be streamed to the output stream.
+	@param		inOutStream		Specifies the output stream to receive the dump. Defaults to std::cout.
+	@return		A non-constant reference to the given output stream.
+**/
+AJAExport std::ostream & NTV2PrintRasterLineOffsets (const NTV2RasterLineOffsets & inObj, std::ostream & inOutStream = std::cout);
 
 /**
 	@brief	This provides additional information about a video frame for a given video standard or format and pixel format,
@@ -27,6 +40,10 @@
 class AJAExport NTV2FormatDescriptor
 {
 public:
+	/**
+		@name	Constructors
+	**/
+	///@{
 	/**
 		@brief	My default constructor initializes me in an "invalid" state.
 	**/
@@ -75,7 +92,12 @@ public:
 	explicit		NTV2FormatDescriptor (	const NTV2VideoFormat		inVideoFormat,
 											const NTV2FrameBufferFormat	inFrameBufferFormat,
 											const NTV2VANCMode			inVancMode	= NTV2_VANCMODE_OFF);
-
+	///@}
+	
+	/**
+		@name	Inquiry
+	**/
+	///@{
 	inline bool		IsValid (void) const		{return numLines && numPixels && mNumPlanes && mLinePitch[0];}	///< @return	True if valid;  otherwise false.
 	inline bool		IsVANC (void) const			{return firstActiveLine > 0;}									///< @return	True if VANC geometry;  otherwise false.
 	inline bool		IsPlanar (void) const		{return GetNumPlanes() > 1 || NTV2_IS_FBF_PLANAR (mPixelFormat);}	///< @return	True if planar format;  otherwise false.
@@ -103,7 +125,7 @@ public:
 	/**
 		@return		The total number of bytes required to hold the raster, including any VANC, and all planes of planar formats.
 	**/
-	ULWord			GetTotalBytes (void) const;
+	ULWord			GetTotalBytes (void) const;	//	New in SDK 16.0
 
 	/**
 		@return		The total number of bytes required to hold the visible raster (i.e. active lines after any VANC lines).
@@ -163,13 +185,24 @@ public:
 	inline ULWord	GetVisibleRasterHeight (void) const								{return GetFullRasterHeight() - GetFirstActiveLine();}
 
 	/**
+		@brief		Answers with an NTV2_POINTER that describes the given row (and plane) given the NTV2_POINTER
+					that describes the frame buffer.
+		@param[in]	inFrameBuffer		Specifies the frame buffer (that includes all planes, if planar).
+		@param		inOutRowBuffer		Receives the NTV2_POINTER that references the row (and plane) in the frame buffer.
+		@param[in]	inRowIndex0			Specifies the row of interest in the buffer, where zero is the topmost row.
+		@param[in]	inPlaneIndex0		Optionally specifies the plane of interest. Defaults to zero.
+		@return		True if successful;  otherwise false.
+	**/
+	bool			GetRowBuffer (const NTV2_POINTER & inFrameBuffer, NTV2_POINTER & inOutRowBuffer,  const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;	//	New in SDK 16.0
+
+	/**
 		@return		A pointer to the start of the given row in the given buffer, or NULL if row index is bad
 					(using my description of the buffer contents).
 		@param[in]	pInStartAddress		A pointer to the raster buffer.
 		@param[in]	inRowIndex0			Specifies the row of interest in the buffer, where zero is the topmost row.
 		@param[in]	inPlaneIndex0		Specifies the plane of interest. Defaults to zero.
 	**/
-	const void *					GetRowAddress (const void * pInStartAddress,  const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
+	const void *	GetRowAddress (const void * pInStartAddress,  const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
 
 	/**
 		@return		A non-const pointer to the start of the given row in the given buffer, or NULL if row index is bad
@@ -178,7 +211,7 @@ public:
 		@param[in]	inRowIndex0			Specifies the row of interest in the buffer, where zero is the topmost row.
 		@param[in]	inPlaneIndex0		Specifies the plane of interest. Defaults to zero.
 	**/
-	void *							GetWriteableRowAddress (void * pInStartAddress,  const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
+	void *			GetWriteableRowAddress (void * pInStartAddress,  const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
 
 	/**
 		@return		The absolute byte offset from the start of the frame buffer to the start of the given raster line
@@ -187,14 +220,14 @@ public:
 		@param[in]	inRowIndex0			Specifies the row of interest in the buffer, where zero is the topmost row.
 		@param[in]	inPlaneIndex0		Specifies the plane of interest. Defaults to zero.
 	**/
-	ULWord							RasterLineToByteOffset (const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
+	ULWord			RasterLineToByteOffset (const ULWord inRowIndex0,  const UWord inPlaneIndex0 = 0) const;
 
 	/**
 		@return		A pointer to the start of the first visible row in the given buffer, or NULL if invalid
 					(using my description of the buffer contents).
 		@param[in]	pInStartAddress		A pointer to the raster buffer.
 	**/
-	inline UByte *					GetTopVisibleRowAddress (UByte * pInStartAddress) const				{return (UByte *) GetRowAddress (pInStartAddress, firstActiveLine);}
+	inline UByte *	GetTopVisibleRowAddress (UByte * pInStartAddress) const				{return (UByte *) GetRowAddress (pInStartAddress, firstActiveLine);}
 
 	/**
 		@brief		Compares two buffers line-by-line (using my description of the buffer contents).
@@ -204,7 +237,7 @@ public:
 											or 0xFFFFFFFF if identical.
 		@return		True if successful;  otherwise false.
 	**/
-	bool							GetFirstChangedRow (const void * pInStartAddress1, const void * pInStartAddress2, ULWord & outFirstChangedRowNum) const;
+	bool			GetFirstChangedRow (const void * pInStartAddress1, const void * pInStartAddress2, ULWord & outFirstChangedRowNum) const;
 
 	/**
 		@brief		Compares two buffers line-by-line (using my description of the buffer contents).
@@ -217,17 +250,17 @@ public:
 		@return		True if successful;  otherwise false.
 		@note		The buffers must be large enough to accommodate my video standard/format or else a memory access violation will occur.
 	**/
-	bool							GetChangedLines (NTV2RasterLineOffsets & outDiffs, const void * pInBuffer1, const void * pInBuffer2, const ULWord inMaxLines = 0) const;
+	bool			GetChangedLines (NTV2RasterLineOffsets & outDiffs, const void * pInBuffer1, const void * pInBuffer2, const ULWord inMaxLines = 0) const;
 
 	/**
-		@return	The full-raster NTV2FrameDimensions (including VANC lines, if any).
+		@return		The full-raster NTV2FrameDimensions (including VANC lines, if any).
 	**/
-	inline NTV2FrameDimensions		GetFullRasterDimensions (void) const					{return NTV2FrameDimensions (GetRasterWidth(), GetRasterHeight(false));}
+	NTV2FrameDimensions				GetFullRasterDimensions (void) const;
 
 	/**
-		@return	The visible NTV2FrameDimensions (excluding VANC lines, if any).
+		@return		The visible NTV2FrameDimensions (excluding VANC lines, if any).
 	**/
-	inline NTV2FrameDimensions		GetVisibleRasterDimensions (void) const					{return NTV2FrameDimensions (GetRasterWidth(), GetRasterHeight(true));}
+	NTV2FrameDimensions				GetVisibleRasterDimensions (void) const;
 
 	/**
 		@brief		Answers with the equivalent SMPTE line number for the given line offset into the frame buffer I describe.
@@ -288,12 +321,14 @@ public:
 	inline bool						IsTallerVanc (void) const		{return mVancMode == NTV2_VANCMODE_TALLER;}	///< @return	True if I was created with "taller" VANC.
 	inline NTV2FrameGeometry		GetFrameGeometry (void) const	{return mFrameGeometry;}					///< @return	The frame geometry I was created with.
 	bool							Is2KFormat (void) const;		///< @return	True if I was created with a 2Kx1080 video format.
+	///@}
+
 	void							MakeInvalid (void);				///< @brief	Resets me into an invalid (NULL) state.
 
 	private:
 		friend class CNTV2CaptionRenderer;	//	The caption renderer needs to call SetPixelFormat
-		inline void					SetPixelFormat (const NTV2PixelFormat inPixFmt)		{mPixelFormat = inPixFmt;}	//	Internal use only
-		void						FinalizePlanar (void);	//	Completes initialization for planar formats
+		inline void					SetPixelFormat (const NTV2PixelFormat inPixFmt)		{mPixelFormat = inPixFmt;}			///< @brief	Internal use only
+		void						FinalizePlanar (void);			///< @brief	Completes initialization for planar formats
 
 	//	Member Data
 	public:

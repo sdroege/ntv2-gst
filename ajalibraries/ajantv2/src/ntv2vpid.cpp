@@ -534,6 +534,44 @@ NTV2VPIDLuminance CNTV2VPID::GetLuminance (void) const
 	return NTV2VPIDLuminance((m_uVPID & kRegmaskVPIDLuminance) >> kRegShiftVPIDLuminance); 
 }
 
+CNTV2VPID & CNTV2VPID::SetRGBRange (const NTV2VPIDRGBRange inRGBRange)
+{	
+	switch(GetBitDepth())
+	{
+	case VPIDBitDepth_10_Full:
+	case VPIDBitDepth_10:
+		if(inRGBRange == NTV2_VPID_Range_Narrow || !IsRGBSampling())
+			SetBitDepth(VPIDBitDepth_10);
+		else
+			SetBitDepth(VPIDBitDepth_10_Full);
+	break;
+	case VPIDBitDepth_12_Full:
+	case VPIDBitDepth_12:
+		if(inRGBRange == NTV2_VPID_Range_Narrow || !IsRGBSampling())
+			SetBitDepth(VPIDBitDepth_12);
+		else
+			SetBitDepth(VPIDBitDepth_12_Full);
+	}
+
+	return *this;
+}
+
+
+NTV2VPIDRGBRange CNTV2VPID::GetRGBRange (void) const
+{
+	if(!IsRGBSampling())
+		return NTV2_VPID_Range_Narrow;
+	
+	switch(GetBitDepth())
+	{
+	case VPIDBitDepth_10_Full:
+	case VPIDBitDepth_12_Full:
+		return NTV2_VPID_Range_Full;
+	default:
+		return NTV2_VPID_Range_Narrow;
+	}
+}
+
 #if !defined (NTV2_DEPRECATE)
 void CNTV2VPID::SetDynamicRange (const VPIDDynamicRange inDynamicRange)
 {
@@ -1304,6 +1342,7 @@ static const string	sVPIDAudio[]		= {	"Unknown", "Copied", "Additional", "Reserv
 static const string sVPIDTransfer[]		= { "SDR", "HLG", "PQ", "Unspecified" };
 static const string sVPIDColorimetry[]	= { "Rec709", "Reserved", "UHDTV", "Unknown" };
 static const string sVPIDLuminance[]	= { "YCbCr", "ICtCp" };
+static const string sVPIDRGBRange[]	= { "Narrow", "Full" };
 
 
 
@@ -1325,10 +1364,33 @@ ostream & CNTV2VPID::Print (ostream & ostrm) const
 				<< " 16x9=" << YesNo(GetImageAspect16x9())
 				<< " xfer=" << sVPIDTransfer[GetTransferCharacteristics()]
 				<< " colo=" << sVPIDColorimetry[GetColorimetry()]
-				<< " lumi=" << sVPIDLuminance[GetLuminance()];
+                << " lumi=" << sVPIDLuminance[GetLuminance()]
+                << " rng=" << sVPIDRGBRange[GetRGBRange()];
 	return ostrm;
 }
 
+ostream & CNTV2VPID::PrintPretty (ostream & ostrm) const
+{
+    ostrm	<< "VPID " << xHEX0N(m_uVPID,8) << endl;
+    if (IsValid())
+        ostrm	<< "Version = " << ::VPIDVersionToString(GetVersion()) << endl
+                << "Standard =  " << ::VPIDStandardToString(GetStandard()) << endl
+                << "Format =  " << ::NTV2VideoFormatToString(GetVideoFormat()) << endl
+                << "Frame Rate = " << sVPIDPictureRate[GetPictureRate()] << endl
+                << "Sampling = " << sVPIDSampling[GetSampling()] << endl
+                << "Channel = " << sVPIDChannel[GetChannel()] << endl
+                << "Links = " << (VPIDStandardIsSingleLink(GetStandard()) ? "1" : "mult") << endl
+            //	<< " dynRange=" << sVPIDDynamicRange[GetDynamicRange()] << endl
+                << "Bit Depth =" << sVPIDBitDepth[GetBitDepth()] << endl
+                << "3Ga= " << YesNo(IsStandard3Ga()) << endl
+                << "TSI = " << YesNo(IsStandardTwoSampleInterleave()) << endl
+                << "16x9 = " << YesNo(GetImageAspect16x9()) << endl
+                << "Xfer Char = " << sVPIDTransfer[GetTransferCharacteristics()] << endl
+                << "Colorimitry ="  << sVPIDColorimetry[GetColorimetry()] << endl
+                << "Luminance = " << sVPIDLuminance[GetLuminance()] << endl
+                << "RGB Range = " << sVPIDRGBRange[GetRGBRange()] << endl;
+    return ostrm;
+}
 
 #define	YesOrNo(__x__)		((__x__) ? "Yes" : "No")
 

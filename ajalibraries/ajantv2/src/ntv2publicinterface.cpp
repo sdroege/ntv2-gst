@@ -727,37 +727,29 @@ ostream & operator << (ostream & inOutStream, const FRAME_STAMP & inObj)
 }
 
 
-ostream & operator << (ostream & inOutStream, const AUTOCIRCULATE_STATUS & inObj)
+ostream & operator << (ostream & oss, const AUTOCIRCULATE_STATUS & inObj)
 {
-	string	str	(::NTV2CrosspointToString (inObj.acCrosspoint));
-	while (str.find (' ') != string::npos)
-		str.erase (str.find (' '), 1);
-	inOutStream << inObj.acHeader << " " << str << " " << ::NTV2AutoCirculateStateToString (inObj.acState);
-	if (inObj.acState != NTV2_AUTOCIRCULATE_DISABLED)
-	{
-		inOutStream	<< " startFrm=" << inObj.acStartFrame
-					<< " endFrm=" << inObj.acEndFrame
-					<< " actFrm=" << inObj.acActiveFrame
-					<< " proc=" << inObj.acFramesProcessed
-					<< " drop=" << inObj.acFramesDropped
-					<< " bufLvl=" << inObj.acBufferLevel;
-		if (NTV2_IS_VALID_AUDIO_SYSTEM (inObj.acAudioSystem))
-			inOutStream	<< " +" << ::NTV2AudioSystemToString (inObj.acAudioSystem, true);
-		inOutStream	<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_RP188			? " +RP188" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_LTC			? " +LTC" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_FBFCHANGE		? " +FBFCHG" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_FBOCHANGE		? " +FBOCHG" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_COLORCORRECT	? " +COLORCORR" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_VIDPROC		? " +VIDPROC" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_ANC			? " +ANC" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_FIELDS			? " +FldMode" : "")
-					<< (inObj.acOptionFlags & AUTOCIRCULATE_WITH_HDMIAUX		? " +HDMIAux" : "");
-					//	<< inObj.acRDTSCStartTime
-					//	<< inObj.acAudioClockStartTime
-					//	<< inObj.acRDTSCCurrentTime
-					//	<< inObj.acAudioClockCurrentTime
-	}
-	return inOutStream << " " << inObj.acTrailer;
+	if (!inObj.IsStopped())
+		oss << ::NTV2ChannelToString(inObj.GetChannel(), true) << ": "
+			<< (inObj.IsInput() ? "Input " : "Output")
+			<< setw(12) << ::NTV2AutoCirculateStateToString(inObj.acState) << "  "
+			<< setw( 5) << inObj.GetStartFrame()
+			<< setw( 6) << inObj.GetEndFrame()
+			<< setw( 6) << inObj.GetActiveFrame()
+			<< setw( 8) << inObj.GetProcessedFrameCount()
+			<< setw( 8) << inObj.GetDroppedFrameCount()
+			<< setw( 7) << inObj.GetBufferLevel()
+			<< setw(10) << ::NTV2AudioSystemToString(inObj.acAudioSystem, true)
+			<< setw(10) << (inObj.WithRP188()			? "+RP188"		: "-RP188")
+			<< setw(10) << (inObj.WithLTC()				? "+LTC"		: "-LTC")
+			<< setw(10) << (inObj.WithFBFChange()		? "+FBFchg"		: "-FBFchg")
+			<< setw(10) << (inObj.WithFBOChange()		? "+FBOchg"		: "-FBOchg")
+			<< setw(10) << (inObj.WithColorCorrect()	? "+ColCor"		: "-ColCor")
+			<< setw(10) << (inObj.WithVidProc()			? "+VidProc"	: "-VidProc")
+			<< setw(10) << (inObj.WithCustomAnc()		? "+AncData"	: "-AncData")
+			<< setw(10) << (inObj.IsFieldMode()			? "+FldMode"	: "-FldMode")
+			<< setw(10) << (inObj.WithHDMIAuxData()		? "+HDMIAux"	: "-HDMIAux");
+	return oss;
 }
 
 
@@ -1037,12 +1029,14 @@ ostream & NTV2SegmentedXferInfo::Print (ostream & inStrm, const bool inDumpSegme
 		inStrm	<< DEC(getSegmentCount()) << " x " << DEC(getSegmentLength())
 				<< sSegXferUnits[getElementLength()] << " segs";
 		if (getSourceOffset())
-			inStrm	<< " srcOff=" << DEC(getSourceOffset());
-		inStrm << " srcSpan=" << DEC(getSourcePitch()) << (isSourceBottomUp()?" VF":"");
+			inStrm	<< " srcOff=" << xHEX0N(getSourceOffset(),8);
+		if (getSegmentCount() > 1)
+			inStrm << " srcSpan=" << xHEX0N(getSourcePitch(),8) << (isSourceBottomUp()?" VF":"");
 		if (getDestOffset())
-			inStrm	<< " dstOff=" << DEC(getDestOffset());
-		inStrm << " dstSpan=" << DEC(getDestPitch()) << (isDestBottomUp()?" VF":"")
-				<< " totElm=" << DEC(getTotalElements()) << " totByt=" << DEC(getTotalBytes());
+			inStrm	<< " dstOff=" << xHEX0N(getDestOffset(),8);
+		if (getSegmentCount() > 1)
+			inStrm << " dstSpan=" << xHEX0N(getDestPitch(),8) << (isDestBottomUp()?" VF":"");
+		inStrm << " totElm=" << DEC(getTotalElements()) << " totByt=" << xHEX0N(getTotalBytes(),8);
 	}
 	return inStrm;
 }
@@ -1077,6 +1071,49 @@ string NTV2SegmentedXferInfo::getSourceCode (const bool inInclDecl) const
 	return oss.str();
 }
 
+bool NTV2SegmentedXferInfo::containsElementAtOffset (const ULWord inElementOffset) const
+{
+	if (!isValid())
+		return false;
+	if (getSegmentCount() == 1)
+	{
+		if (inElementOffset >= getSourceOffset())
+			if (inElementOffset < getSourceOffset()+getSegmentLength())
+				return true;
+		return false;
+	}
+	ULWord offset(getSourceOffset());
+	for (ULWord seg(0);  seg < getSegmentCount();  seg++)
+	{
+		if (inElementOffset < offset)
+			return false;	//	past element of interest already
+		if (inElementOffset < offset+getSegmentLength())
+			return true;	//	must be within this segment
+		offset += getSourcePitch();	//	skip to next segment
+	}
+	return false;
+}
+
+bool NTV2SegmentedXferInfo::operator != (const NTV2SegmentedXferInfo & inRHS) const
+{
+	if (getElementLength() != inRHS.getElementLength())
+		//	FUTURE TBD:  Need to transform RHS to match ElementLength so as to make apples-to-apples comparison
+		return true;	//	For now, fail
+	if (getSegmentCount() != inRHS.getSegmentCount())
+		return true;
+	if (getSegmentLength() != inRHS.getSegmentLength())
+		return true;
+	if (getSourceOffset() != inRHS.getSourceOffset())
+		return true;
+	if (getSourcePitch() != inRHS.getSourcePitch())
+		return true;
+	if (getDestOffset() != inRHS.getDestOffset())
+		return true;
+	if (getDestPitch() != inRHS.getDestPitch())
+		return true;
+	return false;
+}
+
 NTV2SegmentedXferInfo &	NTV2SegmentedXferInfo::reset (void)
 {
 	mFlags				= 0;
@@ -1086,7 +1123,7 @@ NTV2SegmentedXferInfo &	NTV2SegmentedXferInfo::reset (void)
 	mInitialDstOffset	= 0;
 	mSrcElementsPerRow	= 0;
 	mDstElementsPerRow	= 0;
-	setElementLength(1);
+	setElementLength(1);	//	elements == bytes
 	return *this;
 }
 
@@ -1971,7 +2008,7 @@ void AUTOCIRCULATE_STATUS::Clear (void)
 
 NTV2Channel AUTOCIRCULATE_STATUS::GetChannel (void) const
 {
-	return ::NTV2CrosspointToNTV2Channel (acCrosspoint);
+	return ::NTV2CrosspointToNTV2Channel(acCrosspoint);
 }
 
 
@@ -2691,71 +2728,6 @@ ostream & NTV2PrintULWordVector (const NTV2ULWordVector & inObj, ostream & inOut
 {
 	for (NTV2ULWordVector::const_iterator it(inObj.begin());  it != inObj.end();  ++it)
 		inOutStream << " " << HEX0N(*it,8);
-	return inOutStream;
-}
-
-
-ostream & NTV2PrintRasterLineOffsets(const NTV2RasterLineOffsets & inObj, ostream & inOutStream)
-{
-	NTV2StringList	pieces;
-	NTV2RasterLineOffsetsConstIter	iter (inObj.begin());
-	ULWord	current		(0xFFFFFFFF);
-	ULWord	previous	(0xFFFFFFFF);
-	ULWord	first		(0xFFFFFFFF);
-	ULWord	last		(0xFFFFFFFF);
-
-	#if 0
-		//	Verify sorted ascending...
-		current = 0;
-		while (iter != inObj.end())
-		{
-			NTV2_ASSERT (current < previous);
-			previous = current;
-		}
-		iter = inObj.begin();
-	#endif	//	_DEBUG
-
-	while (iter != inObj.end())
-	{
-		current = *iter;
-		if (previous == 0xFFFFFFFF)
-			previous = first = last = current;	//	First time -- always start new sequence
-		else if (current == (previous + 1))
-			last = previous = current;			//	Continue sequence
-		else if (current == previous)
-			;
-		else
-		{
-			ostringstream	oss;
-			if (first == last)
-				oss << first;
-			else
-				oss << first << "-" << last;
-			pieces.push_back (oss.str ());
-
-			first = last = previous = current;	//	Start new sequence...
-		}	//	else sequence break
-		++iter;
-	}
-
-	if (first != 0xFFFFFFFF && last != 0xFFFFFFFF)
-	{
-		ostringstream	oss;
-		if (first == last)
-			oss << first;
-		else
-			oss << first << "-" << last;
-		pieces.push_back (oss.str ());
-	}
-
-	for (NTV2StringListConstIter it (pieces.begin());  ; )
-	{
-		inOutStream << *it;
-		if (++it != pieces.end())
-			inOutStream << ",";
-		else
-			break;
-	}
 	return inOutStream;
 }
 

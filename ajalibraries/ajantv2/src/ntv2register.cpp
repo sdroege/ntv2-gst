@@ -4187,6 +4187,7 @@ NTV2VideoFormat CNTV2Card::GetSDIInputVideoFormat (NTV2Channel inChannel, bool i
 	{
 		ReadSDIInVPID(inChannel, vpidDS1, vpidDS2);
 		inputVPID.SetVPID(vpidDS1);
+		isValidVPID = inputVPID.IsValid();
 	}
 
 	NTV2FrameRate inputRate(GetSDIInputRate(inChannel));
@@ -4268,7 +4269,7 @@ NTV2VideoFormat CNTV2Card::GetHDMIInputVideoFormat(NTV2Channel inChannel)
 			else if(hdmiVersion > 1)
 			{
 				NTV2FrameRate hdmiRate = NTV2FrameRate((status &kRegMaskInputStatusFPS) >> kRegShiftInputStatusFPS);
-				NTV2Standard hdmiStandard = NTV2Standard((status & kRegMaskInputStatusV2Std) >> kRegShiftHDMIInputStatusV2Std);
+				NTV2Standard hdmiStandard = NTV2Standard((status & kRegMaskHDMIInV2VideoStd) >> kRegShiftHDMIInV2VideoStd);
 				UByte inputGeometry = 0;
 				if (hdmiStandard == NTV2_STANDARD_2Kx1080i || hdmiStandard == NTV2_STANDARD_2Kx1080p)
 					inputGeometry = 8;

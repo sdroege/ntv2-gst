@@ -1377,8 +1377,42 @@ private:
 		DefineRegName	(kVRegNTV2VPIDRGBRange6,				"kVRegNTV2VPIDRGBRange6");
 		DefineRegName	(kVRegNTV2VPIDRGBRange7,				"kVRegNTV2VPIDRGBRange7");
 		DefineRegName	(kVRegNTV2VPIDRGBRange8,				"kVRegNTV2VPIDRGBRange8");
+		DefineRegName	(kVRegDmaTransferRateC2H1,				"kVRegDmaTransferRateC2H1");
+		DefineRegName	(kVRegDmaHardwareRateC2H1,				"kVRegDmaHardwareRateC2H1");
+		DefineRegName	(kVRegDmaTransferRateH2C1,				"kVRegDmaTransferRateH2C1");
+		DefineRegName	(kVRegDmaHardwareRateH2C1,				"kVRegDmaHardwareRateH2C1");
+		DefineRegName	(kVRegDmaTransferRateC2H2,				"kVRegDmaTransferRateC2H2");
+		DefineRegName	(kVRegDmaHardwareRateC2H2,				"kVRegDmaHardwareRateC2H2");
+		DefineRegName	(kVRegDmaTransferRateH2C2,				"kVRegDmaTransferRateH2C2");
+		DefineRegName	(kVRegDmaHardwareRateH2C2,				"kVRegDmaHardwareRateH2C2");
+		DefineRegName	(kVRegDmaTransferRateC2H3,				"kVRegDmaTransferRateC2H3");
+		DefineRegName	(kVRegDmaHardwareRateC2H3,				"kVRegDmaHardwareRateC2H3");
+		DefineRegName	(kVRegDmaTransferRateH2C3,				"kVRegDmaTransferRateH2C3");
+		DefineRegName	(kVRegDmaHardwareRateH2C3,				"kVRegDmaHardwareRateH2C3");
+		DefineRegName	(kVRegDmaTransferRateC2H4,				"kVRegDmaTransferRateC2H4");
+		DefineRegName	(kVRegDmaHardwareRateC2H4,				"kVRegDmaHardwareRateC2H4");
+		DefineRegName	(kVRegDmaTransferRateH2C4,				"kVRegDmaTransferRateH2C4");
+		DefineRegName	(kVRegDmaHardwareRateH2C4,				"kVRegDmaHardwareRateH2C4");
 
-		DefineRegName	(kVRegPCIMaxReadRequestSize,			"kVRegPCIMaxReadRequestSize");
+		DefineRegName	(kVRegHDMIInAviInfo1,					"kVRegHDMIInAviInfo1");
+		DefineRegName	(kVRegHDMIInDrmInfo1,					"kVRegHDMIInDrmInfo1");
+		DefineRegName	(kVRegHDMIInDrmGreenPrimary1,			"kVRegHDMIInDrmGreenPrimary1");
+		DefineRegName	(kVRegHDMIInDrmBluePrimary1,			"kVRegHDMIInDrmBluePrimary1");
+		DefineRegName	(kVRegHDMIInDrmRedPrimary1,				"kVRegHDMIInDrmRedPrimary1");
+		DefineRegName	(kVRegHDMIInDrmWhitePoint1,				"kVRegHDMIInDrmWhitePoint1");
+		DefineRegName	(kVRegHDMIInDrmMasteringLuminence1,		"kVRegHDMIInDrmMasteringLuminence1");
+		DefineRegName	(kVRegHDMIInDrmLightLevel1,				"kVRegHDMIInDrmLightLevel1");
+
+		DefineRegName	(kVRegHDMIInAviInfo2,					"kVRegHDMIInAviInfo2");
+		DefineRegName	(kVRegHDMIInDrmInfo2,                   "kVRegHDMIInDrmInfo2");
+		DefineRegName	(kVRegHDMIInDrmGreenPrimary2,			"kVRegHDMIInDrmGreenPrimary2");
+		DefineRegName	(kVRegHDMIInDrmBluePrimary2,			"kVRegHDMIInDrmBluePrimary2");
+		DefineRegName	(kVRegHDMIInDrmRedPrimary2,				"kVRegHDMIInDrmRedPrimary2");
+		DefineRegName	(kVRegHDMIInDrmWhitePoint2,				"kVRegHDMIInDrmWhitePoint2");
+		DefineRegName	(kVRegHDMIInDrmMasteringLuminence2,		"kVRegHDMIInDrmMasteringLuminence2");
+		DefineRegName	(kVRegHDMIInDrmLightLevel2,				"kVRegHDMIInDrmLightLevel2");
+
+        DefineRegName	(kVRegPCIMaxReadRequestSize,			"kVRegPCIMaxReadRequestSize");
 		DefineRegName	(kVRegLastAJA,							"kVRegLastAJA");
 		DefineRegName	(kVRegFirstOEM,							"kVRegFirstOEM");
 
@@ -3059,8 +3093,8 @@ private:
 			(void) inRegNum;
 			ostringstream	oss;
 			const ULWord	hdmiVers(::NTV2DeviceGetHDMIVersion (inDeviceID));
-			const uint32_t	vidStd	(hdmiVers >= 2 ? (inRegValue & kRegMaskHDMIInV2VideoStd) >> kRegShiftHDMIInputStatusV2Std : (inRegValue & kRegMaskHDMIInStandard) >> kRegShiftInputStatusStd);
-			const uint32_t	rate	((inRegValue & kRegMaskHDMIInFPS) >> kRegShiftInputStatusFPS);
+			const uint32_t	vidStd	(hdmiVers >= 2 ? (inRegValue & kRegMaskHDMIInV2VideoStd) >> kRegShiftHDMIInV2VideoStd : (inRegValue & kRegMaskInputStatusStd) >> kRegShiftInputStatusStd);
+			const uint32_t	rate	((inRegValue & kRegMaskInputStatusFPS) >> kRegShiftInputStatusFPS);
 			static const string	sStds[32] = {"1080i", "720p", "480i", "576i", "1080p", "SXGA", "2K1080p", "2K1080i", "3840p", "4096p"};
 			static const string	sRates[32] = {"invalid", "60.00", "59.94", "30.00", "29.97", "25.00", "24.00", "23.98", "50.00", "48.00", "47.95" };
 			oss	<< "HDMI Input: " << (inRegValue & BIT(0) ? "Locked" : "Unlocked")			<< endl

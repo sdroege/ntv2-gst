@@ -18,9 +18,9 @@
 #define AJA_NTV2_SDK_VERSION_MAJOR		16			///< @brief	The SDK major version number, an unsigned decimal integer.
 #define AJA_NTV2_SDK_VERSION_MINOR		0			///< @brief	The SDK minor version number, an unsigned decimal integer.
 #define AJA_NTV2_SDK_VERSION_POINT		0			///< @brief	The SDK "point" release version, an unsigned decimal integer.
-#define AJA_NTV2_SDK_BUILD_NUMBER		288			///< @brief	The SDK build number, an unsigned decimal integer.
-#define AJA_NTV2_SDK_BUILD_DATETIME		"Sat Oct 17 09:30:31 UTC 2020"		///< @brief	The date and time the SDK was built, in this format: "MM/DD/YYYY +8:hh:mm:ss"
-#define AJA_NTV2_SDK_BUILD_TYPE			"b"			///< @brief	The SDK build type, where "a"=alpha, "b"=beta, "d"=development, ""=release.
+#define AJA_NTV2_SDK_BUILD_NUMBER		4			///< @brief	The SDK build number, an unsigned decimal integer.
+#define AJA_NTV2_SDK_BUILD_DATETIME		"Fri Dec 04 20:56:47 UTC 2020"		///< @brief	The date and time the SDK was built, in this format: "MM/DD/YYYY +8:hh:mm:ss"
+#define AJA_NTV2_SDK_BUILD_TYPE			""			///< @brief	The SDK build type, where "a"=alpha, "b"=beta, "d"=development, ""=release.
 
 #define	AJA_NTV2_SDK_VERSION	((AJA_NTV2_SDK_VERSION_MAJOR << 24) | (AJA_NTV2_SDK_VERSION_MINOR << 16) | (AJA_NTV2_SDK_VERSION_POINT << 8) | (AJA_NTV2_SDK_BUILD_NUMBER))
 #define	AJA_NTV2_SDK_VERSION_AT_LEAST(__a__,__b__)		(AJA_NTV2_SDK_VERSION >= (((__a__) << 24) | ((__b__) << 16)))
@@ -142,7 +142,7 @@ typedef enum
 	NTV2_STANDARD_525,			///< @brief	Identifies SMPTE SD 525i
 	NTV2_STANDARD_625,			///< @brief	Identifies SMPTE SD 625i
 	NTV2_STANDARD_1080p,		///< @brief	Identifies SMPTE HD 1080p
-	NTV2_STANDARD_2K,			///< @brief	Identifies SMPTE HD 2048x1556psf (1.35 full-aperture film, obsolete in SDK 15.0 and later)
+	NTV2_STANDARD_2K,			///< @deprecated	Identifies SMPTE HD 2048x1556psf (1.35 full-aperture film, obsolete in SDK 15.0 and later)
 	NTV2_STANDARD_2Kx1080p,		///< @brief	Identifies SMPTE HD 2K1080p
 	NTV2_STANDARD_2Kx1080i,		///< @brief	Identifies SMPTE HD 2K1080psf
 	NTV2_STANDARD_3840x2160p,	///< @brief	Identifies Ultra-High-Definition (UHD)
@@ -311,6 +311,22 @@ typedef NTV2FrameBufferFormat	NTV2PixelFormat;	///< @brief	An alias for NTV2Fram
 											||	(__fbf__) == NTV2_FBF_8BIT_YCBCR_YUY2			\
 											||	(__fbf__) == NTV2_FBF_ABGR						\
 											||	(__fbf__) == NTV2_FBF_8BIT_DVCPRO				\
+										)
+
+#define NTV2_IS_FBF_10BIT(__fbf__)		(		(__fbf__) == NTV2_FBF_10BIT_YCBCR				\
+											||	(__fbf__) == NTV2_FBF_10BIT_RGB					\
+											||	(__fbf__) == NTV2_FBF_10BIT_DPX					\
+											||	(__fbf__) == NTV2_FBF_10BIT_YCBCR_DPX			\
+											||	(__fbf__) == NTV2_FBF_10BIT_YCBCRA				\
+											||	(__fbf__) == NTV2_FBF_10BIT_DPX_LE				\
+											||	(__fbf__) == NTV2_FBF_10BIT_RGB_PACKED			\
+											||	(__fbf__) == NTV2_FBF_10BIT_ARGB				\
+											||	(__fbf__) == NTV2_FBF_10BIT_RAW_RGB				\
+											||	(__fbf__) == NTV2_FBF_10BIT_RAW_YCBCR			\
+											||	(__fbf__) == NTV2_FBF_10BIT_YCBCR_420PL3_LE		\
+											||	(__fbf__) == NTV2_FBF_10BIT_YCBCR_422PL3_LE		\
+											||	(__fbf__) == NTV2_FBF_10BIT_YCBCR_420PL2		\
+											||	(__fbf__) == NTV2_FBF_10BIT_YCBCR_422PL2		\
 										)
 
 #define	NTV2_FBF_HAS_ALPHA(__fbf__)		(		(__fbf__) == NTV2_FBF_ARGB						\
@@ -3593,6 +3609,11 @@ typedef enum
 	NTV2_GBRFull_to_GBRSMPTE_Matrix,		// RGB full  range -> RGB SMPTE range
 	NTV2_GBRSMPTE_to_GBRFull_Matrix,		// RGB SMPTE range -> RGB full  range
 
+    NTV2_GBRFull_to_YCbCr_Rec2020_Matrix,	// RGB full  range -> YCbCr Rec 2020
+    NTV2_GBRSMPTE_to_YCbCr_Rec2020_Matrix,	// RGB SMPTE range -> YCbCr Rec 2020
+    NTV2_YCbCr_to_GBRFull_Rec2020_Matrix,	// YCbCr -> RGB full  range Rec 2020
+    NTV2_YCbCr_to_GBRSMPTE_Rec2020_Matrix,	// YCbCr -> RGB SMPTE range Rec 2020
+
 	#if !defined (NTV2_DEPRECATE)
 		NTV2K2_Rec709Matrix		= NTV2_Rec709Matrix,
 		NTV2K2_Rec601Matrix		= NTV2_Rec601Matrix,
@@ -3748,6 +3769,24 @@ typedef enum
 } NTV2HDMIRange;
 
 #define	NTV2_IS_VALID_HDMI_RANGE(__x__)		((__x__) < NTV2_MAX_NUM_HDMIRanges)
+
+
+/**
+	@brief	This specifies the colorimetry of HDMI
+**/
+typedef enum
+{
+	NTV2_HDMIColorimetryNoData,
+	NTV2_HDMIColorimetry601,
+	NTV2_HDMIColorimetry709,
+	NTV2_HDMIColorimetry2020,
+	NTV2_HDMIColorimetry2020CL,
+	NTV2_HDMIColorimetryDCI,
+	NTV2_MAX_NUM_HDMIColorimetry,
+	NTV2_INVALID_HDMI_Colorimetry	= NTV2_MAX_NUM_HDMIColorimetry
+} NTV2HDMIColorimetry;
+
+#define	NTV2_IS_VALID_HDMI_COLORIMETRY(__x__)		((__x__) < NTV2_MAX_NUM_HDMIColorimetry)
 
 
 /**
@@ -3985,9 +4024,9 @@ typedef enum
 		
 typedef enum
 {
-	NTV2_REDPLANE = 0x1,
+	NTV2_REDPLANE = 0x3,
 	NTV2_GREENPLANE = 0x2,
-	NTV2_BLUEPLANE = 0x3
+	NTV2_BLUEPLANE = 0x1
 } NTV2LUTPlaneSelect;
 
 
