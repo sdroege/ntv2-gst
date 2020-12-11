@@ -1714,6 +1714,10 @@ NTV2GstAV::ACInputWorker (void)
 
   bool haveSignal = true;
   unsigned int iterations_without_frame = 0;
+  // Drop that many frames after each signal loss to prevent garbage frames
+  // from getting through
+  const uint32_t drop_frames_after_signal_loss = 5;
+  uint32_t frames_to_drop = drop_frames_after_signal_loss;
 
   uint64_t processed_frames = 0;
   uint64_t dropped_frames = 0;
@@ -2185,20 +2189,30 @@ NTV2GstAV::ACInputWorker (void)
 
       processed_frames++;
 
-      // Possible callbacks are not setup yet so make sure we release the buffer if
-      // no one is there to catch them
-      if (!DoCallback (VIDEO_CALLBACK, pVideoData))
+      if (frames_to_drop > 0) {
+        frames_to_drop -= 1;
+        GST_INFO ("Dropping initial frame after signal loss (dropping %u more)", frames_to_drop);
+
         ReleaseVideoBuffer (pVideoData);
+        ReleaseAudioBuffer (pAudioData);
+      } else {
+        GST_INFO ("Outputting frame");
+
+        // Possible callbacks are not setup yet so make sure we release the buffer if
+        // no one is there to catch them
+        if (!DoCallback (VIDEO_CALLBACK, pVideoData))
+          ReleaseVideoBuffer (pVideoData);
+
+        // Possible callbacks are not setup yet so make sure we release the buffer if
+        // no one is there to catch them
+        if (!DoCallback (AUDIO_CALLBACK, pAudioData))
+          ReleaseAudioBuffer (pAudioData);
+      }
 
       if (pVideoData->lastFrame) {
         GST_INFO ("Video out last frame number %" G_GUINT64_FORMAT, processed_frames);
         mLastFrameVideoOut = true;
       }
-
-      // Possible callbacks are not setup yet so make sure we release the buffer if
-      // no one is there to catch them
-      if (!DoCallback (AUDIO_CALLBACK, pAudioData))
-        ReleaseAudioBuffer (pAudioData);
 
       if (pAudioData->lastFrame) {
         GST_INFO ("Audio out last frame number %" G_GUINT64_FORMAT, processed_frames);
@@ -2224,6 +2238,8 @@ NTV2GstAV::ACInputWorker (void)
           DoCallback (AUDIO_CALLBACK, NULL);
           // Short enough to not miss any frames at 60fps / 16.667ms per frame
           g_usleep (16000);
+          // Drop the next frames if we get any again
+          frames_to_drop = drop_frames_after_signal_loss;
         }
       }
     }
