@@ -39,12 +39,33 @@ typedef struct _GstAjaSinkClass GstAjaSinkClass;
 
 struct _GstAjaSink
 {
-    GstBaseSink                 parent;
+  GstBaseSink parent;
+
+  GMutex queue_lock;
+  GCond queue_cond;
+  GstQueueArray *queue;
+  gboolean eos;
+  gboolean playing;
+  gboolean shutdown;
+
+  GstBufferPool *buffer_pool;
+
+  CNTV2Card *device;
+  NTV2DeviceID device_id;
+
+  // TODO: Properties
+  gchar *device_specifier;
+  NTV2Channel output_channel;
+
+  GstCaps *configured_caps;
+  GstVideoInfo configured_info;
+
+  AJAThread *output_thread;
 };
 
 struct _GstAjaSinkClass
 {
-    GstBaseSinkClass parent_class;
+  GstBaseSinkClass parent_class;
 };
 
 GType gst_aja_sink_get_type (void);
