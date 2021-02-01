@@ -22,6 +22,7 @@
 #endif
 
 #include "gstajasink.h"
+#include "gstajasinkmeta.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_aja_sink_debug);
 #define GST_CAT_DEFAULT gst_aja_sink_debug
@@ -33,6 +34,9 @@ typedef enum {
 typedef struct {
   QueueItemType type;
   GstVideoFrame frame;
+
+  GstBuffer *audio_buffer;
+  GstMapInfo audio_map;
 } QueueItem;
 
 enum
@@ -285,11 +289,17 @@ gst_aja_sink_stop (GstAjaSink * self)
 
   GST_OBJECT_LOCK (self);
   gst_clear_caps (&self->configured_caps);
+  self->configured_audio_channels = 0;
   GST_OBJECT_UNLOCK (self);
 
   if (self->buffer_pool) {
     gst_buffer_pool_set_active (self->buffer_pool, FALSE);
     gst_clear_object (&self->buffer_pool);
+  }
+
+  if (self->audio_buffer_pool) {
+    gst_buffer_pool_set_active (self->audio_buffer_pool, FALSE);
+    gst_clear_object (&self->audio_buffer_pool);
   }
 
   GST_DEBUG_OBJECT (self, "Stopped");
@@ -354,6 +364,7 @@ static gboolean
 gst_aja_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
 {
   GstAjaSink *self = GST_AJA_SINK (bsink);
+  const GstStructure *s;
 
   GST_DEBUG_OBJECT (self, "Configuring caps %" GST_PTR_FORMAT, caps);
 
@@ -369,6 +380,11 @@ gst_aja_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
     GST_FIXME_OBJECT (self, "Failed to parse caps");
     return FALSE;
   }
+
+  self->configured_audio_channels = 0;
+  s = gst_caps_get_structure (caps, 0);
+  gst_structure_get_int (s, "audio-channels", &self->configured_audio_channels);
+
   gst_caps_replace (&self->configured_caps, caps);
   GST_OBJECT_UNLOCK (self);
 
@@ -424,6 +440,33 @@ gst_aja_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
   gst_buffer_pool_set_config (self->buffer_pool, config);
   gst_buffer_pool_set_active (self->buffer_pool, TRUE);
   gst_object_unref (video_alloc);
+
+  if (self->configured_audio_channels) {
+    guint audio_buffer_size = 1UL*1024UL*1024UL;
+    GstAllocator *audio_alloc = gst_aja_allocator_new(self->device, audio_buffer_size, 16);
+
+    self->audio_buffer_pool = gst_aja_buffer_pool_new ();
+    config = gst_buffer_pool_get_config (self->audio_buffer_pool);
+    gst_buffer_pool_config_set_params (config, NULL, audio_buffer_size,
+        16, 0);
+    gst_buffer_pool_config_set_allocator (config, audio_alloc, NULL);
+    gst_structure_set (config, "is-video", G_TYPE_BOOLEAN, FALSE, NULL);
+    gst_buffer_pool_set_config (self->audio_buffer_pool, config);
+    gst_buffer_pool_set_active (self->audio_buffer_pool, TRUE);
+    gst_object_unref (audio_alloc);
+
+    // TODO: Property
+    self->audio_system = ::NTV2_AUDIOSYSTEM_1;
+
+    self->device->SetNumberAudioChannels(self->configured_audio_channels, self->audio_system);
+    self->device->SetAudioRate(NTV2_AUDIO_48K, self->audio_system);
+    self->device->SetAudioBufferSize(NTV2_AUDIO_BUFFER_BIG, self->audio_system);
+    self->device->SetSDIOutputAudioSystem(::NTV2_CHANNEL1, self->audio_system);
+    self->device->SetSDIOutputDS2AudioSystem(::NTV2_CHANNEL1, self->audio_system);
+    self->device->SetAudioLoopBack(NTV2_AUDIO_LOOPBACK_OFF, self->audio_system);
+  } else {
+    self->audio_system = ::NTV2_AUDIOSYSTEM_INVALID;
+  }
 
   CNTV2SignalRouter router;
 
@@ -506,8 +549,10 @@ gst_aja_sink_render (GstBaseSink * bsink, GstBuffer * buffer)
 {
   GstAjaSink *self = GST_AJA_SINK (bsink);
   GstFlowReturn flow_ret = GST_FLOW_OK;
+  GstAjaSinkAudioMeta *meta;
   GstVideoFrame in_frame;
-  GstBuffer *item_buffer;
+  GstMapInfo audio_map;
+  GstBuffer *item_buffer, *item_audio_buffer;
   QueueItem item;
 
   if (!gst_video_frame_map (&in_frame, &self->configured_info, buffer, GST_MAP_READ)) {
@@ -521,11 +566,32 @@ gst_aja_sink_render (GstBaseSink * bsink, GstBuffer * buffer)
     return flow_ret;
   }
 
+  meta = gst_buffer_get_aja_sink_audio_meta (buffer);
+  if (meta) {
+    flow_ret = gst_buffer_pool_acquire_buffer (self->audio_buffer_pool, &item_audio_buffer, NULL);
+    if (flow_ret != GST_FLOW_OK) {
+      gst_video_frame_unmap (&in_frame);
+      gst_buffer_unref (item_buffer);
+      return flow_ret;
+    }
+  }
+
   item.type = QUEUE_ITEM_TYPE_FRAME;
   gst_video_frame_map (&item.frame, &self->configured_info, item_buffer, GST_MAP_WRITE);
   gst_video_frame_copy (&item.frame, &in_frame);
   gst_video_frame_unmap (&in_frame);
   gst_buffer_unref (item_buffer);
+
+  if (meta) {
+    gst_buffer_map (meta->buffer, &audio_map, GST_MAP_READ);
+    gst_buffer_fill (item_audio_buffer, 0, audio_map.data, audio_map.size);
+    gst_buffer_unmap (meta->buffer, &audio_map);
+
+    gst_buffer_map (item_audio_buffer, &item.audio_map, GST_MAP_READ);
+    item.audio_buffer = item_audio_buffer;
+  } else {
+    item.audio_buffer = NULL;
+  }
 
   g_mutex_lock (&self->queue_lock);
   while (gst_queue_array_get_length (self->queue) >= 16) {
@@ -534,6 +600,10 @@ gst_aja_sink_render (GstBaseSink * bsink, GstBuffer * buffer)
     if (tmp->type == QUEUE_ITEM_TYPE_FRAME) {
       GST_WARNING_OBJECT (self, "Dropping old frame");
       gst_video_frame_unmap (&tmp->frame);
+      if (tmp->audio_buffer) {
+        gst_buffer_unmap (tmp->audio_buffer, &tmp->audio_map);
+        gst_buffer_unref (tmp->audio_buffer);
+      }
     }
   }
 
@@ -570,7 +640,7 @@ restart:
   self->device->AutoCirculateStop (::NTV2_CHANNEL1);
   self->device->AutoCirculateInitForOutput (::NTV2_CHANNEL1,
                                             7,
-                                            ::NTV2_AUDIOSYSTEM_INVALID,
+                                            self->audio_system,
                                             0,
                                             1,
                                             0, 7);
@@ -590,17 +660,15 @@ restart:
                       "current time %" G_GUINT64_FORMAT " "
                       "frames processed %u "
                       "frames dropped %u "
-                      "buffer level %u "
-                      "frames per second %f",
+                      "buffer level %u",
                       status.acStartFrame, status.acEndFrame,
                       status.acActiveFrame,
                       status.acRDTSCStartTime,
                       status.acRDTSCCurrentTime,
                       status.acFramesProcessed,
                       status.acFramesDropped,
-                      status.acBufferLevel,
-                      ((double)status.acFramesProcessed+status.acFramesDropped) / (((double)status.acRDTSCCurrentTime - status.acRDTSCStartTime) / 10000000.0)
-                      );
+                      status.acBufferLevel
+    );
 
     if (status.GetNumAvailableOutputFrames() > 1) {
       QueueItem item, *item_p;
@@ -613,6 +681,10 @@ restart:
       if (!self->playing || self->shutdown) {
         if (item_p && item_p->type == QUEUE_ITEM_TYPE_FRAME) {
           gst_video_frame_unmap (&item_p->frame);
+          if (item_p->audio_buffer) {
+            gst_buffer_unmap (item_p->audio_buffer, &item_p->audio_map);
+            gst_buffer_unref (item_p->audio_buffer);
+          }
         }
         break;
       }
@@ -633,11 +705,20 @@ restart:
       AUTOCIRCULATE_TRANSFER transfer;
 
       transfer.SetVideoBuffer ((guint*) GST_VIDEO_FRAME_PLANE_DATA (&item.frame, 0), GST_VIDEO_FRAME_SIZE (&item.frame));
+      if (item.audio_buffer) {
+        transfer.SetAudioBuffer((guint *) item.audio_map.data, item.audio_map.size);
+      }
+
       if (!self->device->AutoCirculateTransfer (::NTV2_CHANNEL1, transfer)) {
         GST_WARNING_OBJECT (self, "Failed to transfer frame");
       }
 
       gst_video_frame_unmap (&item.frame);
+
+      if (item.audio_buffer) {
+        gst_buffer_unmap (item.audio_buffer, &item.audio_map);
+        gst_buffer_unref (item.audio_buffer);
+      }
 
       g_mutex_lock (&self->queue_lock);
     } else {

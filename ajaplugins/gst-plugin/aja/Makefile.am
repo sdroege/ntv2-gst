@@ -36,6 +36,7 @@ libgstaja_la_SOURCES = \
 	gstajavideosrc.cpp \
 	gstajaaudiosrc.cpp \
 	gstajasink.cpp \
+	gstajasinkmeta.cpp \
 	gstajadeviceprovider.cpp \
 	gstntv2.cpp
 #	gstajavideosink.cpp
@@ -48,6 +49,7 @@ noinst_HEADERS = \
 	gstajavideosrc.h \
 	gstajaaudiosrc.h \
 	gstajasink.h \
+	gstajasinkmeta.h \
 	gstajadeviceprovider.h \
 	gstntv2.h \
 	../../../ajalibraries/ajantv2/includes/ntv2enums.h \

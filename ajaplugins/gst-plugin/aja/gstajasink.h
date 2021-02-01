@@ -49,6 +49,7 @@ struct _GstAjaSink
   gboolean shutdown;
 
   GstBufferPool *buffer_pool;
+  GstBufferPool *audio_buffer_pool;
 
   CNTV2Card *device;
   NTV2DeviceID device_id;
@@ -56,9 +57,11 @@ struct _GstAjaSink
   // TODO: Properties
   gchar *device_specifier;
   NTV2Channel output_channel;
+  NTV2AudioSystem audio_system;
 
   GstCaps *configured_caps;
   GstVideoInfo configured_info;
+  gint configured_audio_channels;
 
   AJAThread *output_thread;
 };
