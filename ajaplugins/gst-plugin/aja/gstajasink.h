@@ -54,9 +54,11 @@ struct _GstAjaSink
   CNTV2Card *device;
   NTV2DeviceID device_id;
 
-  // TODO: Properties
-  gchar *device_specifier;
-  NTV2Channel output_channel;
+  // Properties
+  gchar *device_identifier;
+  NTV2Channel channel;
+  guint queue_size;
+
   NTV2AudioSystem audio_system;
 
   GstCaps *configured_caps;

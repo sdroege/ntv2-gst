@@ -27,6 +27,7 @@
 #include "gstajavideosrc.h"
 #include "gstajaaudiosrc.h"
 #include "gstajasink.h"
+#include "gstajasinkcombiner.h"
 #include "gstajadeviceprovider.h"
 
 #include "ajabase/system/memory.h"
@@ -1021,6 +1022,8 @@ aja_init (GstPlugin * plugin)
 
   gst_element_register (plugin, "ajasink", GST_RANK_NONE,
       GST_TYPE_AJA_SINK);
+  gst_element_register (plugin, "ajasinkcombiner", GST_RANK_NONE,
+      GST_TYPE_AJA_SINK_COMBINER);
 
   gst_device_provider_register (plugin, "ajadeviceprovider",
         GST_RANK_PRIMARY, GST_TYPE_AJA_DEVICE_PROVIDER);
